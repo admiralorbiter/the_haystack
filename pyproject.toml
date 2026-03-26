@@ -1,0 +1,66 @@
+[project]
+name = "the-haystack"
+version = "0.1.0"
+description = "A modular, place-based intelligence platform for regional data exploration."
+requires-python = ">=3.11"
+
+# ---------------------------------------------------------------------------
+# Ruff: linting + formatting (replaces black, flake8, isort)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["routes", "loaders", "db", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes (undefined names, unused imports)
+    "I",   # isort (import ordering)
+    "UP",  # pyupgrade (modern Python syntax)
+    "B",   # flake8-bugbear (common gotchas)
+]
+ignore = [
+    "E501",  # line too long — handled by formatter, not linter
+    "B008",  # do not perform function calls in argument defaults (Flask does this)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["routes", "models", "config", "db"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+# Run with coverage: pytest --cov=. --cov-report=term-missing
+# Uses the in-memory SQLite config defined in TestingConfig (config.py)
+addopts = "--cov=. --cov-report=term-missing --cov-fail-under=70"
+
+[tool.coverage.run]
+source = ["routes", "loaders", "db", "models"]
+omit = [
+    "venv/*",
+    "migrations/*",
+    "tests/*",
+    "mock_data.py",
+    "*/conftest.py",
+]
+
+[tool.coverage.report]
+# Show lines missing coverage in terminal output
+show_missing = true
+# Lines to exclude from coverage (can't meaningfully test these)
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "pass",
+]

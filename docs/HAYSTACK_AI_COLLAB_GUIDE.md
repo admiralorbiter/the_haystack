@@ -93,6 +93,74 @@ haystack/
   tests/
 ```
 
+### Tooling (locked)
+```
+pyproject.toml        # Single config hub for all dev tools
+requirements.txt      # Core + dev dependencies (ruff, pytest, pytest-flask)
+```
+
+**Linter/Formatter:** `ruff` (replaces black + flake8 + isort)
+- Check: `ruff check .`
+- Fix auto-fixable issues: `ruff check . --fix`
+- Format: `ruff format .`
+
+**Tests:** `pytest` with `pytest-flask` and `pytest-cov`
+- Run all tests: `pytest -v`
+- Run with coverage report: `pytest --cov=. --cov-report=term-missing`
+- All tests use in-memory SQLite (`TestingConfig`) — never touch the real DB
+- **Minimum coverage gate: 70%** — `pytest` will fail below this threshold
+- Coverage is measured on `routes/`, `loaders/`, `db/`, and `models.py` only
+
+### Testing standard (mandatory — not optional)
+
+**Every new route must have tests for all three categories:**
+
+| Category | What to test |
+|---|---|
+| **Happy path** | Returns 200 (or expected status), contains expected content |
+| **Edge cases** | Empty result set, missing optional fields, multi-hop joins with no data |
+| **Error paths** | Invalid ID → 404 (not 500), malformed input → 404, SQL-injection-style strings → safe 404 |
+
+**Every new loader must have tests for:**
+- Normal load: correct record count
+- Idempotent: running twice produces the same result, no duplicates
+- Deduplication: org with same `unitid` updates, does not duplicate
+- `org_alias` written correctly on first insert
+- Suppressed data: NULL completions are stored as NULL, not zero
+- Missing required fields: row is skipped with a logged warning, not a crash
+- `dataset_source` row written on completion
+
+**Edge cases to always consider for Haystack entity types:**
+
+```
+Provider:
+  - org_id not found → 404      ✓ never 500
+  - org_id found but wrong type  → 404 (e.g. an employer, not a training provider)
+  - provider with zero programs  → renders empty state, not crash
+  - provider with suppressed completions → shows caveat, not zero
+
+Program:
+  - CIP code malformed (5 digits, letters) → safely ignored or rejected
+  - completions = NULL (suppressed) → UI shows caveat
+  - no occupation links → renders empty state
+
+Loader (all):
+  - empty source file → zero records loaded, no crash
+  - source file with only suppressed rows → all stored as NULL
+  - region with no counties → zero providers loaded, no crash
+```
+
+**Test file naming convention:**
+```
+tests/
+  test_routes.py          ← route integration tests (use Flask test client)
+  test_models.py          ← SQLAlchemy model unit tests (use in-memory DB)
+  test_loaders.py         ← data pipeline tests (use fixture CSVs in tests/fixtures/)
+  test_qa.py              ← QA script tests
+  fixtures/               ← small CSV/JSON files with sample IPEDS data for loader tests
+  conftest.py             ← shared app, client, db_session fixtures
+```
+
 ---
 
 ## Defaults

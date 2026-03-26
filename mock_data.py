@@ -7,13 +7,16 @@ MOCK_PROVIDER = {
         "program_count": 34,
         "total_completions": 1280,
         "top_field": "Health",
-        "linked_occupations": 61
+        "linked_occupations": 61,
     },
     "programs": [
         {"name": "Registered Nursing", "credential": "Associate's Degree", "completions": 250},
         {"name": "Computer Science", "credential": "Certificate", "completions": 115},
-        {"name": "Welding Technology", "credential": "Certificate", "completions": 85}
+        {"name": "Welding Technology", "credential": "Certificate", "completions": 85},
     ],
     "sectors_served": ["Healthcare", "Manufacturing", "Information Technology"],
-    "similar_providers": ["Johnson County Community College", "Kansas City Kansas Community College"]
+    "similar_providers": [
+        "Johnson County Community College",
+        "Kansas City Kansas Community College",
+    ],
 }

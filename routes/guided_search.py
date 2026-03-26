@@ -17,8 +17,10 @@ ROUTE:
 
 See HAYSTACK_EPICS.md Epic 10 for full design spec.
 """
+
 from . import root_bp
 
-@root_bp.route('/search/guided')
+
+@root_bp.route("/search/guided")
 def guided_search():
     return "Guided Search (Stub — Epic 10)"

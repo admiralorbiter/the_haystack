@@ -40,3 +40,8 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+
+# Testing & Coverage
+.coverage
+htmlcov/
+.pytest_cache/
