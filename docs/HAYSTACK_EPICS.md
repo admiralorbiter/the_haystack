@@ -162,13 +162,27 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 - [x] No duplicate unitids in organization table
 - [x] All programs have a valid org_id foreign key
 
-#### Epic 2.5 — Thin admin UI *(planned, post-pipeline)*
+#### Epic 2.5 — Thin admin UI + Raw Data Explorer *(next up)*
 > Build only after at least 2 loaders are proven. Do not let this block the pipeline work.
+> **Status:** Planned — starting after Epic 3 (pipeline proven, provider pages shipped).
+
+**Why the data explorer goes here and not later:** Once Epic 4+ begins, you'll routinely want to inspect raw program and occupation records without leaving the browser. Building it now while the admin blueprint is being created is ~0.5 day of incremental work vs. a separate effort later. Keeps the user-facing product clean — no "raw data" in the main nav.
+
+##### Admin dashboard (`/admin`)
 - [ ] `routes/admin.py` blueprint — `/admin` route, no auth (local dev only)
 - [ ] Table showing all `dataset_source` rows (name, loaded_at, record_count)
 - [ ] Live row counts per core table (`organization`, `program`, `occupation`, `program_occupation`)
-- [ ] HTMX action to re-run a named loader via `POST /admin/run/<loader_name>` — streams stdout
-- [ ] Effort: ~1–2 days
+- [ ] HTMX action to re-run a named loader via `POST /admin/run/<loader_name>` — streams stdout to a `<pre>` block
+
+##### Raw data explorer (`/admin/data/<table>`)
+- [ ] Route accepts a `<table>` slug: `organizations`, `programs`, `occupations`, `program_occupations`
+- [ ] Paginated table view (50 rows/page) showing all columns for the selected table
+- [ ] Basic sort by clicking column header (query param driven — no JS required)
+- [ ] Row count + pagination controls (Prev / Next)
+- [ ] Shared admin layout — no main nav, clear "Admin only" label
+- [ ] Link back to `/admin` dashboard from every data table page
+
+- [ ] **Effort: ~1.5–2.5 days total** (0.5 day added vs. original scope for the explorer)
 
 ---
 
@@ -380,7 +394,7 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 | 311 service requests | 4 |
 | Crime data | 4 |
 | Neighborhood / tract pages | 4 |
-| **Admin UI** (dataset status, loader runner) | Epic 2.5 — after pipeline proven |
+| **Admin UI + Raw Data Explorer** (dataset status, loader runner, `/admin/data/<table>`) | Epic 2.5 — **next up** |
 | **Inverse Search (guided query builder)** | Epic 10 |
 | **Ecosystem / Network View** | Epic 11 |
 | **Briefing Builder** | Epic 12 |
@@ -392,18 +406,19 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 
 ## Realistic timeline (solo)
 
-| Epic | Effort | Cumulative |
-|---|---|---|
-| 0 — Foundation shell | 1–2 weeks | Week 2 |
-| 1 — Schema | 3–5 days | Week 3 |
-| 2 — IPEDS pipeline | 2–3 weeks | Week 6 |
-| 3 — Provider pages | 1.5–2 weeks | Week 8 |
-| 4 — Program pages | 1–1.5 weeks | Week 9.5 |
-| 5 — Field pages | 1 week | Week 10.5 |
-| 6 — Compare | 1 week | Week 11.5 |
-| 7 — Map | 1–1.5 weeks | Week 13 |
-| 8 — Search | 1 week | Week 14 |
-| 9 — Quality pass | 3–5 days | Week 15 |
+| Epic | Effort | Cumulative | Status |
+|---|---|---|---|
+| 0 — Foundation shell | 1–2 weeks | Week 2 | ✅ Done |
+| 1 — Schema | 3–5 days | Week 3 | ✅ Done |
+| 2 — IPEDS pipeline | 2–3 weeks | Week 6 | ✅ Done |
+| 3 — Provider pages | 1.5–2 weeks | Week 8 | ✅ Done |
+| **2.5 — Admin UI + Data Explorer** | **1.5–2.5 days** | **Week 8.5** | **⬅ Next up** |
+| 4 — Program pages | 1–1.5 weeks | Week 10 | 🔲 Planned |
+| 5 — Field pages | 1 week | Week 11 | 🔲 Planned |
+| 6 — Compare | 1 week | Week 12 | 🔲 Planned |
+| 7 — Map | 1–1.5 weeks | Week 13.5 | 🔲 Planned |
+| 8 — Search | 1 week | Week 14.5 | 🔲 Planned |
+| 9 — Quality pass | 3–5 days | Week 15 | 🔲 Planned |
 
 **Honest V1 target: 14–16 weeks solo.** This is a real product, not a hackathon demo. The IPEDS pipeline alone will take longer than you expect the first time. Build in buffer at Epics 2 and 3.
 

@@ -217,7 +217,7 @@ def download_crosswalks(force: bool) -> list[dict]:
         downloaded = download_file(
             cf["url"], dest, force=force, label=f"{cf['filename']} ({cf['description']})"
         )
-        if downloaded or dest.exists():
+        if downloaded:
             manifest_entries.append(
                 {
                     "file": f"data/raw/crosswalks/{cf['filename']}",
