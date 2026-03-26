@@ -84,13 +84,25 @@ haystack/
   data/
     raw/                  # Downloaded source files
     processed/            # Cleaned/transformed
-  loaders/                # One script per dataset
-    load_ipeds.py
-    load_scorecard.py
+  loaders/                # One script per dataset (Epic 2)
+    load_ipeds_institutions.py
+    load_ipeds_programs.py
+    load_cip_soc.py
   db/
-    schema.sql
-    haystack.db
+    haystack.db           # SQLite DB (gitignored)
+    init_db.py            # Runs Alembic upgrade to head
+    seed.py               # Seeds region + geo_scope data
+    connection.py         # SQLAlchemy session factory
+  migrations/             # Alembic migrations (schema history)
+    versions/
+  qa/                     # QA scripts per dataset
+    check_ipeds.py
   tests/
+    fixtures/             # Small CSV/JSON files for loader tests
+    conftest.py
+    test_routes.py
+    test_models.py
+    test_loaders.py
 ```
 
 ### Tooling (locked)

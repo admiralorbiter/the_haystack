@@ -145,10 +145,18 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 - [ ] Log: occupation records, links created
 
 #### QA scripts
-- [ ] `qa/check_ipeds.py` — prints: institution count by county, program count, null completions rate, CIP coverage, unmatched unitids
+- [ ] `qa/check_ipeds.py` — prints: institution count by county, program count, null completions rate, CIP coverage, unmatched unitids  *(note: `qa/` directory already exists as a stub)*
 - [ ] At least one institution per KC MSA county
 - [ ] No duplicate unitids in organization table
 - [ ] All programs have a valid org_id foreign key
+
+#### Epic 2.5 — Thin admin UI *(planned, post-pipeline)*
+> Build only after at least 2 loaders are proven. Do not let this block the pipeline work.
+- [ ] `routes/admin.py` blueprint — `/admin` route, no auth (local dev only)
+- [ ] Table showing all `dataset_source` rows (name, loaded_at, record_count)
+- [ ] Live row counts per core table (`organization`, `program`, `occupation`, `program_occupation`)
+- [ ] HTMX action to re-run a named loader via `POST /admin/run/<loader_name>` — streams stdout
+- [ ] Effort: ~1–2 days
 
 ---
 
@@ -344,6 +352,7 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 | 311 service requests | 4 |
 | Crime data | 4 |
 | Neighborhood / tract pages | 4 |
+| **Admin UI** (dataset status, loader runner) | Epic 2.5 — after pipeline proven |
 | **Inverse Search (guided query builder)** | Epic 10 |
 | **Ecosystem / Network View** | Epic 11 |
 | **Briefing Builder** | Epic 12 |

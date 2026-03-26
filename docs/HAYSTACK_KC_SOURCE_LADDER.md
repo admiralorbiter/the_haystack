@@ -45,19 +45,6 @@ This ladder describes **what to add and why**, in a sequence that maximizes valu
    - Why: strong neighborhood condition signal, map-friendly, operationally meaningful
    - Primary entities: Civic Signal, Geography
    - UI surfaces: map mode, neighborhood conditions, trend summaries
-
-7. **Crime**
-   - Why: major local context layer, high user interest, place-based relevance
-   - Primary entities: Civic Signal, Geography
-   - UI surfaces: map mode, neighborhood conditions, compare by place/time window
-
----
-
-## Tier 3 — Add civic signal layers
-6. **311 service requests**
-   - Why: strong neighborhood condition signal, map-friendly, operationally meaningful
-   - Primary entities: Civic Signal, Geography
-   - UI surfaces: map mode, neighborhood conditions, trend summaries
    - *KC-specific: KC Open Data 311 portal*
 
 7. **Crime**
