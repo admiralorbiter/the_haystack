@@ -1,0 +1,6 @@
+UNITID,INSTNM,STABBR,CITY,COUNTYCD,LATITUDE,LONGITUD,WEBADDR,SECTOR
+123001,Metropolitan Community College,MO,Kansas City,29095,39.0910,-94.5724,www.mcckc.edu,4
+123002,University of Kansas City,MO,Kansas City,29095,39.0393,-94.5786,www.umkc.edu,1
+123003,Johnson County Community College,KS,Overland Park,20091,38.9009,-94.7238,www.jccc.edu,4
+999001,University of Nebraska,NE,Lincoln,31109,40.8136,-96.7026,www.unl.edu,1
+999002,Iowa State University,IA,Ames,19169,42.0267,-93.6465,www.iastate.edu,1

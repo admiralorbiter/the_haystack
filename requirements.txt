@@ -5,6 +5,11 @@ Flask-SQLAlchemy==3.1.1
 alembic==1.18.4
 python-dotenv==1.0.1
 
+# Data pipeline (Epic 2+)
+pandas==2.2.2
+openpyxl==3.1.2
+requests==2.32.3
+
 # Dev tools (not needed in production)
 ruff==0.4.4
 pytest==8.2.0
