@@ -51,7 +51,7 @@
         <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a>
         <a href="{{ url_for('root.index') }}" style="margin-left: auto;">← Back to Site</a>
     </header>
-    <div class="admin-content">
+    <div style="{% block content_style %}max-width: 1200px; margin: 2rem auto; padding: 0 2rem;{% endblock %}">
         {% block content %}{% endblock %}
     </div>
 </body>

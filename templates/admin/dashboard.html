@@ -4,9 +4,21 @@
 
 {% block content %}
 <h1 style="margin-bottom: 0.25rem;">Admin Dashboard</h1>
-<p style="color: var(--text-muted, #888); margin-bottom: 2rem; font-size: 0.9rem;">
+<p style="color: var(--text-muted, #888); margin-bottom: 1rem; font-size: 0.9rem;">
     Dataset sources, live row counts, and loader controls.
 </p>
+<div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+    <a href="{{ url_for('admin.raw_file_list') }}" style="
+        padding: 0.5rem 1.1rem;
+        background: var(--color-bg, #f5ede0);
+        border: 1px solid var(--color-border, #c4a882);
+        border-radius: 7px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-primary, #6b2737);
+        text-decoration: none;
+    ">📂 Browse Raw CSV Files →</a>
+</div>
 
 {# ── Row Counts ───────────────────────────────────────────────────────────── #}
 <section style="margin-bottom: 2.5rem;">

@@ -1,0 +1,146 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ file_name }} — Raw Data — Admin — The Haystack{% endblock %}
+
+{# Full-width override — remove max-width so all columns are visible #}
+{% block content_style %}
+    width: 100%;
+    margin: 0;
+    padding: 1rem 1.25rem;
+    box-sizing: border-box;
+{% endblock %}
+
+{% block content %}
+{# ── Page header ─────────────────────────────────────────────────────────── #}
+<div style="display: flex; align-items: baseline; gap: 1rem; margin-bottom: 0.2rem; flex-wrap: wrap;">
+    <h1 style="margin: 0; font-family: monospace; font-size: 1.2rem; color: var(--color-primary, #6b2737);">{{ file_name }}</h1>
+    <span style="color: var(--text-muted, #888); font-size: 0.875rem;">
+        {% if q %}<strong>{{ "{:,}".format(total) }}</strong> results for "{{ q }}"{% else %}<strong>{{ "{:,}".format(total) }}</strong> rows &mdash; {{ columns | length }} columns{% endif %}
+    </span>
+    <a href="{{ url_for('admin.raw_file_list') }}" style="margin-left: auto; font-size: 0.8rem; color: var(--text-muted, #888);">← All raw files</a>
+</div>
+<p style="color: var(--text-muted, #888); font-size: 0.8rem; margin-bottom: 1rem;">
+    Page {{ page }} of {{ total_pages }}{% if sort_col %} &mdash; sorted by <strong>{{ column_labels.get(sort_col, sort_col) }}</strong> {{ "↑" if sort_dir == "asc" else "↓" }}{% endif %}
+</p>
+
+{# ── Search ──────────────────────────────────────────────────────────────── #}
+<form method="get" action="" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; align-items: center; flex-wrap: wrap;">
+    <input
+        type="text"
+        name="q"
+        value="{{ q }}"
+        placeholder="Search all columns…"
+        style="
+            padding: 0.4rem 0.7rem;
+            border: 1px solid var(--color-border, #c4a882);
+            border-radius: 6px;
+            background: var(--color-bg, #f5ede0);
+            color: inherit;
+            font-size: 0.85rem;
+            width: 260px;
+        "
+    >
+    <input type="hidden" name="sort" value="{{ sort_col }}">
+    <input type="hidden" name="dir" value="{{ sort_dir }}">
+    <button type="submit" style="
+        padding: 0.4rem 0.9rem;
+        background: var(--color-primary, #6b2737);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        cursor: pointer;
+    ">Search</button>
+    {% if q %}
+    <a href="{{ url_for('admin.raw_csv_view', file_path=file_path) }}" style="font-size: 0.8rem; color: var(--text-muted, #888);">✕ Clear</a>
+    {% endif %}
+    <span style="font-size: 0.73rem; color: var(--text-muted, #888);">Searches across all {{ columns | length }} columns &mdash; hover any cell to see full value</span>
+</form>
+
+{% if rows %}
+<div style="overflow-x: auto; border: 1px solid var(--color-border, #c4a882); border-radius: 8px; margin-bottom: 1rem;">
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.72rem;">
+        <thead>
+            <tr style="background: var(--color-primary, #6b2737); color: #fff;">
+                {% for col in columns %}
+                {% set label = column_labels.get(col, none) %}
+                {% set next_dir = "desc" if (sort_col == col and sort_dir == "asc") else "asc" %}
+                {% set is_active = (sort_col == col) %}
+                <th style="
+                    padding: 0.45rem 0.55rem;
+                    text-align: left;
+                    white-space: nowrap;
+                    border-right: 1px solid rgba(255,255,255,0.1);
+                    font-weight: {{ '700' if is_active else '500' }};
+                    border-bottom: 2px solid {{ 'rgba(255,255,255,0.5)' if is_active else 'transparent' }};
+                    min-width: 70px;
+                ">
+                    <a href="{{ url_for('admin.raw_csv_view', file_path=file_path, page=1, sort=col, dir=next_dir, q=q) }}"
+                       style="color: {{ '#ffe8b0' if is_active else '#fff' }}; text-decoration: none;"
+                       title="{{ col }}{% if label %} — {{ label }}{% endif %}">
+                        {% if label %}
+                            {# Show friendly name + raw code as subscript #}
+                            <span style="display: block; font-size: 0.72rem;">{{ label }}</span>
+                            <span style="display: block; font-size: 0.6rem; opacity: 0.65; font-family: monospace;">{{ col }}{% if is_active %} {{ "▲" if sort_dir == "asc" else "▼" }}{% endif %}</span>
+                        {% else %}
+                            <span style="display: block; font-family: monospace; font-size: 0.7rem;">{{ col }}{% if is_active %} {{ "▲" if sort_dir == "asc" else "▼" }}{% endif %}</span>
+                        {% endif %}
+                    </a>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr style="background: {{ 'var(--color-surface, #ede3d4)' if loop.index is odd else 'var(--color-bg, #f5ede0)' }};">
+                {% for col in columns %}
+                <td style="
+                    padding: 0.3rem 0.55rem;
+                    max-width: 180px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    border-bottom: 1px solid var(--color-border, #c4a882);
+                    border-right: 1px solid rgba(0,0,0,0.04);
+                " title="{{ row.get(col, '') }}">{{ row.get(col, '') or "—" }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# ── Pagination ─────────────────────────────────────────────────────────── #}
+<div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; padding-bottom: 1rem;">
+    {% if page > 1 %}
+    <a href="{{ url_for('admin.raw_csv_view', file_path=file_path, page=page-1, sort=sort_col, dir=sort_dir, q=q) }}"
+       style="padding: 0.35rem 0.8rem; border: 1px solid var(--color-border, #c4a882); border-radius: 6px; text-decoration: none; color: inherit;">← Prev</a>
+    {% else %}
+    <span style="padding: 0.35rem 0.8rem; opacity: 0.35;">← Prev</span>
+    {% endif %}
+
+    <span style="color: var(--text-muted, #888);">Page <strong>{{ page }}</strong> of {{ total_pages }}</span>
+
+    {% if page < total_pages %}
+    <a href="{{ url_for('admin.raw_csv_view', file_path=file_path, page=page+1, sort=sort_col, dir=sort_dir, q=q) }}"
+       style="padding: 0.35rem 0.8rem; border: 1px solid var(--color-border, #c4a882); border-radius: 6px; text-decoration: none; color: inherit;">Next →</a>
+    {% else %}
+    <span style="padding: 0.35rem 0.8rem; opacity: 0.35;">Next →</span>
+    {% endif %}
+
+    <span style="margin-left: auto; font-size: 0.75rem; color: var(--text-muted, #888);">
+        Rows {{ ((page - 1) * 100) + 1 }}–{{ [page * 100, total] | min }} of {{ "{:,}".format(total) }}
+    </span>
+</div>
+
+{% else %}
+<div class="empty-state">
+    {% if q %}
+    <p>No rows matched "<strong>{{ q }}</strong>".</p>
+    <a href="{{ url_for('admin.raw_csv_view', file_path=file_path) }}">← Clear search</a>
+    {% else %}
+    <p>This file appears to be empty.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

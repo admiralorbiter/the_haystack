@@ -1,0 +1,63 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Raw Data Files — Admin — The Haystack{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 0.25rem;">Raw Data Files</h1>
+<p style="color: var(--text-muted, #888); font-size: 0.9rem; margin-bottom: 2rem;">
+    All CSV files downloaded into <code>data/raw/</code>. Click any file to browse its full contents.
+    These are the <strong>unfiltered</strong> source files before any KC-region processing.
+</p>
+
+{% for group, files in groups.items() %}
+<section style="margin-bottom: 2rem;">
+    <h2 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted, #888); margin-bottom: 0.75rem;">
+        📁 {{ group }}
+    </h2>
+    <div style="border: 1px solid var(--color-border, #c4a882); border-radius: 8px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+                <tr style="background: var(--color-primary, #6b2737); color: #fff;">
+                    <th style="padding: 0.6rem 1rem; text-align: left; font-weight: 600;">File</th>
+                    <th style="padding: 0.6rem 1rem; text-align: right; font-weight: 600;">Rows</th>
+                    <th style="padding: 0.6rem 1rem; text-align: right; font-weight: 600;">Size</th>
+                    <th style="padding: 0.6rem 1rem; text-align: center; font-weight: 600;">Browse</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in files %}
+                <tr style="background: {{ 'var(--color-surface, #ede3d4)' if loop.index is odd else 'var(--color-bg, #f5ede0)' }}; border-bottom: 1px solid var(--color-border, #c4a882);">
+                    <td style="padding: 0.55rem 1rem;">
+                        <code style="font-size: 0.8rem; color: var(--color-primary, #6b2737);">{{ f.name }}</code>
+                    </td>
+                    <td style="padding: 0.55rem 1rem; text-align: right; color: var(--text-muted, #888);">
+                        {{ "{:,}".format(f.row_count) }}
+                    </td>
+                    <td style="padding: 0.55rem 1rem; text-align: right; color: var(--text-muted, #888);">
+                        {{ f.size_mb }} MB
+                    </td>
+                    <td style="padding: 0.55rem 1rem; text-align: center;">
+                        <a href="{{ url_for('admin.raw_csv_view', file_path=f.path) }}"
+                           style="
+                               padding: 0.3rem 0.75rem;
+                               background: var(--color-primary, #6b2737);
+                               color: #fff;
+                               border-radius: 5px;
+                               text-decoration: none;
+                               font-size: 0.8rem;
+                               font-weight: 600;
+                           ">Browse →</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% else %}
+<div class="empty-state">
+    <p>No CSV files found in <code>data/raw/</code>. Run the download script first.</p>
+    <code style="font-size: 0.8rem; display: block; margin-top: 0.5rem;">python scripts/download_data.py --year 2024</code>
+</div>
+{% endfor %}
+{% endblock %}

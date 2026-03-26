@@ -3,12 +3,15 @@ Admin blueprint — Epic 2.5
 
 Routes:
     GET  /admin                        — Dashboard: dataset sources + row counts
-    GET  /admin/data/<table_slug>      — Paginated raw data explorer
+    GET  /admin/data/<table_slug>      — Paginated DB table explorer
+    GET  /admin/raw                    — List all downloaded raw CSV files
+    GET  /admin/raw/<path:file_path>   — Paginated raw CSV viewer with search
     POST /admin/run/<loader_name>      — HTMX loader runner (streams stdout)
 
 No auth — local dev only. Do not expose in production.
 """
 
+import csv
 import subprocess
 import sys
 from pathlib import Path
@@ -38,6 +41,113 @@ ALLOWED_LOADERS: dict[str, Path] = {
     "load_cip_soc": LOADERS_DIR / "load_cip_soc.py",
     "load_ipeds_institutions": LOADERS_DIR / "load_ipeds_institutions.py",
     "load_ipeds_programs": LOADERS_DIR / "load_ipeds_programs.py",
+}
+
+# ---------------------------------------------------------------------------
+# IPEDS data dictionary — maps raw column codes to friendly labels
+# Source: IPEDS data dictionaries (nces.ed.gov/ipeds)
+# ---------------------------------------------------------------------------
+
+IPEDS_COLUMNS: dict[str, str] = {
+    # ── Identifiers ─────────────────────────────────────────────────────────
+    "UNITID":       "Unit ID",
+    "CIPCODE":      "CIP Code",
+    "MAJORNUM":     "Major (1st/2nd)",
+    "AWLEVEL":      "Award Level",
+
+    # ── Institution ─────────────────────────────────────────────────────────
+    "INSTNM":       "Institution Name",
+    "IALIAS":       "Alias",
+    "ADDR":         "Street Address",
+    "CITY":         "City",
+    "STABBR":       "State",
+    "ZIP":          "ZIP Code",
+    "FIPS":         "FIPS State Code",
+    "OBEREG":       "Bureau Region",
+    "CHFNM":        "Chief Admin Name",
+    "CHFTITLE":     "Chief Admin Title",
+    "GENTELE":      "Phone",
+    "FAXTELE":      "Fax",
+    "EIN":          "Tax ID (EIN)",
+    "OPEID":        "OPE ID",
+    "OPEFLAG":      "OPE Participation",
+    "WEBADDR":      "Website",
+    "ADMINURL":     "Admissions URL",
+    "FAIDURL":      "Financial Aid URL",
+    "APPLURL":      "Application URL",
+    "NPRICURL":     "Net Price Calculator URL",
+    "VETURL":       "Veterans URL",
+    "ATHURL":       "Athletics URL",
+    "DISAURL":      "Disability Services URL",
+
+    # ── Classification ──────────────────────────────────────────────────────
+    "SECTOR":       "Sector",
+    "ICLEVEL":      "Level (2yr / 4yr)",
+    "CONTROL":      "Control (Public / Private)",
+    "HLOFFER":      "Highest Level Offered",
+    "UGOFFER":      "Undergrad Programs",
+    "GROFFER":      "Graduate Programs",
+    "HDEGOFR1":     "Highest Degree Offered",
+    "DEGGRANT":     "Degree Granting",
+    "HBCU":         "HBCU",
+    "HOSPITAL":     "Hospital",
+    "MEDICAL":      "Medical School",
+    "TRIBAL":       "Tribal College",
+    "LOCALE":       "Locale",
+    "OPENPUBL":     "Open to Public",
+    "PSET4FLAG":    "4-Year Postsecondary",
+    "PSEFLAG":      "Postsecondary Flag",
+    "INSTCAT":      "Institution Category",
+    "CCBASIC":      "Carnegie Basic Classification",
+    "C18BASIC":     "Carnegie 2018 Basic",
+    "C18IPUG":      "Carnegie 2018 UG Profile",
+    "C18ISIZE":     "Carnegie 2018 Size",
+    "C18UG":        "Carnegie 2018 UG Enrollment",
+    "LONGITUD":     "Longitude",
+    "LATITUDE":     "Latitude",
+    "COUNTYCD":     "County Code",
+    "COUNTYNM":     "County Name",
+    "CNGDSTCD":     "Congressional District",
+    "F1SYSTYP":     "System Type",
+    "F1SYSNAM":     "System Name",
+    "INSTSIZE":     "Institution Size",
+
+    # ── IC (Institutional Characteristics) ─────────────────────────────────
+    "CALSYS":       "Calendar System",
+    "FT_UG":        "Full-Time UG Offered",
+    "FT_FTUG":      "Full-Time/Full-Year UG",
+    "FTGDNIDP":     "Full-Time Grad (Non-Deg)",
+    "PT_UG":        "Part-Time UG Offered",
+    "PT_FTUG":      "Part-Time/Full-Year UG",
+    "PTGDNIDP":     "Part-Time Grad (Non-Deg)",
+    "OPENADMP":     "Open Admissions",
+    "CREDITS1":     "Dual Credit",
+    "CREDITS2":     "Credit Accepted (AP)",
+    "CREDITS3":     "Credit Accepted (Life Exp)",
+    "CREDITS4":     "Credit Accepted (Clep)",
+    "STUSRV1":      "Remedial Services",
+    "STUSRV2":      "Academic Counseling",
+    "STUSRV3":      "Employment Services",
+    "STUSRV4":      "Daycare for Students",
+    "LIBFAC":       "Library Facility",
+    "ATHASSOC":     "Intercollegiate Athletics",
+    "ENRLFT":       "Full-Time Enrollment",
+    "ENRLPT":       "Part-Time Enrollment",
+    "ENRLT":        "Total Enrollment",
+
+    # ── Completions totals ───────────────────────────────────────────────────
+    "CTOTALT":      "Completions Total",
+    "CTOTALM":      "Completions Men",
+    "CTOTALW":      "Completions Women",
+    "CAIANT":       "AI/AN Total",
+    "CASIAT":       "Asian Total",
+    "CBKAAT":       "Black Total",
+    "CHISPT":       "Hispanic Total",
+    "CNHPIT":       "NH/PI Total",
+    "CWHITT":       "White Total",
+    "C2MORT":       "Two+ Races Total",
+    "CUNKNT":       "Unknown Race Total",
+    "CNRALT":       "Non-Resident Alien Total",
 }
 
 PAGE_SIZE = 50
@@ -227,3 +337,102 @@ def run_loader(loader_name: str):
         mimetype="text/plain",
         headers={"X-Content-Type-Options": "nosniff"},
     )
+
+
+# ---------------------------------------------------------------------------
+# Raw CSV file explorer
+# ---------------------------------------------------------------------------
+
+RAW_DIR = PROJECT_ROOT / "data" / "raw"
+RAW_PAGE_SIZE = 100  # CSVs often have many columns — fewer rows per page
+
+
+@admin_bp.route("/raw")
+def raw_file_list():
+    """List all downloaded CSV files in data/raw, grouped by directory."""
+    groups: dict[str, list[dict]] = {}
+
+    for csv_file in sorted(RAW_DIR.rglob("*.csv")):
+        rel = csv_file.relative_to(RAW_DIR)
+        group = str(rel.parent) if str(rel.parent) != "." else "root"
+        size_mb = csv_file.stat().st_size / (1024 * 1024)
+
+        # Peek at row count (fast: count newlines)
+        with open(csv_file, "rb") as f:
+            row_count = sum(1 for _ in f) - 1  # subtract header
+
+        groups.setdefault(group, []).append({
+            "name": csv_file.name,
+            "path": str(rel).replace("\\", "/"),
+            "size_mb": round(size_mb, 1),
+            "row_count": row_count,
+        })
+
+    return render_template("admin/raw_file_list.html", groups=groups)
+
+
+@admin_bp.route("/raw/<path:file_path>")
+def raw_csv_view(file_path: str):
+    """Paginated, searchable viewer for a single raw CSV file."""
+    # Security: resolve path and ensure it stays inside RAW_DIR
+    target = (RAW_DIR / file_path).resolve()
+    if not str(target).startswith(str(RAW_DIR.resolve())):
+        abort(404)
+    if not target.exists() or target.suffix.lower() != ".csv":
+        abort(404)
+
+    q = request.args.get("q", "").strip().lower()
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except (ValueError, TypeError):
+        page = 1
+
+    sort_col = request.args.get("sort", "")
+    sort_dir = request.args.get("dir", "asc")
+    if sort_dir not in ("asc", "desc"):
+        sort_dir = "asc"
+
+    # Read the CSV — for large files we stream and filter in one pass
+    all_rows: list[dict] = []
+    columns: list[str] = []
+
+    with open(target, newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        columns = reader.fieldnames or []
+        search_col = columns[0] if columns else ""
+
+        for row in reader:
+            if q:
+                if not any(q in str(v).lower() for v in row.values()):
+                    continue
+            all_rows.append(dict(row))
+
+    # Validate sort column
+    if sort_col not in columns:
+        sort_col = columns[0] if columns else ""
+
+    # Sort
+    if sort_col:
+        reverse = sort_dir == "desc"
+        all_rows.sort(key=lambda r: (r.get(sort_col) or "").lower(), reverse=reverse)
+
+    total = len(all_rows)
+    total_pages = max(1, (total + RAW_PAGE_SIZE - 1) // RAW_PAGE_SIZE)
+    page = min(page, total_pages)
+    rows = all_rows[(page - 1) * RAW_PAGE_SIZE : page * RAW_PAGE_SIZE]
+
+    return render_template(
+        "admin/raw_csv_view.html",
+        file_path=file_path,
+        file_name=target.name,
+        columns=columns,
+        rows=rows,
+        total=total,
+        page=page,
+        total_pages=total_pages,
+        sort_col=sort_col,
+        sort_dir=sort_dir,
+        q=q,
+        column_labels=IPEDS_COLUMNS,
+    )
+
