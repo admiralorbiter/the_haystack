@@ -1,0 +1,42 @@
+{# Geography tab — HTMX fragment #}
+
+<div class="tab-section">
+  <h3 class="section-title">Location</h3>
+  <dl class="detail-list">
+    <dt>Address</dt>
+    <dd>{{ org.city }}{% if org.city and org.state %}, {% endif %}{{ org.state or '—' }}</dd>
+
+    <dt>County</dt>
+    <dd>
+      {% if county %}
+        {{ county.county_name }}, {{ county.state }}
+        <span style="font-family:monospace; font-size:0.8rem; color:var(--text-muted);">(FIPS {{ county.county_fips }})</span>
+      {% else %}
+        {{ org.county_fips or '—' }}
+      {% endif %}
+    </dd>
+
+    {% if org.lat and org.lon %}
+    <dt>Coordinates</dt>
+    <dd style="font-family:monospace; font-size:0.85rem;">{{ '%.4f' | format(org.lat) }}, {{ '%.4f' | format(org.lon) }}</dd>
+    {% endif %}
+
+    {% if org.website %}
+    <dt>Website</dt>
+    <dd><a href="{{ org.website }}" target="_blank" rel="noopener">{{ org.website }}</a></dd>
+    {% endif %}
+  </dl>
+</div>
+
+{% if org.lat and org.lon %}
+<div class="tab-section">
+  <div class="map-placeholder">
+    <div class="map-placeholder-pin">📍</div>
+    <p>Interactive map coming in Epic 7.</p>
+    <p style="font-size:0.85rem; color:var(--text-muted);">
+      {{ org.name }}<br>
+      {{ '%.4f' | format(org.lat) }}°N, {{ '%.4f' | format(org.lon) }}°W
+    </p>
+  </div>
+</div>
+{% endif %}

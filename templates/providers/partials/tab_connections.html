@@ -1,0 +1,68 @@
+{# Connections tab — HTMX fragment #}
+
+<div class="tab-section">
+  <h3 class="section-title">Linked Occupations
+    <span class="section-count">({{ occ_links | length }})</span>
+  </h3>
+
+  {% if occ_links %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Occupation</th>
+        <th>SOC Code</th>
+        <th class="num-col">Programs</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for occ, prog_count in occ_links %}
+      <tr>
+        <td>{{ occ.title }}</td>
+        <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);">{{ occ.soc }}</td>
+        <td class="num-col">{{ prog_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state-inline">No occupation links found for this provider's programs.</div>
+  {% endif %}
+</div>
+
+<div class="tab-section">
+  <h3 class="section-title">Similar Providers
+    <span class="section-hint">— by shared fields of study</span>
+  </h3>
+
+  {% if similar_providers %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Institution</th>
+        <th>Location</th>
+        <th class="num-col">Shared Fields</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in similar_providers %}
+      <tr class="provider-row" onclick="window.location='{{ url_for('root.provider_detail', org_id=row.org.org_id) }}'">
+        <td>
+          <a href="{{ url_for('root.provider_detail', org_id=row.org.org_id) }}" class="provider-name-link">
+            {{ row.org.name }}
+          </a>
+        </td>
+        <td style="color:var(--text-muted); font-size:0.9rem;">
+          {{ row.org.city }}{% if row.org.city and row.org.state %}, {% endif %}{{ row.org.state }}
+        </td>
+        <td class="num-col">{{ row.shared_cip_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="methods-note">
+    Similarity is based on number of shared CIP (field of study) codes via the NCES CIP 2020 → SOC 2018 crosswalk.
+  </p>
+  {% else %}
+  <div class="empty-state-inline">No similar providers found.</div>
+  {% endif %}
+</div>

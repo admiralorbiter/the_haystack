@@ -1,0 +1,52 @@
+{# Methods tab — HTMX fragment, static copy #}
+
+<div class="tab-section">
+  <h3 class="section-title">How to read this data</h3>
+
+  <div class="methods-block">
+    <h4>What are "completions"?</h4>
+    <p>
+      Completions are <strong>awards conferred</strong> during the academic year — degrees, certificates, and other credentials
+      actually earned by students. This is not the same as enrollment or graduation rates.
+      A single student can earn multiple awards in one year.
+    </p>
+  </div>
+
+  <div class="methods-block">
+    <h4>Why do some programs show — instead of a number?</h4>
+    <p>
+      NCES suppresses completion values when fewer than 3 students completed a program in a given year,
+      to protect student privacy. A dash (—) means data exists but is withheld.
+      It does <em>not</em> mean zero completions.
+    </p>
+  </div>
+
+  <div class="methods-block">
+    <h4>How are programs linked to occupations?</h4>
+    <p>
+      The occupation links are derived from the
+      <strong>NCES CIP 2020 → SOC 2018 crosswalk</strong>.
+      Each program's 6-digit CIP code (Classification of Instructional Programs) is matched to
+      one or more SOC codes (Standard Occupational Classification) from the crosswalk.
+      This is a structural mapping, not a guaranteed employment outcome.
+    </p>
+  </div>
+
+  <div class="methods-block">
+    <h4>What is the KC MSA?</h4>
+    <p>
+      The Kansas City Metropolitan Statistical Area (MSA) includes
+      {{ org.county_fips and 'the county where this institution is located, plus' or '' }}
+      counties in both Missouri and Kansas defined by the U.S. Office of Management and Budget.
+      The Haystack filters to institutions whose primary campus is within these counties.
+    </p>
+  </div>
+
+  <div class="methods-block">
+    <h4>Data currency</h4>
+    <p>
+      Institutional data is sourced from IPEDS 2023–24 (data year 2024).
+      IPEDS data is collected annually; this reflects the most recent finalized release available.
+    </p>
+  </div>
+</div>

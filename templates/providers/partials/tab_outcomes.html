@@ -1,0 +1,58 @@
+{# Outcomes tab — HTMX fragment #}
+
+<div class="tab-section">
+  <h3 class="section-title">Completions by Program</h3>
+
+  {% if total_completions %}
+  <div class="outcome-summary">
+    <span class="outcome-total">{{ '{:,}'.format(total_completions) }}</span>
+    <span class="outcome-label">total awards conferred (IPEDS 2023–24)</span>
+    {% if suppressed_count > 0 %}
+    <span class="suppressed-note">
+      &mdash; {{ suppressed_count }} program{{ 's' if suppressed_count != 1 }} with suppressed data not included
+    </span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if programs %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Program</th>
+        <th>Credential</th>
+        <th class="num-col">Completions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in programs %}
+      <tr>
+        <td>{{ p.name }}</td>
+        <td style="font-size:0.85rem; color:var(--text-muted);">{{ p.credential_type }}</td>
+        <td class="num-col">
+          {% if p.completions is not none %}
+            {{ p.completions }}
+          {% else %}
+            <span class="suppressed-label" title="Suppressed by NCES to protect student privacy">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state-inline">No program records found for this provider.</div>
+  {% endif %}
+</div>
+
+<div class="tab-section">
+  <h3 class="section-title">College Scorecard Outcomes</h3>
+  <div class="scorecard-placeholder">
+    <p>Earnings and employment outcomes from the College Scorecard will be available in Phase 2.</p>
+  </div>
+</div>
+
+<p class="methods-note" style="margin-top: var(--spacing-lg);">
+  Completions are awards conferred, not enrollments.
+  Values shown as — are suppressed by NCES when fewer than 3 completers are reported, to protect student privacy.
+</p>

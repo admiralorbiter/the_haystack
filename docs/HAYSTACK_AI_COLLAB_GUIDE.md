@@ -282,6 +282,22 @@ Each entry is a hard-won lesson. Read before starting a new loader or route.
   - Second pass (after programs): creates `program_occupation` links (needs programs to exist first).
 - This is idempotent. Do not collapse into a single call or one phase will always produce zero links.
 
+### Flask Server Management on Windows
+- A common issue when developing on Windows is creating "zombie" Python processes holding port 5000 hostage when the dev server is restarted improperly or crashes silently without releasing the port.
+- When you see an error like `[WinError 10013] An attempt was made to access a socket in a way forbidden by its access permissions`, it means port 5000 is still bound by an orphaned Flask process.
+- **Always clear the port first:** Use `Stop-Process -Id (Get-NetTCPConnection -LocalPort 5000).OwningProcess -Force` in PowerShell to kill the zombie before trying to restart. Note that if you use `flask run` you might get an error because the current user doesn't have permissions, so run `python app.py` instead or kill the specific PID directly.
+
+### UI Styling & Visual Hierarchy
+- Standard `<button>` elements almost always require `border: none; background: none;` to look clean when used as navigational tabs or custom elements. Do not leave the browser-default gray border box on them.
+- **Snapshot Strips:** Always ensure snapshot strips form a complete, balanced row visually (e.g., 5 cards). Do not leave a single "orphaned" card wrapping onto a second row. Swap it out for a different layout element, like a small inline callout underneath.
+- **Data presentation:** Raw IPEDS codes (like CIP 51) are meaningless to end-users. Always use mappings to translate raw IDs into human-readable strings (e.g., "Health Professions (51)") in UI presentations.
+- **Empty States**: Use the standardized `empty-state` CSS class defined in `components.css`. The `components.empty_state()` Jinja macro is available for simple messages, but custom HTML with the `empty-state` class is fine for complex links, as long as the styling remains unified.
+
+### SQLite FTS5 Approach (Epic 4+)
+- When implementing full-text search, use the SQLite FTS5 extension with the `porter` tokenizer (which handles word stemming like "nurse" matching "nursing"). Do not use the `trigram` tokenizer because it creates version bounds issues (requires SQLite > 3.34) and is overkill for basic English title search.
+- Use raw SQL in Alembic to create the `_fts` virtual table.
+- Use `INSERT`, `UPDATE`, and `DELETE` database triggers to keep the FTS virtual table synchronized with the core tables. This isolates the FTS logic cleanly within the database layer so data loaders (like IPEDS) do not need to be modified.
+
 ---
 
 ## Key docs (reference, don't re-derive)

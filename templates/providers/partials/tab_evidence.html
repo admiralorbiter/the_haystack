@@ -1,0 +1,50 @@
+{# Evidence tab — HTMX fragment #}
+
+<div class="tab-section">
+  <h3 class="section-title">Data Provenance</h3>
+  <dl class="detail-list">
+    <dt>Institution name</dt>
+    <dd>{{ org.name }}</dd>
+
+    {% if alias %}
+    <dt>IPEDS UNITID</dt>
+    <dd style="font-family:monospace;">{{ alias.source_id }}</dd>
+    <dt>IPEDS name on record</dt>
+    <dd>{{ alias.source_name or '—' }}</dd>
+    {% endif %}
+
+    {% if org.unitid %}
+    <dt>Internal UNITID</dt>
+    <dd style="font-family:monospace;">{{ org.unitid }}</dd>
+    {% endif %}
+
+    <dt>Haystack org_id</dt>
+    <dd style="font-family:monospace; font-size:0.8rem; color:var(--text-muted);">{{ org.org_id }}</dd>
+
+    {% if ds_hd %}
+    <dt>Institutions file</dt>
+    <dd>
+      {{ ds_hd.name }}
+      &mdash; <span style="color:var(--text-muted); font-size:0.85rem;">
+        {{ ds_hd.record_count | default('?') }} records, loaded {{ ds_hd.loaded_at.strftime('%Y-%m-%d') if ds_hd.loaded_at else '?' }}
+      </span>
+    </dd>
+    {% endif %}
+
+    {% if ds_c %}
+    <dt>Completions file</dt>
+    <dd>
+      {{ ds_c.name }}
+      &mdash; <span style="color:var(--text-muted); font-size:0.85rem;">
+        {{ ds_c.record_count | default('?') }} records, loaded {{ ds_c.loaded_at.strftime('%Y-%m-%d') if ds_c.loaded_at else '?' }}
+      </span>
+    </dd>
+    {% endif %}
+  </dl>
+</div>
+
+<p class="methods-note">
+  <a href="https://nces.ed.gov/ipeds/" target="_blank" rel="noopener">IPEDS</a>
+  is the Integrated Postsecondary Education Data System, maintained by the National Center for Education Statistics (NCES).
+  Data is collected annually and typically published 12–18 months after the survey year.
+</p>

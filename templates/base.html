@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/providers.css') }}">
 </head>
 <body>
     <header class="top-nav">
@@ -21,10 +22,11 @@
             <input type="text" placeholder="Search... (stub)">
         </div>
         <nav class="nav-links">
-            <a href="#">Explore</a>
+            <a href="{{ url_for('root.providers_directory') }}">Providers</a>
+            <a href="#">Programs</a>
+            <a href="#">Fields</a>
             <a href="{{ url_for('root.map_view') }}">Map</a>
             <a href="{{ url_for('root.compare_providers') }}">Compare</a>
-            <a href="#">Collections</a>
             <a href="#">Methods</a>
         </nav>
     </header>
@@ -34,7 +36,7 @@
     </main>
 
     <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
-        <p>The Haystack &copy; 2026. Data logic stub.</p>
+        <p>The Haystack &copy; 2026 &mdash; Data sourced from IPEDS (NCES). Built for the Kansas City region.</p>
     </footer>
 </body>
 </html>

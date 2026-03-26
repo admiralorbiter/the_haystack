@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}Providers | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('root.index') }}">Home</a> &rsaquo; Providers</div>
+
+<header class="page-header">
+  <div class="title-row">
+    <h1 class="m-0">Training Providers</h1>
+    {{ components.entity_badge('provider', 'KC Region') }}
+  </div>
+  <p style="color:var(--text-muted); margin:0;">
+    Postsecondary institutions offering credential programs in the Kansas City MSA.
+  </p>
+</header>
+
+{# ── Filter bar ─────────────────────────────────────────────────────────── #}
+<form method="get" action="{{ url_for('root.providers_directory') }}" class="filter-bar" id="filter-form">
+  <div class="filter-group">
+    <label class="filter-label">County</label>
+    <div class="chip-row">
+      <a href="{{ url_for('root.providers_directory', sort=sort, cred=cred_filter, cip=cip_filter) }}"
+         class="chip {% if not county_filter %}chip-active{% endif %}">All</a>
+      {% for c in all_counties %}
+      <a href="{{ url_for('root.providers_directory', county=c.county_fips, sort=sort, cred=cred_filter, cip=cip_filter) }}"
+         class="chip {% if county_filter == c.county_fips %}chip-active{% endif %}">
+        {{ c.county_name }}, {{ c.state }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="filter-group" style="margin-top: var(--spacing-sm);">
+    <label class="filter-label">Credential Type</label>
+    <div class="chip-row">
+      <a href="{{ url_for('root.providers_directory', county=county_filter, sort=sort, cip=cip_filter) }}"
+         class="chip {% if not cred_filter %}chip-active{% endif %}">All</a>
+      {% for cred in all_creds %}
+      <a href="{{ url_for('root.providers_directory', county=county_filter, cred=cred, sort=sort, cip=cip_filter) }}"
+         class="chip {% if cred_filter == cred %}chip-active{% endif %}">{{ cred }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</form>
+
+{# ── Results header ─────────────────────────────────────────────────────── #}
+<div class="results-header">
+  <span class="results-count">
+    {{ total_count }} provider{{ 's' if total_count != 1 else '' }}
+    {% if county_filter or cred_filter %}
+    <span style="font-weight:normal; color:var(--text-muted); font-size:0.9rem;"> &mdash; filtered</span>
+    {% endif %}
+  </span>
+  <div class="sort-row">
+    <span class="sort-label">Sort:</span>
+    {% set sort_options = [('completions', 'Completions'), ('programs', 'Programs'), ('name', 'Name')] %}
+    {% for key, label in sort_options %}
+    <a href="{{ url_for('root.providers_directory', county=county_filter, cred=cred_filter, cip=cip_filter, sort=key) }}"
+       class="sort-link {% if sort == key %}sort-active{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{# ── Provider table ─────────────────────────────────────────────────────── #}
+{% if providers %}
+<div class="table-wrapper">
+  <table class="data-table provider-table">
+    <thead>
+      <tr>
+        <th>Institution</th>
+        <th>Location</th>
+        <th class="num-col">Programs</th>
+        <th class="num-col" title="Awards conferred (IPEDS 2023–24). — means data is suppressed to protect student privacy.">Completions ↓</th>
+        <th class="num-col">Occupations</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in providers %}
+      {% set org = row.org %}
+      <tr class="provider-row" onclick="window.location='{{ url_for('root.provider_detail', org_id=org.org_id) }}'">
+        <td>
+          <a href="{{ url_for('root.provider_detail', org_id=org.org_id) }}" class="provider-name-link">
+            {{ org.name }}
+          </a>
+        </td>
+        <td style="color:var(--text-muted); font-size:0.9rem;">
+          {{ org.city }}{% if org.city and org.state %}, {% endif %}{{ org.state }}
+        </td>
+        <td class="num-col">{{ '{:,}'.format(row.program_count) }}</td>
+        <td class="num-col">
+          {% if row.total_completions is not none %}
+            {{ '{:,}'.format(row.total_completions) }}
+          {% else %}
+            <span class="suppressed-label" title="Data suppressed by IPEDS to protect student privacy">&mdash;</span>
+          {% endif %}
+        </td>
+        <td class="num-col">{{ '{:,}'.format(row.occ_count) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Pagination ──────────────────────────────────────────────────────────── #}
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a class="page-btn" href="{{ url_for('root.providers_directory', county=county_filter, cred=cred_filter, sort=sort, page=page-1) }}">&larr; Previous</a>
+  {% endif %}
+  <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a class="page-btn" href="{{ url_for('root.providers_directory', county=county_filter, cred=cred_filter, sort=sort, page=page+1) }}">Next &rarr;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+{# ── Empty state ─────────────────────────────────────────────────────────── #}
+<div class="empty-state">
+  <div class="empty-icon">🏫</div>
+  <h3>No providers match these filters</h3>
+  <p>Try removing a filter or <a href="{{ url_for('root.providers_directory') }}">viewing all providers</a>.</p>
+</div>
+{% endif %}
+
+{# ── Methods footer ──────────────────────────────────────────────────────── #}
+<div class="methods-footer">
+  <strong>Data:</strong> IPEDS Institutional Characteristics (HD) 2023–24.
+  Completions shown are awards conferred, not enrollments.
+  Suppressed values (—) are withheld by NCES to protect student privacy.
+</div>
+
+{% endblock %}

@@ -16,9 +16,14 @@
 <span class="badge badge-freshness">Data as of {{ date }} from {{ source }}</span>
 {% endmacro %}
 
-{% macro empty_state(message, suggestion) %}
-<div class="empty-state" style="text-align: center; padding: 3rem; background: var(--color-surface); border-radius: var(--radius-md);">
-    <h3 style="color: var(--text-muted);">{{ message }}</h3>
-    <p style="color: var(--text-muted);">{{ suggestion }}</p>
+{% macro empty_state(message, suggestion, icon='') %}
+<div class="empty-state">
+    {% if icon %}
+    <div class="empty-icon">{{ icon }}</div>
+    {% endif %}
+    <h3>{{ message }}</h3>
+    {% if suggestion %}
+    <p>{{ suggestion | safe }}</p>
+    {% endif %}
 </div>
 {% endmacro %}

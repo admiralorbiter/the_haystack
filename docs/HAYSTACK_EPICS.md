@@ -104,33 +104,44 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 
 **Effort estimate:** 2–3 weeks (IPEDS is messier than it looks)
 
+**Status: ✅ COMPLETE** — Shipped 2026-03-26
+
+**What shipped:**
+- 38 KC MSA training institutions loaded (IPEDS HD 2024)
+- 1,132 programs with human-readable names ("CIP Title — Credential Level", Option B)
+- 867 occupations + 5,119 program→occupation links (CIP→SOC crosswalk 2020)
+- Idempotent, additive pipeline covering 2014–2024 (11 years downloadable)
+- 35 tests, all passing
+- QA script with automated checks on FK integrity, deduplication, and coverage
+- Retro complete, doc drift fixed, process lessons logged in collab guide
+
 ### Tasks
 
 #### Understand the source files
-- [ ] Download IPEDS HD (institution directory) for most recent complete year
-- [ ] Download IPEDS C (completions by CIP) for same year
-- [ ] Download IPEDS IC (institutional characteristics) for credential types
-- [ ] Download CIP→SOC crosswalk (NCES or O*NET — pick one, document it)
-- [ ] Review column names, null patterns, suppression markers
+- [x] Download IPEDS HD (institution directory) for most recent complete year
+- [x] Download IPEDS C (completions by CIP) for same year
+- [x] Download IPEDS IC (institutional characteristics) for credential types
+- [x] Download CIP→SOC crosswalk (NCES — CIP 2020 / SOC 2018)
+- [x] Review column names, null patterns, suppression markers
 
 #### Loader: institutions (`loaders/load_ipeds_institutions.py`)
-- [ ] Accept `--region` flag and look up county FIPS from `region_county` table
-- [ ] Filter IPEDS to institutions in those counties
-- [ ] Map IPEDS columns → `organization` schema
-- [ ] Set `org_type = 'training'`
-- [ ] Upsert on `unitid` (update if exists, insert if not)
-- [ ] Write `unitid` to `org_alias` table with `source='ipeds'` — all future sources must resolve through this table before creating a new org
-- [ ] Record `dataset_source` row on completion
-- [ ] Log: institutions loaded, skipped, failed
+- [x] Accept `--region` flag and look up county FIPS from `region_county` table
+- [x] Filter IPEDS to institutions in those counties
+- [x] Map IPEDS columns → `organization` schema
+- [x] Set `org_type = 'training'`
+- [x] Upsert on `unitid` (update if exists, insert if not)
+- [x] Write `unitid` to `org_alias` table with `source='ipeds'` — all future sources must resolve through this table before creating a new org
+- [x] Record `dataset_source` row on completion
+- [x] Log: institutions loaded, skipped, failed
 
 #### Loader: programs (`loaders/load_ipeds_programs.py`)
-- [ ] Join completions file to institution by `unitid`
-- [ ] Filter to KC institutions only
-- [ ] Normalize CIP to 6-digit string (pad if needed)
-- [ ] Map credential level codes to human labels (e.g. `1` → "Certificate < 1 year")
-- [ ] Handle suppressed completions (value = `.` or blank) → store as NULL
-- [ ] Upsert on `(org_id, cip, credential_type)` composite
-- [ ] Log: programs loaded, suppressed, failed
+- [x] Join completions file to institution by `unitid`
+- [x] Filter to KC institutions only
+- [x] Normalize CIP to 6-digit string (pad if needed)
+- [x] Map credential level codes to human labels (e.g. `5` → "Bachelor's degree", `20` → "Certificate (sub-baccalaureate, < 1 year)")
+- [x] Handle suppressed completions (value = `.` or blank) → store as NULL
+- [x] Upsert on `(org_id, cip, credential_type)` composite
+- [x] Log: programs loaded, suppressed, failed
 
 #### Deduplication rule (applies to every loader, forever)
 > **Before inserting any organization, check `org_alias` for the incoming source ID.**
@@ -139,16 +150,17 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 > This ensures one canonical `org_id` per real-world entity across all data sources.
 
 #### Loader: CIP→SOC crosswalk (`loaders/load_cip_soc.py`)
-- [ ] Load crosswalk file
-- [ ] Populate `occupation` table (SOC codes + titles)
-- [ ] Populate `program_occupation` with confidence=1.0 for direct matches
-- [ ] Log: occupation records, links created
+- [x] Load crosswalk file (sheet `"CIP-SOC"` — must specify explicitly)
+- [x] Populate `occupation` table (SOC codes + titles)
+- [x] Populate `program_occupation` with confidence=1.0 for direct matches
+- [x] Log: occupation records, links created
+- [x] Pipeline runs CIP→SOC twice: Phase 1 before programs (occupation table), Phase 2 after programs (links)
 
 #### QA scripts
-- [ ] `qa/check_ipeds.py` — prints: institution count by county, program count, null completions rate, CIP coverage, unmatched unitids  *(note: `qa/` directory already exists as a stub)*
-- [ ] At least one institution per KC MSA county
-- [ ] No duplicate unitids in organization table
-- [ ] All programs have a valid org_id foreign key
+- [x] `qa/check_ipeds.py` — prints: institution count by county, program count, null completions rate, CIP coverage, dedup integrity
+- [x] At least one institution per core KC MSA county (rural fringe counties are WARN not FAIL)
+- [x] No duplicate unitids in organization table
+- [x] All programs have a valid org_id foreign key
 
 #### Epic 2.5 — Thin admin UI *(planned, post-pipeline)*
 > Build only after at least 2 loaders are proven. Do not let this block the pipeline work.
@@ -167,66 +179,82 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 
 **Effort estimate:** 1.5–2 weeks
 
+**Status: ✅ COMPLETE** — Shipped 2026-03-26
+
+**What shipped:**
+- Provider directory (`/providers`) with county and credential type filters, text search, and sorts.
+- Provider detail page (`/providers/<id>`) with HTMX-powered deferred tab loading for performance.
+- Snapshot strip featuring real data metrics (Programs, Award Completions, Top Credential, Top CIP Family, Linked Occupations) and a stub for Scorecard metrics.
+- Connections Tab: Advanced SQL self-joins to find similar providers by CIP overlap, and Occupation Links resolving CIP to SOC codes in real-time.
+- CSS foundation for the "Premium Civic-Tech" aesthetic: glassmorphism, responsive tables, pill-shaped filters, and clean tab navigation.
+- Data Provenance tracking via `dataset_source`.
+
 ### Tasks
 
 #### Provider directory (`/providers`)
-- [ ] SQLAlchemy query: list organizations where org_type='training', join program counts and total completions
-- [ ] Filters: county, credential type (via program join), CIP family (2-digit prefix), completions band
-- [ ] Sort: completions desc (default), program count, alphabetic
-- [ ] Search: LIKE on organization name (or SQLite FTS if already set up)
-- [ ] URL-synced filter state (query params)
-- [ ] Result count shown ("34 providers")
-- [ ] Card/list toggle (start with one, add toggle later)
-- [ ] **Network view toggle:** List | Map | ~~Network~~ (Network shows a "Coming soon" panel — the toggle exists from day one so Epic 11 is a swap, not a redesign)
-- [ ] Empty state if filters return zero results
-- [ ] Pagination or limit (50 per page is fine for V1)
+- [x] SQLAlchemy query: list organizations where org_type='training', join program counts and total completions
+- [x] Filters: county, credential type (via program join), CIP family (2-digit prefix), completions band
+- [x] Sort: completions desc (default), program count, alphabetic
+- [x] Search: LIKE on organization name (or SQLite FTS if already set up)
+- [x] URL-synced filter state (query params)
+- [x] Result count shown ("34 providers")
+- [x] Card/list toggle (start with one, add toggle later)
+- [x] **Network view toggle:** List | Map | ~~Network~~ (Network shows a "Coming soon" panel — the toggle exists from day one so Epic 11 is a swap, not a redesign)
+- [x] Empty state if filters return zero results
+- [x] Pagination or limit (50 per page is fine for V1)
 
 #### Provider detail (`/providers/<id>`)
-- [ ] Route: fetch organization + aggregate metrics in one query
-- [ ] Snapshot strip: program count, total completions, top credential type, top CIP family, linked occupation count, Scorecard coverage
-- [ ] Tab: Overview — provider summary, top 5 programs by completions, CIP family breakdown
-- [ ] Tab: Connections — linked occupations via CIP→SOC (ranked by program count), similar providers by CIP overlap
-- [ ] Tab: Geography — static map pin (lat/lon), county label, nearby context (placeholder for Phase 4)
-- [ ] Tab: Outcomes — completions table by CIP; Scorecard placeholder ("Scorecard data coming in Phase 2")
-- [ ] Tab: Evidence — unitid, data source name, loaded_at date
-- [ ] Tab: Methods — completions definition, CIP/SOC caveat text, suppression note
-- [ ] Data freshness badge visible in header
-- [ ] **Briefing Builder:** every stat card in the snapshot strip has a ★ button (wired to HTMX `POST /briefing/add` — returns 200 in V1 as a placeholder response)
-- [ ] 404 if org_id not found or org_type != 'training'
-- [ ] Empty states: no programs, no occupation links, no completions data
+- [x] Route: fetch organization + aggregate metrics in one query
+- [x] Snapshot strip: program count, total completions, top credential type, top CIP family, linked occupation count, Scorecard coverage
+- [x] Tab: Overview — provider summary, top 5 programs by completions, CIP family breakdown
+- [x] Tab: Connections — linked occupations via CIP→SOC (ranked by program count), similar providers by CIP overlap
+- [x] Tab: Geography — static map pin (lat/lon), county label, nearby context (placeholder for Phase 4)
+- [x] Tab: Outcomes — completions table by CIP; Scorecard placeholder ("Scorecard data coming in Phase 2")
+- [x] Tab: Evidence — unitid, data source name, loaded_at date
+- [x] Tab: Methods — completions definition, CIP/SOC caveat text, suppression note
+- [x] Data freshness badge visible in header
+- [x] **Briefing Builder:** every stat card in the snapshot strip has a ★ button (wired to HTMX `POST /briefing/add` — returns 200 in V1 as a placeholder response)
+- [x] 404 if org_id not found or org_type != 'training'
+- [x] Empty states: no programs, no occupation links, no completions data
 
 #### Performance
-- [ ] No N+1 queries — all tab data fetched in batched queries, not per-row
-- [ ] Provider detail renders in < 300ms on local SQLite
+- [x] No N+1 queries — all tab data fetched in batched queries, not per-row
+- [x] Provider detail renders in < 300ms on local SQLite
 
 ---
 
 ## Epic 4 — Program directory and detail
 **Goal:** Programs browsable independently of providers. Users can find a specific certificate type without knowing which school offers it.
 
-**Exit criteria:** `/programs` lists all KC programs with working filters. `/programs/<id>` renders without errors.
+**Exit criteria:** `/programs` lists all KC programs with working filters and FTS5 search. `/programs/<id>` renders without errors.
 
 **Effort estimate:** 1–1.5 weeks (template and query patterns already established)
 
 ### Tasks
 
+#### Program FTS5 Architecture
+- [ ] Create Alembic migration for `program_fts` virtual table using SQLite FTS5.
+- [ ] Configure `program_fts` to use the `porter` stemming tokenizer (matches "nursing" to "nurse") to avoid `trigram` compatibility issues.
+- [ ] Add `INSERT`, `UPDATE`, `DELETE` triggers to `program` and `organization` tables to keep the FTS index automatically synchonized without pipeline logic changes.
+- [ ] Map `program_fts` in `models.py` for SQLAlchemy `MATCH` queries.
+
 #### Program directory (`/programs`)
 - [ ] SQLAlchemy query: list programs with org name, credential type, CIP label, completions, occupation link count
 - [ ] Filters: credential type, CIP family, provider (org_id), completions band
 - [ ] Sort: completions desc (default), provider alphabetic, credential type
-- [ ] Search: program name + org name LIKE
+- [ ] Search: FTS5 query matching program title, institution name, and CIP code.
 - [ ] URL-synced filter state
-- [ ] Empty state
+- [ ] Standardized `empty_state` UI usage
 
 #### Program detail (`/programs/<id>`)
 - [ ] Snapshot strip: provider name, credential type, CIP code + label, completions, linked occupation count, Scorecard available (yes/no)
+- [ ] Base shell route + HTMX lazy-loading architecture identical to Providers.
 - [ ] Tab: Overview — short descriptor, provider card (name, city, link), award level, CIP family context
 - [ ] Tab: Occupation links — related occupations ranked by confidence, SOC code shown, wage/demand placeholder
 - [ ] Tab: Outcomes — completions value; suppression note if NULL; Scorecard placeholder
 - [ ] Tab: Geography — provider map pin
 - [ ] Tab: Methods — CIP/SOC mapping explanation, completions definition
 - [ ] 404 handling
-- [ ] Empty state: no occupation links, no completions
 
 ---
 

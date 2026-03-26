@@ -1,23 +1,394 @@
-from flask import abort, render_template
+"""
+Provider routes — Epic 3
 
-from mock_data import MOCK_PROVIDER
+Implements:
+  GET /providers                          — directory (filterable, paginated)
+  GET /providers/mock                     — mock detail (retained for dev reference)
+  GET /providers/<org_id>                 — detail page (snapshot + overview tab)
+  GET /providers/<org_id>/tab/connections — HTMX: occupation links + similar providers
+  GET /providers/<org_id>/tab/geography   — HTMX: location info
+  GET /providers/<org_id>/tab/outcomes    — HTMX: completions table
+  GET /providers/<org_id>/tab/evidence    — HTMX: data provenance
+  GET /providers/<org_id>/tab/methods     — HTMX: static caveat copy
+"""
+
+from collections import Counter
+
+from flask import abort, render_template, request
+from sqlalchemy import func
+
+from models import (
+    DatasetSource, Occupation, OrgAlias, Organization,
+    Program, ProgramOccupation, RegionCounty, db,
+)
 
 from . import root_bp
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _get_provider_or_404(org_id: str) -> Organization:
+    """Fetch a training provider by org_id. Aborts 404 if missing or wrong type."""
+    org = (
+        db.session.query(Organization)
+        .filter_by(org_id=org_id, org_type="training")
+        .first()
+    )
+    if not org:
+        abort(404)
+    return org
+
+
+# Top-level CIP 2-digit family names (NCES official)
+_CIP_FAMILY_NAMES = {
+    "01": "Agriculture", "03": "Natural Resources", "04": "Architecture",
+    "05": "Area & Cultural Studies", "09": "Communication", "10": "Communications Tech",
+    "11": "Computer Science", "12": "Personal Services", "13": "Education",
+    "14": "Engineering", "15": "Engineering Tech", "16": "Foreign Languages",
+    "19": "Family Sciences", "22": "Legal", "23": "English",
+    "24": "Liberal Arts", "25": "Library Science", "26": "Biology",
+    "27": "Mathematics", "28": "Military", "29": "Military Tech",
+    "30": "Interdisciplinary", "31": "Parks & Recreation", "38": "Philosophy",
+    "39": "Theology", "40": "Physical Sciences", "41": "Science Tech",
+    "42": "Psychology", "43": "Homeland Security", "44": "Public Admin",
+    "45": "Social Sciences", "46": "Construction", "47": "Mechanic & Repair",
+    "48": "Precision Production", "49": "Transportation", "50": "Visual & Performing Arts",
+    "51": "Health Professions", "52": "Business", "54": "History",
+    "60": "Residency Programs",
+}
+
+
+def _provider_snapshot(org_id: str) -> dict:
+    """
+    Compute all snapshot strip metrics for a provider in a single pass.
+    Returns a dict safe to pass into templates.
+    """
+    programs = db.session.query(Program).filter_by(org_id=org_id).all()
+
+    total_programs = len(programs)
+    completions_values = [p.completions for p in programs if p.completions is not None]
+    total_completions = sum(completions_values) if completions_values else None
+    suppressed_count = sum(1 for p in programs if p.completions is None)
+
+    # Top credential type — most common by program count
+    cred_counts = Counter(p.credential_type for p in programs)
+    top_credential = cred_counts.most_common(1)[0][0] if cred_counts else "—"
+
+    # Top CIP family — most common 2-digit CIP prefix
+    cip_families = Counter(
+        p.cip.split(".")[0] for p in programs if p.cip and "." in p.cip
+    )
+    top_cip_family = cip_families.most_common(1)[0][0] if cip_families else "—"
+    cip_name = _CIP_FAMILY_NAMES.get(top_cip_family, "")
+    top_cip_label = f"{cip_name} ({top_cip_family})" if cip_name else top_cip_family
+
+    # Linked occupations — distinct SOC codes across all programs
+    program_ids = [p.program_id for p in programs]
+    occ_count = 0
+    if program_ids:
+        occ_count = (
+            db.session.query(func.count(func.distinct(ProgramOccupation.soc)))
+            .filter(ProgramOccupation.program_id.in_(program_ids))
+            .scalar() or 0
+        )
+
+    # Dataset source freshness
+    ds = (
+        db.session.query(DatasetSource)
+        .filter(DatasetSource.source_id.like("ipeds_hd_%"))
+        .order_by(DatasetSource.loaded_at.desc())
+        .first()
+    )
+
+    return {
+        "total_programs": total_programs,
+        "total_completions": total_completions,
+        "suppressed_count": suppressed_count,
+        "top_credential": top_credential,
+        "top_cip_family": top_cip_family,
+        "top_cip_label": top_cip_label,
+        "linked_occupations": occ_count,
+        "data_source": ds.name if ds else "IPEDS",
+        "data_as_of": ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Directory — GET /providers
+# ---------------------------------------------------------------------------
+
 @root_bp.route("/providers")
 def providers_directory():
-    return "Provider Directory (Stub)"
+    county_filter = request.args.get("county", "").strip()
+    cred_filter = request.args.get("cred", "").strip()
+    cip_filter = request.args.get("cip", "").strip()
+    sort = request.args.get("sort", "completions")
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = 50
 
+    q = (
+        db.session.query(
+            Organization,
+            func.count(Program.program_id).label("program_count"),
+            func.sum(Program.completions).label("total_completions"),
+            func.count(func.distinct(ProgramOccupation.soc)).label("occ_count"),
+        )
+        .outerjoin(Program, Program.org_id == Organization.org_id)
+        .outerjoin(ProgramOccupation, ProgramOccupation.program_id == Program.program_id)
+        .filter(Organization.org_type == "training")
+        .group_by(Organization.org_id)
+    )
+
+    if county_filter:
+        q = q.filter(Organization.county_fips == county_filter)
+
+    if cred_filter:
+        cred_org_ids = (
+            db.session.query(Program.org_id)
+            .filter(Program.credential_type == cred_filter)
+            .distinct()
+            .subquery()
+        )
+        q = q.filter(Organization.org_id.in_(cred_org_ids))
+
+    if cip_filter:
+        cip_org_ids = (
+            db.session.query(Program.org_id)
+            .filter(Program.cip.like(f"{cip_filter}.%"))
+            .distinct()
+            .subquery()
+        )
+        q = q.filter(Organization.org_id.in_(cip_org_ids))
+
+    if sort == "programs":
+        q = q.order_by(func.count(Program.program_id).desc())
+    elif sort == "name":
+        q = q.order_by(Organization.name.asc())
+    else:
+        q = q.order_by(func.sum(Program.completions).desc().nulls_last())
+
+    total_count = q.count()
+    rows = q.offset((page - 1) * per_page).limit(per_page).all()
+
+    all_counties = (
+        db.session.query(RegionCounty.county_fips, RegionCounty.county_name, RegionCounty.state)
+        .order_by(RegionCounty.county_name)
+        .all()
+    )
+    all_creds = (
+        db.session.query(Program.credential_type)
+        .filter(Program.org_id.in_(
+            db.session.query(Organization.org_id).filter_by(org_type="training")
+        ))
+        .distinct()
+        .order_by(Program.credential_type)
+        .all()
+    )
+
+    providers = [
+        {
+            "org": row.Organization,
+            "program_count": row.program_count or 0,
+            "total_completions": int(row.total_completions) if row.total_completions else None,
+            "occ_count": row.occ_count or 0,
+        }
+        for row in rows
+    ]
+
+    total_pages = max(1, -(-total_count // per_page))
+
+    return render_template(
+        "providers/directory.html",
+        providers=providers,
+        total_count=total_count,
+        page=page,
+        total_pages=total_pages,
+        per_page=per_page,
+        county_filter=county_filter,
+        cred_filter=cred_filter,
+        cip_filter=cip_filter,
+        sort=sort,
+        all_counties=all_counties,
+        all_creds=[r.credential_type for r in all_creds],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Mock detail (retained for dev/testing reference)
+# ---------------------------------------------------------------------------
 
 @root_bp.route("/providers/mock")
 def provider_detail_mock():
-    return render_template("providers/detail.html", provider=MOCK_PROVIDER)
+    from mock_data import MOCK_PROVIDER
+    return render_template(
+        "providers/detail.html",
+        org=type("O", (), MOCK_PROVIDER)(),
+        snapshot={
+            "total_programs": 5, "total_completions": 120,
+            "suppressed_count": 0, "top_credential": "Bachelor's degree",
+            "top_cip_family": "51", "linked_occupations": 12,
+            "data_source": "IPEDS Mock", "data_as_of": "2024-01-01",
+        },
+        top_programs=[],
+        cred_mix=[],
+        active_tab="overview",
+    )
 
+
+# ---------------------------------------------------------------------------
+# Detail page — GET /providers/<org_id>
+# ---------------------------------------------------------------------------
 
 @root_bp.route("/providers/<org_id>")
-def provider_detail(org_id):
-    # Stub: until DB is wired (Epic 3), all real IDs return 404.
-    # This ensures the test suite correctly validates 404 handling
-    # from day one, not just after the DB is built.
-    abort(404)
+def provider_detail(org_id: str):
+    org = _get_provider_or_404(org_id)
+    snapshot = _provider_snapshot(org_id)
+
+    top_programs = (
+        db.session.query(Program)
+        .filter_by(org_id=org_id)
+        .order_by(Program.completions.desc().nulls_last())
+        .limit(10)
+        .all()
+    )
+
+    cred_mix = (
+        db.session.query(Program.credential_type, func.count(Program.program_id).label("cnt"))
+        .filter_by(org_id=org_id)
+        .group_by(Program.credential_type)
+        .order_by(func.count(Program.program_id).desc())
+        .all()
+    )
+
+    return render_template(
+        "providers/detail.html",
+        org=org,
+        snapshot=snapshot,
+        top_programs=top_programs,
+        cred_mix=cred_mix,
+        active_tab="overview",
+    )
+
+
+# ---------------------------------------------------------------------------
+# HTMX tab fragments
+# ---------------------------------------------------------------------------
+
+@root_bp.route("/providers/<org_id>/tab/connections")
+def provider_tab_connections(org_id: str):
+    """Connections tab: occupation links + similar providers by CIP overlap."""
+    org = _get_provider_or_404(org_id)
+
+    occ_links = (
+        db.session.query(
+            Occupation,
+            func.count(func.distinct(Program.program_id)).label("program_count"),
+        )
+        .join(ProgramOccupation, ProgramOccupation.soc == Occupation.soc)
+        .join(Program, Program.program_id == ProgramOccupation.program_id)
+        .filter(Program.org_id == org_id)
+        .group_by(Occupation.soc)
+        .order_by(func.count(func.distinct(Program.program_id)).desc())
+        .all()
+    )
+
+    # CIP-overlap self-join: other providers sharing the most CIP codes with this one
+    similar_rows = (
+        db.session.query(
+            Organization,
+            func.count(func.distinct(Program.cip)).label("shared_cip_count"),
+        )
+        .join(Program, Program.org_id == Organization.org_id)
+        .filter(
+            Organization.org_type == "training",
+            Organization.org_id != org_id,
+            Program.cip.in_(
+                db.session.query(Program.cip).filter_by(org_id=org_id).subquery()
+            ),
+        )
+        .group_by(Organization.org_id)
+        .order_by(func.count(func.distinct(Program.cip)).desc())
+        .limit(5)
+        .all()
+    )
+
+    similar_providers = [
+        {"org": row.Organization, "shared_cip_count": row.shared_cip_count}
+        for row in similar_rows
+    ]
+
+    return render_template(
+        "providers/partials/tab_connections.html",
+        org=org,
+        occ_links=occ_links,
+        similar_providers=similar_providers,
+    )
+
+
+@root_bp.route("/providers/<org_id>/tab/geography")
+def provider_tab_geography(org_id: str):
+    org = _get_provider_or_404(org_id)
+    county = (
+        db.session.query(RegionCounty)
+        .filter_by(county_fips=org.county_fips)
+        .first()
+    )
+    return render_template(
+        "providers/partials/tab_geography.html",
+        org=org,
+        county=county,
+    )
+
+
+@root_bp.route("/providers/<org_id>/tab/outcomes")
+def provider_tab_outcomes(org_id: str):
+    org = _get_provider_or_404(org_id)
+    programs = (
+        db.session.query(Program)
+        .filter_by(org_id=org_id)
+        .order_by(Program.credential_type, Program.completions.desc().nulls_last())
+        .all()
+    )
+    with_data = [p for p in programs if p.completions is not None]
+    total = sum(p.completions for p in with_data)
+
+    return render_template(
+        "providers/partials/tab_outcomes.html",
+        org=org,
+        programs=programs,
+        total_completions=total,
+        suppressed_count=len(programs) - len(with_data),
+    )
+
+
+@root_bp.route("/providers/<org_id>/tab/evidence")
+def provider_tab_evidence(org_id: str):
+    org = _get_provider_or_404(org_id)
+    alias = db.session.query(OrgAlias).filter_by(org_id=org_id, source="ipeds").first()
+    ds_hd = (
+        db.session.query(DatasetSource)
+        .filter(DatasetSource.source_id.like("ipeds_hd_%"))
+        .order_by(DatasetSource.loaded_at.desc())
+        .first()
+    )
+    ds_c = (
+        db.session.query(DatasetSource)
+        .filter(DatasetSource.source_id.like("ipeds_c_%"))
+        .order_by(DatasetSource.loaded_at.desc())
+        .first()
+    )
+    return render_template(
+        "providers/partials/tab_evidence.html",
+        org=org,
+        alias=alias,
+        ds_hd=ds_hd,
+        ds_c=ds_c,
+    )
+
+
+@root_bp.route("/providers/<org_id>/tab/methods")
+def provider_tab_methods(org_id: str):
+    org = _get_provider_or_404(org_id)
+    return render_template("providers/partials/tab_methods.html", org=org)

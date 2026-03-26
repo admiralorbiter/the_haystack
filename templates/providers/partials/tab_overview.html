@@ -1,0 +1,60 @@
+{# Overview tab — server-rendered on initial page load #}
+{% if top_programs %}
+<div class="tab-section">
+  <h3 class="section-title">Top Programs by Completions</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Program</th>
+        <th>Credential Type</th>
+        <th class="num-col">Completions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in top_programs %}
+      <tr>
+        <td>
+          {{ p.name }}
+          <div style="font-size:0.78rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">CIP {{ p.cip }}</div>
+        </td>
+        <td style="font-size:0.88rem; color:var(--text-muted);">{{ p.credential_type }}</td>
+        <td class="num-col">
+          {% if p.completions is not none %}
+            <strong>{{ '{:,}'.format(p.completions) }}</strong>
+          {% else %}
+            <span class="suppressed-label" title="Suppressed by NCES to protect student privacy">&mdash;</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if cred_mix %}
+<div class="tab-section">
+  <h3 class="section-title">Credential Mix <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">(by program count)</span></h3>
+  <div class="cred-mix-list">
+    {% set cred_total = cred_mix | sum(attribute='cnt') %}
+    {% for row in cred_mix %}
+    <div class="cred-mix-row">
+      <span class="cred-mix-label">{{ row.credential_type }}</span>
+      <div class="cred-mix-bar-wrap">
+        <div class="cred-mix-bar" style="width: {{ (row.cnt / cred_total * 100) | round(1) }}%"></div>
+      </div>
+      <span class="cred-mix-count">
+        {{ row.cnt }}
+        <span style="font-size:0.78rem; color:var(--text-muted); margin-left:4px;">({{ (row.cnt / cred_total * 100) | round(0) | int }}%)</span>
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">📋</div>
+  <p>No program records found for this provider in IPEDS 2024.</p>
+</div>
+{% endif %}
