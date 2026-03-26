@@ -71,29 +71,29 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 ### Tasks
 
 #### Schema
-- [ ] `geo_area` table — geoid, name, type (zip/tract/county/metro), state, county_fips, lat, lon
-- [ ] `organization` table — org_id (uuid), name, org_type, city, state, county_fips, lat, lon, website, unitid (nullable), ein (nullable)
-- [ ] `program` table — program_id (uuid), org_id (fk), name, credential_type, cip (6-digit), modality, completions, duration_weeks (nullable)
-- [ ] `occupation` table — soc (7-digit), title, soc_major, soc_minor
-- [ ] `program_occupation` table — program_id, soc, confidence, source
-- [ ] `civic_signal` table — signal_id, type, geoid, lat, lon, occurred_at, status, source
-- [ ] `relationship` table — rel_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, rel_type, weight, confidence, source, valid_from, valid_to  *(empty in V1, ready for Phase 6)*
-- [ ] `org_alias` table — org_id (fk), source, source_id, source_name  *(deduplication anchor — maps external IDs to one canonical org_id)*
-- [ ] `dataset_source` table — source_id, name, version, url, loaded_at, record_count, notes
-- [ ] `region` table — region_id, name, slug, default_lat, default_lon, default_zoom
-- [ ] `region_county` table — region_id, county_fips, county_name, state — seeded with KC MSA
+- [x] `geo_area` table — geoid, name, type (zip/tract/county/metro), state, county_fips, lat, lon
+- [x] `organization` table — org_id (uuid), name, org_type, city, state, county_fips, lat, lon, website, unitid (nullable), ein (nullable)
+- [x] `program` table — program_id (uuid), org_id (fk), name, credential_type, cip (6-digit), modality, completions, duration_weeks (nullable)
+- [x] `occupation` table — soc (7-digit), title, soc_major, soc_minor
+- [x] `program_occupation` table — program_id, soc, confidence, source
+- [x] `civic_signal` table — signal_id, type, geoid, lat, lon, occurred_at, status, source
+- [x] `relationship` table — rel_id, from_entity_type, from_entity_id, to_entity_type, to_entity_id, rel_type, weight, confidence, source, valid_from, valid_to  *(empty in V1, ready for Phase 6)*
+- [x] `org_alias` table — org_id (fk), source, source_id, source_name  *(deduplication anchor — maps external IDs to one canonical org_id)*
+- [x] `dataset_source` table — source_id, name, version, url, loaded_at, record_count, notes
+- [x] `region` table — region_id, name, slug, default_lat, default_lon, default_zoom
+- [x] `region_county` table — region_id, county_fips, county_name, state — seeded with KC MSA
 
 #### Infra
-- [ ] `models.py` — SQLAlchemy declarative models for all tables
-- [ ] Alembic setup (`alembic init migrations`) to manage schema changes
-- [ ] `db/seed.py` — Seeds `geo_scope` and runs print success
-- [ ] `db/connection.py` — SQLAlchemy session maker and Flask app teardown hook
-- [ ] Basic indexes: `organization(county_fips)`, `program(org_id)`, `program(cip)`, `program_occupation(program_id)`
+- [x] `models.py` — SQLAlchemy declarative models for all tables
+- [x] Alembic setup (`alembic init migrations`) to manage schema changes
+- [x] `db/seed.py` — Seeds `geo_scope` and runs print success
+- [x] `db/connection.py` — SQLAlchemy session maker and Flask app teardown hook
+- [x] Basic indexes: `organization(county_fips)`, `program(org_id)`, `program(cip)`, `program_occupation(program_id)`
 
 #### QA
-- [ ] Running init_db twice does not error (idempotent)
-- [ ] All foreign keys defined
-- [ ] `PRAGMA foreign_keys = ON` set on every connection
+- [x] Running init_db twice does not error (idempotent)
+- [x] All foreign keys defined
+- [x] `PRAGMA foreign_keys = ON` set on every connection
 
 ---
 

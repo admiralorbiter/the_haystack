@@ -225,6 +225,16 @@ If a command drops tables, deletes rows, or overwrites files — **warn clearly 
 
 If I reference one of these, treat it as ground truth. If something contradicts them, flag it.
 
+## Epic Execution Process
+
+Every Epic follows this exact 5-step lifecycle. Do not skip to coding without completing step 1.
+
+1. **Epic Kickoff / Deep Dive:** Before writing code, outline considerations, architectural changes, robustness factors, and edge-case testing strategies. Look for "cool shit" or out-of-the-box ideas we can add. We must agree on the plan first.
+2. **Execute Work:** Build the backend/frontend logic based on the approved plan.
+3. **UI Walkthrough (if applicable):** If the Epic includes frontend changes, step through the UI together to test how it feels. Evaluate responsiveness and usability before declaring it done.
+4. **Edge Cases & Tests:** Ensure all edge cases defined in the Deep Dive are covered in `pytest`. Update documentation if the codebase behavior changed from the original intent.
+5. **Retro:** We end the epic by running the standard Retro to examine what slowed us down, log tech debt, and queue up fixes.
+
 ---
 
 ## Retro mode
