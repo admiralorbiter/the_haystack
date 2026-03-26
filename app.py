@@ -13,8 +13,10 @@ def create_app(config_name="default"):
 
     # Register blueprints
     from routes import root_bp
+    from routes.admin import admin_bp
 
     app.register_blueprint(root_bp)
+    app.register_blueprint(admin_bp, url_prefix="/admin")
 
     @app.errorhandler(404)
     def page_not_found(e):

@@ -1,0 +1,148 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ table_name }} — Admin — The Haystack{% endblock %}
+
+{% block content %}
+<div style="display: flex; align-items: baseline; gap: 1rem; margin-bottom: 0.25rem;">
+    <h1 style="margin: 0;">{{ table_name }}</h1>
+    <span style="color: var(--text-muted, #888); font-size: 0.9rem;">
+        {% if q %}{{ "{:,}".format(total) }} results for "{{ q }}"{% else %}{{ "{:,}".format(total) }} rows total{% endif %}
+    </span>
+</div>
+<p style="color: var(--text-muted, #888); font-size: 0.85rem; margin-bottom: 1.25rem;">
+    Page {{ page }} of {{ total_pages }} &mdash; {{ columns | length }} columns &mdash; sorted by
+    <strong>{{ sort_col }}</strong> {{ "↑" if sort_dir == "asc" else "↓" }}
+</p>
+
+{# ── Search ───────────────────────────────────────────────────────────────── #}
+<form method="get" action="" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; align-items: center;">
+    <input
+        type="text"
+        name="q"
+        value="{{ q }}"
+        placeholder="Search {{ search_label }}…"
+        style="
+            padding: 0.45rem 0.75rem;
+            border: 1px solid var(--color-border, #c4a882);
+            border-radius: 6px;
+            background: var(--color-bg, #f5ede0);
+            color: inherit;
+            font-size: 0.875rem;
+            width: 280px;
+        "
+    >
+    <input type="hidden" name="sort" value="{{ sort_col }}">
+    <input type="hidden" name="dir" value="{{ sort_dir }}">
+    <button type="submit" style="
+        padding: 0.45rem 1rem;
+        background: var(--color-primary, #6b2737);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        cursor: pointer;
+    ">Search</button>
+    {% if q %}
+    <a href="{{ url_for('admin.data_table', table_slug=table_slug) }}" style="font-size: 0.8rem; color: var(--text-muted, #888);">✕ Clear</a>
+    {% endif %}
+</form>
+
+{% if rows %}
+<div style="overflow-x: auto; margin-bottom: 1.25rem; border: 1px solid var(--color-border, #c4a882); border-radius: 8px;">
+    <table style="
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+    ">
+        <thead>
+            <tr style="background: var(--color-primary, #6b2737); color: #fff;">
+                {% for col in columns %}
+                {% set next_dir = "desc" if (sort_col == col and sort_dir == "asc") else "asc" %}
+                {% set is_active = (sort_col == col) %}
+                <th style="
+                    padding: 0.6rem 0.75rem;
+                    text-align: left;
+                    font-weight: {{ '700' if is_active else '500' }};
+                    white-space: nowrap;
+                    border-bottom: 2px solid {{ 'rgba(255,255,255,0.5)' if is_active else 'transparent' }};
+                ">
+                    <a href="{{ url_for('admin.data_table', table_slug=table_slug, page=1, sort=col, dir=next_dir, q=q) }}"
+                       style="color: {{ '#ffe8b0' if is_active else '#fff' }}; text-decoration: none; display: flex; align-items: center; gap: 0.3rem;">
+                        {{ col | replace("_", " ") | title }}
+                        {% if is_active %}
+                            <span style="font-size: 0.7rem;">{{ "▲" if sort_dir == "asc" else "▼" }}</span>
+                        {% endif %}
+                    </a>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr style="background: {{ 'var(--color-surface, #ede3d4)' if loop.index is odd else 'var(--color-bg, #f5ede0)' }};">
+                {% for col in columns %}
+                <td style="
+                    padding: 0.45rem 0.75rem;
+                    max-width: 260px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    border-bottom: 1px solid var(--color-border, #c4a882);
+                    {% if col in ['org_id', 'program_id', 'soc'] %}
+                        color: var(--text-muted, #888);
+                        font-size: 0.75rem;
+                        font-family: monospace;
+                    {% endif %}
+                " title="{{ row[col] if row[col] is not none else '' }}">
+                    {% if row[col] is not none %}
+                        {% if col == 'website' and row[col] %}
+                            <a href="{{ row[col] }}" target="_blank" rel="noopener" style="color: var(--color-accent, #7b68ee);">{{ row[col] | truncate(40) }}</a>
+                        {% else %}
+                            {{ row[col] }}
+                        {% endif %}
+                    {% else %}
+                        <span style="color: var(--text-muted, #888);">—</span>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# ── Pagination ─────────────────────────────────────────────────────────── #}
+<div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem;">
+    {% if page > 1 %}
+    <a href="{{ url_for('admin.data_table', table_slug=table_slug, page=page-1, sort=sort_col, dir=sort_dir, q=q) }}"
+       style="padding: 0.4rem 0.9rem; border: 1px solid var(--color-border, #c4a882); border-radius: 6px; text-decoration: none; color: inherit;">← Prev</a>
+    {% else %}
+    <span style="padding: 0.4rem 0.9rem; border: 1px solid transparent; opacity: 0.35;">← Prev</span>
+    {% endif %}
+
+    <span style="color: var(--text-muted, #888);">Page <strong>{{ page }}</strong> of {{ total_pages }}</span>
+
+    {% if page < total_pages %}
+    <a href="{{ url_for('admin.data_table', table_slug=table_slug, page=page+1, sort=sort_col, dir=sort_dir, q=q) }}"
+       style="padding: 0.4rem 0.9rem; border: 1px solid var(--color-border, #c4a882); border-radius: 6px; text-decoration: none; color: inherit;">Next →</a>
+    {% else %}
+    <span style="padding: 0.4rem 0.9rem; border: 1px solid transparent; opacity: 0.35;">Next →</span>
+    {% endif %}
+
+    <span style="margin-left: auto; font-size: 0.75rem; color: var(--text-muted, #888);">
+        Showing rows {{ ((page - 1) * 50) + 1 }}–{{ [page * 50, total] | min }} of {{ "{:,}".format(total) }}
+    </span>
+</div>
+
+{% else %}
+<div class="empty-state">
+    {% if q %}
+    <p>No results for "<strong>{{ q }}</strong>".</p>
+    <a href="{{ url_for('admin.data_table', table_slug=table_slug) }}" style="font-size: 0.9rem;">← Clear search</a>
+    {% else %}
+    <p>No rows in this table yet. Run the pipeline to load data.</p>
+    <a href="{{ url_for('admin.dashboard') }}" style="font-size: 0.9rem;">← Back to dashboard</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

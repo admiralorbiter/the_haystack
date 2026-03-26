@@ -1,0 +1,109 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Admin Dashboard — The Haystack{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 0.25rem;">Admin Dashboard</h1>
+<p style="color: var(--text-muted, #888); margin-bottom: 2rem; font-size: 0.9rem;">
+    Dataset sources, live row counts, and loader controls.
+</p>
+
+{# ── Row Counts ───────────────────────────────────────────────────────────── #}
+<section style="margin-bottom: 2.5rem;">
+    <h2 style="font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted, #888); margin-bottom: 1rem;">Live Row Counts</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+        {% for label, count in row_counts.items() %}
+        <div class="stat-card">
+            <div class="stat-value">{{ "{:,}".format(count or 0) }}</div>
+            <div class="stat-label">{{ label }}</div>
+            {% if table_links[label] %}
+            <a href="{{ url_for('admin.data_table', table_slug=table_links[label]) }}"
+               style="font-size: 0.75rem; color: var(--color-accent, #7b68ee); margin-top: 0.5rem; display: inline-block;">
+                Browse →
+            </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+{# ── Dataset Sources ────────────────────────────────────────────────────── #}
+<section style="margin-bottom: 2.5rem;">
+    <h2 style="font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted, #888); margin-bottom: 1rem;">Dataset Sources</h2>
+    {% if sources %}
+    <div style="overflow-x: auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Version</th>
+                    <th>Loaded At</th>
+                    <th>Records</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sources %}
+                <tr>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.version or "—" }}</td>
+                    <td>{{ s.loaded_at.strftime("%Y-%m-%d %H:%M") if s.loaded_at else "—" }}</td>
+                    <td>{{ "{:,}".format(s.record_count) if s.record_count is not none else "—" }}</td>
+                    <td style="font-size: 0.8rem; color: var(--text-muted, #888);">{{ s.notes or "" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No dataset sources recorded yet. Run the pipeline to populate this table.</p>
+    </div>
+    {% endif %}
+</section>
+
+{# ── Loader Runner ──────────────────────────────────────────────────────── #}
+<section>
+    <h2 style="font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted, #888); margin-bottom: 0.5rem;">Run a Loader</h2>
+    <p style="font-size: 0.85rem; color: var(--text-muted, #888); margin-bottom: 1rem;">
+        Triggers the loader script directly. Output streams below. <strong>This writes to the real DB.</strong>
+    </p>
+    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        {% for loader_name in allowed_loaders %}
+        <button
+            class="filter-chip"
+            hx-post="{{ url_for('admin.run_loader', loader_name=loader_name) }}"
+            hx-target="#loader-output"
+            hx-swap="innerHTML"
+            hx-indicator="#loader-spinner"
+            style="
+                cursor: pointer;
+                background: var(--color-primary, #6b2737);
+                color: #fff;
+                border: none;
+                padding: 0.45rem 1rem;
+                border-radius: 6px;
+                font-size: 0.875rem;
+                font-weight: 600;
+                letter-spacing: 0.02em;
+            ">
+            ▶ {{ loader_name.replace("_", " ").title() }}
+        </button>
+        {% endfor %}
+        <span id="loader-spinner" class="htmx-indicator" style="font-size: 0.8rem; color: var(--text-muted, #888); align-self: center;">
+            Running…
+        </span>
+    </div>
+    <pre id="loader-output" style="
+        background: #0d0d1a;
+        border: 1px solid var(--color-border, #2a2a3a);
+        border-radius: 6px;
+        padding: 1rem;
+        font-size: 0.8rem;
+        color: #a0f0a0;
+        min-height: 80px;
+        white-space: pre-wrap;
+        word-break: break-all;
+    ">Output will appear here after running a loader.</pre>
+</section>
+{% endblock %}

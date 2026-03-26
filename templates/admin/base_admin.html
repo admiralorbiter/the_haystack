@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin — The Haystack{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <style>
+        .admin-banner {
+            background: #7c4f00;
+            color: #ffe8b0;
+            text-align: center;
+            padding: 0.4rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .admin-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--color-border, #2a2a3a);
+            background: var(--color-surface, #1a1a2e);
+        }
+        .admin-header .admin-logo {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--color-accent, #7b68ee);
+        }
+        .admin-header a {
+            font-size: 0.85rem;
+            color: var(--text-muted, #888);
+            text-decoration: none;
+        }
+        .admin-header a:hover { color: var(--color-accent, #7b68ee); }
+        .admin-content {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-banner">⚙ Admin Mode — Local Development Only</div>
+    <header class="admin-header">
+        <span class="admin-logo">⚙ Haystack Admin</span>
+        <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a>
+        <a href="{{ url_for('root.index') }}" style="margin-left: auto;">← Back to Site</a>
+    </header>
+    <div class="admin-content">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

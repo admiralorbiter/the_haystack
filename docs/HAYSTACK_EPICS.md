@@ -162,27 +162,32 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 - [x] No duplicate unitids in organization table
 - [x] All programs have a valid org_id foreign key
 
-#### Epic 2.5 — Thin admin UI + Raw Data Explorer *(next up)*
-> Build only after at least 2 loaders are proven. Do not let this block the pipeline work.
-> **Status:** Planned — starting after Epic 3 (pipeline proven, provider pages shipped).
+#### Epic 2.5 — Thin admin UI + Raw Data Explorer
 
-**Why the data explorer goes here and not later:** Once Epic 4+ begins, you'll routinely want to inspect raw program and occupation records without leaving the browser. Building it now while the admin blueprint is being created is ~0.5 day of incremental work vs. a separate effort later. Keeps the user-facing product clean — no "raw data" in the main nav.
+**Status: ✅ COMPLETE** — Shipped 2026-03-26
+
+**What shipped:**
+- Admin dashboard (`/admin`) with live row counts (38 orgs, 1,132 programs, 867 occupations, 5,119 links), dataset source audit log, and HTMX loader runner buttons streaming stdout into a `<pre>` block.
+- Raw data explorer (`/admin/data/<table_slug>`) for all 4 core tables — paginated (50 rows/page), sortable via column header clicks (query-param driven, no JS), empty state on zero rows.
+- Whitelist security pattern on both table slugs and loader names — unknown slugs → 404.
+- Lightweight `base_admin.html` shell (no main nav, amber "Admin Mode" banner, back-to-site link).
+- 15 new route tests covering happy path, edge cases (empty DB, out-of-range page, invalid sort col), and error paths (invalid slug, SQL injection slug).
+- Fixed pre-existing `pyproject.toml` coverage scope bug (`--cov=.` → scoped to `routes/models/db/loaders`).
 
 ##### Admin dashboard (`/admin`)
-- [ ] `routes/admin.py` blueprint — `/admin` route, no auth (local dev only)
-- [ ] Table showing all `dataset_source` rows (name, loaded_at, record_count)
-- [ ] Live row counts per core table (`organization`, `program`, `occupation`, `program_occupation`)
-- [ ] HTMX action to re-run a named loader via `POST /admin/run/<loader_name>` — streams stdout to a `<pre>` block
+- [x] `routes/admin.py` blueprint — `/admin` route, no auth (local dev only)
+- [x] Table showing all `dataset_source` rows (name, loaded_at, record_count)
+- [x] Live row counts per core table (`organization`, `program`, `occupation`, `program_occupation`)
+- [x] HTMX action to re-run a named loader via `POST /admin/run/<loader_name>` — streams stdout to a `<pre>` block
 
 ##### Raw data explorer (`/admin/data/<table>`)
-- [ ] Route accepts a `<table>` slug: `organizations`, `programs`, `occupations`, `program_occupations`
-- [ ] Paginated table view (50 rows/page) showing all columns for the selected table
-- [ ] Basic sort by clicking column header (query param driven — no JS required)
-- [ ] Row count + pagination controls (Prev / Next)
-- [ ] Shared admin layout — no main nav, clear "Admin only" label
-- [ ] Link back to `/admin` dashboard from every data table page
+- [x] Route accepts a `<table>` slug: `organizations`, `programs`, `occupations`, `program-occupations`
+- [x] Paginated table view (50 rows/page) showing all columns for the selected table
+- [x] Basic sort by clicking column header (query param driven — no JS required)
+- [x] Row count + pagination controls (Prev / Next)
+- [x] Shared admin layout — no main nav, clear "Admin only" label
+- [x] Link back to `/admin` dashboard from every data table page
 
-- [ ] **Effort: ~1.5–2.5 days total** (0.5 day added vs. original scope for the explorer)
 
 ---
 
@@ -412,7 +417,7 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 | 1 — Schema | 3–5 days | Week 3 | ✅ Done |
 | 2 — IPEDS pipeline | 2–3 weeks | Week 6 | ✅ Done |
 | 3 — Provider pages | 1.5–2 weeks | Week 8 | ✅ Done |
-| **2.5 — Admin UI + Data Explorer** | **1.5–2.5 days** | **Week 8.5** | **⬅ Next up** |
+| **2.5 — Admin UI + Data Explorer** | **1.5–2.5 days** | **Week 8.5** | **✅ Done** |
 | 4 — Program pages | 1–1.5 weeks | Week 10 | 🔲 Planned |
 | 5 — Field pages | 1 week | Week 11 | 🔲 Planned |
 | 6 — Compare | 1 week | Week 12 | 🔲 Planned |

@@ -42,7 +42,7 @@ python_files = ["test_*.py"]
 python_functions = ["test_*"]
 # Run with coverage: pytest --cov=. --cov-report=term-missing
 # Uses the in-memory SQLite config defined in TestingConfig (config.py)
-addopts = "--cov=. --cov-report=term-missing --cov-fail-under=70"
+addopts = "--cov=routes --cov=models --cov=db --cov=loaders --cov-report=term-missing --cov-fail-under=70"
 
 [tool.coverage.run]
 source = ["routes", "loaders", "db", "models"]
