@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}500 — Server Error | The Haystack{% endblock %}
+{% block content %}
+<div style="text-align: center; padding: 6rem 2rem;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+    <h1 style="color: var(--color-secondary); margin-bottom: 0.5rem;">500 — Something went wrong</h1>
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">An internal error occurred. The data is safe.</p>
+    <a href="{{ url_for('root.index') }}" class="btn btn-secondary">← Back to Home</a>
+</div>
+{% endblock %}

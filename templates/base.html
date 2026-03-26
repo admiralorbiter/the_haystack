@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}The Haystack{% endblock %}</title>
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+</head>
+<body>
+    <header class="top-nav">
+        <div class="logo">
+            <a href="{{ url_for('root.index') }}" style="color: var(--color-bg); font-weight: bold; font-size: 1.25rem;">The Haystack</a>
+        </div>
+        <div class="search-box">
+            <input type="text" placeholder="Search... (stub)">
+        </div>
+        <nav class="nav-links">
+            <a href="#">Explore</a>
+            <a href="{{ url_for('root.map_view') }}">Map</a>
+            <a href="{{ url_for('root.compare_providers') }}">Compare</a>
+            <a href="#">Collections</a>
+            <a href="#">Methods</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+        <p>The Haystack &copy; 2026. Data logic stub.</p>
+    </footer>
+</body>
+</html>

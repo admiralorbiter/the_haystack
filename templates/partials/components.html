@@ -1,0 +1,24 @@
+{% macro stat_card(label, value, caveat='') %}
+<div class="stat-card">
+    <div class="stat-label">{{ label }}</div>
+    <div class="stat-value">{{ value }}</div>
+    {% if caveat %}
+    <div class="stat-caveat">{{ caveat }}</div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro entity_badge(type, text) %}
+<span class="badge badge-{{ type|lower }}">{{ text }}</span>
+{% endmacro %}
+
+{% macro data_freshness_badge(date, source) %}
+<span class="badge badge-freshness">Data as of {{ date }} from {{ source }}</span>
+{% endmacro %}
+
+{% macro empty_state(message, suggestion) %}
+<div class="empty-state" style="text-align: center; padding: 3rem; background: var(--color-surface); border-radius: var(--radius-md);">
+    <h3 style="color: var(--text-muted);">{{ message }}</h3>
+    <p style="color: var(--text-muted);">{{ suggestion }}</p>
+</div>
+{% endmacro %}

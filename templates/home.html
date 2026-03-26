@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}The Haystack — Kansas City Intelligence Platform{% endblock %}
+{% block content %}
+
+{# Regional summary header #}
+<section style="padding: var(--spacing-xl) 0; border-bottom: 1px solid var(--color-surface);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--spacing-lg);">
+        <div>
+            <h1 style="margin: 0; font-size: 2rem;">Kansas City Region</h1>
+            <p style="color: var(--text-muted); margin: 0;">9-county Metro MSA &bull; IPEDS data snapshot</p>
+        </div>
+        <span class="badge badge-freshness">Data as of Mar 2026 &bull; IPEDS</span>
+    </div>
+
+    {# Regional stat strip — will be wired to real DB data in Epic 3 #}
+    <div class="snapshot-strip">
+        <div class="stat-card">
+            <div class="stat-label">Training Providers</div>
+            <div class="stat-value">—</div>
+            <div class="stat-caveat">IPEDS institutions in MSA</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Programs Offered</div>
+            <div class="stat-value">—</div>
+            <div class="stat-caveat">Unique CIP &amp; credential combos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Annual Completions</div>
+            <div class="stat-value">—</div>
+            <div class="stat-caveat">Awards conferred, most recent year</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Linked Occupations</div>
+            <div class="stat-value">—</div>
+            <div class="stat-caveat">SOC codes via CIP crosswalk</div>
+        </div>
+    </div>
+</section>
+
+{# Entity gateway — what can you explore? #}
+<section style="padding: var(--spacing-xl) 0;">
+    <h2 style="margin-bottom: var(--spacing-lg);">Explore the Region</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--spacing-md);">
+
+        <a href="{{ url_for('root.providers_directory') }}" style="text-decoration: none;">
+            <div class="stat-card" style="cursor: pointer; transition: box-shadow 0.15s;">
+                <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm);">🏫</div>
+                <div style="font-weight: bold; color: var(--color-primary); margin-bottom: var(--spacing-xs);">Training Providers</div>
+                <div class="stat-caveat">Browse colleges, certificate programs, and workforce training institutions.</div>
+            </div>
+        </a>
+
+        <a href="{{ url_for('root.programs_directory') }}" style="text-decoration: none;">
+            <div class="stat-card" style="cursor: pointer; transition: box-shadow 0.15s;">
+                <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm);">📋</div>
+                <div style="font-weight: bold; color: var(--color-primary); margin-bottom: var(--spacing-xs);">Programs</div>
+                <div class="stat-caveat">Find specific certificates, degrees, and credentials by field or provider.</div>
+            </div>
+        </a>
+
+        <a href="{{ url_for('root.fields_directory') }}" style="text-decoration: none;">
+            <div class="stat-card" style="cursor: pointer; transition: box-shadow 0.15s;">
+                <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm);">🎓</div>
+                <div style="font-weight: bold; color: var(--color-primary); margin-bottom: var(--spacing-xs);">Fields of Study</div>
+                <div class="stat-caveat">Browse by CIP family — from Health to Construction to IT.</div>
+            </div>
+        </a>
+
+        <a href="{{ url_for('root.map_view') }}" style="text-decoration: none;">
+            <div class="stat-card" style="cursor: pointer; transition: box-shadow 0.15s;">
+                <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm);">🗺️</div>
+                <div style="font-weight: bold; color: var(--color-primary); margin-bottom: var(--spacing-xs);">Map</div>
+                <div class="stat-caveat">Explore providers by location across the KC metro.</div>
+            </div>
+        </a>
+
+        <a href="{{ url_for('root.guided_search') }}" style="text-decoration: none;">
+            <div class="stat-card" style="cursor: pointer; transition: box-shadow 0.15s; border: 2px dashed var(--color-secondary);">
+                <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm);">🔎</div>
+                <div style="font-weight: bold; color: var(--color-secondary); margin-bottom: var(--spacing-xs);">Guided Search <span style="font-size: 0.7rem; vertical-align: middle;">(coming soon)</span></div>
+                <div class="stat-caveat">Start from a workforce need. Let Haystack trace back to the right providers.</div>
+            </div>
+        </a>
+
+        <a href="{{ url_for('root.compare_providers') }}" style="text-decoration: none;">
+            <div class="stat-card" style="cursor: pointer; transition: box-shadow 0.15s;">
+                <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm);">⚖️</div>
+                <div style="font-weight: bold; color: var(--color-primary); margin-bottom: var(--spacing-xs);">Compare</div>
+                <div class="stat-caveat">Put two providers or programs side by side to compare outcomes.</div>
+            </div>
+        </a>
+
+    </div>
+</section>
+
+{% endblock %}

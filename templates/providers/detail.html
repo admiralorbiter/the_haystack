@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}{{ provider.name }} - Providers | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('root.providers_directory') }}">Providers</a> &gt; {{ provider.name }}
+</div>
+
+<header class="page-header">
+    <div class="title-row">
+        <h1 class="m-0">{{ provider.name }}</h1>
+        {{ components.entity_badge('provider', 'Training Provider') }}
+    </div>
+    <div style="color: var(--text-muted); margin-bottom: var(--spacing-sm);">
+        {{ provider.location }} &bull; {{ components.data_freshness_badge(provider.as_of_date, 'IPEDS Mock') }}
+    </div>
+    
+    <div class="quick-actions">
+        <button class="btn btn-secondary">Add to Compare</button>
+        <button class="btn btn-secondary">Open in Map</button>
+    </div>
+</header>
+
+<div class="snapshot-strip">
+    {{ components.stat_card('Programs', provider.metrics.program_count) }}
+    {{ components.stat_card('Award Completions', provider.metrics.total_completions) }}
+    {{ components.stat_card('Top Field', provider.metrics.top_field) }}
+    {{ components.stat_card('Linked Occupations', provider.metrics.linked_occupations) }}
+</div>
+
+<div class="tabs">
+    <div class="tab active">Overview</div>
+    <div class="tab">Connections</div>
+    <div class="tab">Geography</div>
+    <div class="tab">Outcomes</div>
+    <div class="tab">Evidence</div>
+    <div class="tab">Methods</div>
+</div>
+
+<section id="tab-content" style="min-height: 400px;">
+    <!-- Overview Tab Content -->
+    <div>
+        <h3>Top Programs</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Program Name</th>
+                    <th>Credential</th>
+                    <th>Completions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for program in provider.programs %}
+                <tr>
+                    <td>{{ program.name }}</td>
+                    <td>{{ program.credential }}</td>
+                    <td>{{ program.completions }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

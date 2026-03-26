@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}404 — Page Not Found | The Haystack{% endblock %}
+{% block content %}
+<div style="text-align: center; padding: 6rem 2rem;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">🔍</div>
+    <h1 style="color: var(--color-primary); margin-bottom: 0.5rem;">404 — Not Found</h1>
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">That page doesn't exist or the entity you're looking for hasn't been loaded yet.</p>
+    <a href="{{ url_for('root.index') }}" class="btn btn-secondary">← Back to Home</a>
+</div>
+{% endblock %}
