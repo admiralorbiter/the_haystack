@@ -7,9 +7,9 @@ data/raw/ipeds/{year}/ and data/raw/crosswalks/. Existing files are skipped
 unless --force is passed.
 
 Usage:
-    python scripts/download_data.py                     # 2014–2023 (default)
-    python scripts/download_data.py --year 2023         # single year
-    python scripts/download_data.py --years 2020 2023   # inclusive range
+    python scripts/download_data.py                     # 2014–2024 (default, 11 years)
+    python scripts/download_data.py --year 2024         # single year
+    python scripts/download_data.py --years 2020 2024   # inclusive range
     python scripts/download_data.py --force             # re-download all
     python scripts/download_data.py --crosswalks-only   # only crosswalk files
 """

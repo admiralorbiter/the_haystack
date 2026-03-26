@@ -198,8 +198,15 @@ def _load_cip_titles_from_crosswalk(crosswalk_path: Path) -> dict[str, str]:
         df = pd.read_excel(crosswalk_path, sheet_name="CIP-SOC", dtype=str)
         df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
 
-        code_col = next((c for c in df.columns if "cipcode" in c or "cip_code" in c), None)
-        title_col = next((c for c in df.columns if "ciptitle" in c or "cip_title" in c), None)
+        code_col = next(
+            (c for c in df.columns if "cipcode" in c or "cip_code" in c or c.startswith("cip")),
+            None,
+        )
+        title_col = next(
+            (c for c in df.columns if "ciptitle" in c or "cip_title" in c
+             or (c.startswith("cip") and "title" in c)),
+            None,
+        )
 
         if not code_col or not title_col:
             print(

@@ -354,3 +354,47 @@ Why:
 - and makes compare pages much more useful.
 
 That is the cleanest possible next step before introducing noisier civic datasets like 311 or crime.
+
+---
+
+## 11. Pipeline implementation notes (Epic 2 lessons)
+
+Gotchas discovered during Epic 2 that must be carried forward to future loaders:
+
+### CIP→SOC crosswalk file
+- The NCES crosswalk xlsx (`CIP2020_SOC2018_Crosswalk.xlsx`) has **multiple sheets**.
+- The first sheet is a metadata/readme sheet with columns `file_name, description`.
+- **Always read with `sheet_name="CIP-SOC"`** or the data will be unreadable.
+- The `CIP-SOC` sheet contains both `CIPCode` and `CIPTitle` columns — **no separate CIP taxonomy file is needed**. Extract titles from the crosswalk itself.
+
+### Award level codes
+IPEDS uses both older letter-suffix codes and newer numeric codes. All known codes:
+```
+1a  Certificate < 1 year
+1b  Certificate 1–2 years
+2   Certificate 2+ years
+3   Associate's degree
+4   Postsecondary certificate ≥ 2 years
+5   Bachelor's degree
+6   Post-baccalaureate certificate
+7   Master's degree
+8   Post-master's certificate
+17  Doctoral degree – research
+18  Doctoral degree – professional
+19  Doctoral degree – other
+20  Certificate (sub-baccalaureate, < 1 year)   ← added 2024 data
+21  Certificate (sub-baccalaureate, ≥ 1 year)   ← added 2024 data
+```
+If a new code appears as `Level XX`, add it to `AWARD_LEVEL_NAMES` in `loaders/utils.py` and re-run the programs loader (the upsert will update existing rows by credential_type).
+
+**Important:** Because the upsert key includes `credential_type`, renaming an award level code after rows are already loaded creates orphan records with the old name. To correct: delete rows with the old credential_type string and re-run the loader.
+
+### Pipeline step ordering
+`load_cip_soc.py` has two phases:
+1. **Phase 1 (occupation table):** Run before programs — creates occupation rows that programs can link to.
+2. **Phase 2 (program_occupation links):** Must run *after* programs exist — otherwise zero links are created.
+
+The pipeline runner (`scripts/run_pipeline.py`) handles this by calling `load_cip_soc.py` twice. This is idempotent — Phase 1 skips existing rows, Phase 2 skips existing links.
+
+### NCES URL stability
+Not all NCES file URLs are stable. The CIP taxonomy xlsx (`CIPCode2020_v1.0.xlsx`) returned 404. Always verify URLs before adding them as automated downloads. Prefer files that are linked from a known stable index page (`/ipeds/datacenter/data/`).

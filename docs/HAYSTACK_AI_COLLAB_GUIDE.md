@@ -228,6 +228,62 @@ If a command drops tables, deletes rows, or overwrites files — **warn clearly 
 
 ---
 
+## Process lessons (updated after each epic)
+
+Each entry is a hard-won lesson. Read before starting a new loader or route.
+
+### Dependency installation
+- **Always use `.\ venv\Scripts\pip install`** (or `.\ venv\Scripts\activate` first), never bare `pip install`.
+- Bare `pip install` on Windows installs to the user's `AppData/Roaming` site-packages, NOT the venv. The venv will not see those packages.
+- Verify installs landed in the venv: `.\ venv\Scripts\python -c "import pandas; print(pandas.__file__)"`
+
+### NCES Excel files have multiple sheets
+- Every NCES xlsx from the CIP/IPEDS data center has a metadata/readme first sheet.
+- **Always specify `sheet_name=` explicitly** when using `pd.read_excel()` on any NCES file.
+- The CIP→SOC crosswalk data lives on sheet `"CIP-SOC"`. Reading without specifying a sheet returns `['file_name', 'description']` instead of actual data.
+- Tip: `pd.ExcelFile(path).sheet_names` prints all available sheets.
+- **Actual column names in `cip2020_soc2018_crosswalk.xlsx` (CIP-SOC sheet) after `lower().replace(' ', '_')`:**
+  ```
+  cip2020code, cip2020title, soc2018code, soc2018title
+  ```
+  Detection pattern: `"cip" in col and "code" in col` works. `"cipcode" in col` does NOT.
+
+### CIP titles — no separate download needed
+- The NCES CIP taxonomy xlsx URL (`CIPCode2020_v1.0.xlsx`) returns 404 and is not reliably hosted.
+- The CIP→SOC crosswalk file already contains a `CIPTitle` column on the `CIP-SOC` sheet.
+- **Extract CIP titles from the crosswalk.** Do not add a separate taxonomy download step to future pipelines.
+
+### NCES URL stability
+- Only the IPEDS bulk data ZIP files (`/ipeds/datacenter/data/HD{year}.zip`) are reliably stable.
+- Other NCES resource URLs (taxonomy files, crosswalk xlsx files) may change or 404 without notice.
+- Always test URLs manually before adding them to automated download scripts.
+
+### Python module-level constants and test isolation
+- Loader scripts define `IPEDS_DIR` and similar constants at the **module level** (computed at import time).
+- Patching only `loaders.utils.IPEDS_DIR` in tests is NOT enough — importing modules capture their own copy.
+- **Pattern:** patch **both** the utils module AND the specific loader module:
+  ```python
+  import loaders.utils as utils_mod
+  import loaders.load_ipeds_institutions as inst_mod
+  utils_mod.IPEDS_DIR = Path(tmpdir)
+  inst_mod.IPEDS_DIR = Path(tmpdir)  # ← required
+  ```
+- Always restore in a `finally` block.
+
+### Award level codes — upsert key includes credential_type
+- `load_ipeds_programs.py` upserts on `(org_id, cip, credential_type)`.
+- `credential_type` is the **human-readable label** derived from the award level code.
+- If a new IPEDS code appears as `Level XX`, add its label to `AWARD_LEVEL_NAMES` in `loaders/utils.py`,
+  then **delete the orphan rows** and re-run the loader (they won't update in-place because the key changed).
+
+### Pipeline step ordering for CIP→SOC
+- `load_cip_soc.py` runs twice in `run_pipeline.py` by design:
+  - First pass (before institutions): populates `occupation` table so FK constraints are satisfiable.
+  - Second pass (after programs): creates `program_occupation` links (needs programs to exist first).
+- This is idempotent. Do not collapse into a single call or one phase will always produce zero links.
+
+---
+
 ## Key docs (reference, don't re-derive)
 - `HAYSTACK_MASTER_PLAN.md` — entity model, phased roadmap, UI grammar
 - `HAYSTACK_IPEDS_V1_SPEC.md` — V1 scope, screen specs, acceptance criteria
