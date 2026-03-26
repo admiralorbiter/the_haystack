@@ -14,6 +14,11 @@ from app import create_app
 def app():
     """Create a Flask app instance configured for testing."""
     app = create_app("testing")
+    
+    with app.app_context():
+        from models import db
+        db.create_all()
+        
     yield app
 
 

@@ -7,9 +7,9 @@ def create_app(config_name="default"):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
-    # SQLAlchemy init (models imported here after db defined in models.py)
-    # from models import db
-    # db.init_app(app)
+    # SQLAlchemy init
+    from models import db
+    db.init_app(app)
 
     # Register blueprints
     from routes import root_bp

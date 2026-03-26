@@ -1,8 +1,8 @@
 # Core
 Flask==3.0.3
-SQLAlchemy==2.0.29
+SQLAlchemy==2.0.36
 Flask-SQLAlchemy==3.1.1
-alembic==1.13.1
+alembic==1.18.4
 python-dotenv==1.0.1
 
 # Dev tools (not needed in production)

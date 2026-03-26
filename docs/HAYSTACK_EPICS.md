@@ -16,48 +16,48 @@
 ### Tasks
 
 #### App skeleton
-- [ ] `app.py` with Flask app factory and blueprint registration
-- [ ] `routes/` directory with one stub file per entity: `providers.py`, `programs.py`, `fields.py`, `map.py`, `compare.py`
-- [ ] Environment config (`config.py` or `.env`) with DB path, debug flag, secret key
+- [x] `app.py` with Flask app factory and blueprint registration
+- [x] `routes/` directory with one stub file per entity: `providers.py`, `programs.py`, `fields.py`, `map.py`, `compare.py`
+- [x] Environment config (`config.py` or `.env`) with DB path, debug flag, secret key
 
 #### Base template (`base.html`)
-- [ ] Top nav: Search | Explore | Map | Compare | Collections | Methods
-- [ ] Universal search box (stub — no logic yet)
-- [ ] Breadcrumb component
-- [ ] Page-level compare tray (stub)
-- [ ] Evidence/methods drawer (stub — right side or bottom sheet)
-- [ ] Data freshness badge component (Jinja macro)
-- [ ] Footer with source attribution area
+- [x] Top nav: Search | Explore | Map | Compare | Collections | Methods
+- [x] Universal search box (stub — no logic yet)
+- [x] Breadcrumb component
+- [x] Page-level compare tray (stub)
+- [x] Evidence/methods drawer (stub — right side or bottom sheet)
+- [x] Data freshness badge component (Jinja macro)
+- [x] Footer with source attribution area
 
 #### Shared Jinja components (as macros or includes)
-- [ ] `stat_card(label, value, unit, caveat)` — single metric card
-- [ ] `stat_strip(metrics_list)` — row of 4–6 stat cards
-- [ ] `tab_bar(tabs, active)` — tab navigation
-- [ ] `filter_chips(filters)` — chip row with active state
-- [ ] `entity_badge(type)` — type badge (Provider, Program, etc.)
-- [ ] `data_freshness_badge(date, source)` — "Data as of X from Y"
-- [ ] `empty_state(message, suggestion)` — zero-result UI
-- [ ] `skeleton_row()` — loading placeholder
+- [x] `stat_card(label, value, unit, caveat)` — single metric card
+- [x] `stat_strip(metrics_list)` — row of 4–6 stat cards
+- [x] `tab_bar(tabs, active)` — tab navigation
+- [x] `filter_chips(filters)` — chip row with active state
+- [x] `entity_badge(type)` — type badge (Provider, Program, etc.)
+- [x] `data_freshness_badge(date, source)` — "Data as of X from Y"
+- [x] `empty_state(message, suggestion)` — zero-result UI
+- [x] `skeleton_row()` — loading placeholder
 
 #### Signature feature stubs (scaffold early, build later)
 These are hooks, not full implementations. Add the DOM elements and stub routes NOW so they're architectural, not bolted on later.
-- [ ] **Inverse Search stub** — add a `?mode=guided` query parameter stub to `/search`; add a `routes/guided_search.py` file with a comment block describing the intent
-- [ ] **Ecosystem/Network View stub** — on the provider directory, add a view toggle button (List | Map | Network) that currently shows an empty placeholder panel for the Network view
-- [ ] **Briefing Builder stub** — add a ★ "Save to Briefing" icon to the stat card macro that does nothing yet (renders but has no handler); add `routes/briefing.py` stub
+- [x] **Inverse Search stub** — add a `?mode=guided` query parameter stub to `/search`; add a `routes/guided_search.py` file with a comment block describing the intent
+- [x] **Ecosystem/Network View stub** — on the provider directory, add a view toggle button (List | Map | Network) that currently shows an empty placeholder panel for the Network view
+- [x] **Briefing Builder stub** — add a ★ "Save to Briefing" icon to the stat card macro that does nothing yet (renders but has no handler); add `routes/briefing.py` stub
 
 #### CSS foundation
-- [ ] CSS custom properties: colors, spacing, type scale, border radius
-- [ ] Card component styles
-- [ ] Tab bar styles
-- [ ] Filter chip styles
-- [ ] Badge styles
-- [ ] Responsive grid (2-col, 1-col on mobile)
-- [ ] Empty state styles
+- [x] CSS custom properties: colors, spacing, type scale, border radius
+- [x] Card component styles
+- [x] Tab bar styles
+- [x] Filter chip styles
+- [x] Badge styles
+- [x] Responsive grid (2-col, 1-col on mobile)
+- [x] Empty state styles
 
 #### Mock data smoke test
-- [ ] One `/providers/mock` route returning a hardcoded provider dict
-- [ ] Provider detail template renders all tabs from mock data without errors
-- [ ] Mobile layout readable (check at 375px)
+- [x] One `/providers/mock` route returning a hardcoded provider dict
+- [x] Provider detail template renders all tabs from mock data without errors
+- [x] Mobile layout readable (check at 375px)
 
 ---
 
