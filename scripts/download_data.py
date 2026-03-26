@@ -34,15 +34,91 @@ MANIFEST_PATH = PROJECT_ROOT / "data" / "MANIFEST.md"
 
 # ---------------------------------------------------------------------------
 # IPEDS bulk download URL base
-# Files follow a stable pattern: HD{year}.zip, C{year}_A.zip, IC{year}.zip
+# Files follow the NCES naming convention: {SURVEY}{year}.zip → {survey}{year}.csv
+# Reference: https://nces.ed.gov/ipeds/datacenter/DataFiles.aspx
 # ---------------------------------------------------------------------------
 IPEDS_BASE = "https://nces.ed.gov/ipeds/datacenter/data"
 
+# ---------------------------------------------------------------------------
+# Year encoding helpers
+# NCES uses three different year encoding patterns:
+#   single year  →  2024         (HD, IC, EF, GR, ADM, S, SAL, etc.)
+#   fiscal pair  →  2324         (Finance: F2324_F1A, SFA2223)
+#   2-digit year →  24           (GR200: GR200_23)
+# ---------------------------------------------------------------------------
+
+def _fmt(tmpl: str, year: int) -> str:
+    """Format a file name template with all year variant substitutions."""
+    prior = year - 1
+    return (
+        tmpl
+        .replace("{year}", str(year))
+        .replace("{yy}", str(year)[-2:])          # 2-digit  e.g. 24
+        .replace("{ppyy}", f"{str(prior)[-2:]}{str(year)[-2:]}")  # fiscal pair e.g. 2324
+    )
+
+
+# Each entry: (zip_name_template, csv_name_template, survey_group)
+# Templates may use: {year}, {yy} (2-digit), {ppyy} (prior2digit+year2digit)
 IPEDS_FILES_PER_YEAR = [
-    ("{year}/hd{year}.csv", "HD{year}.zip", "hd{year}.csv"),
-    ("{year}/c{year}_a.csv", "C{year}_A.zip", "c{year}_a.csv"),
-    ("{year}/ic{year}.csv", "IC{year}.zip", "ic{year}.csv"),
+    # ── Institutional Directory ──────────────────────────────────────────────
+    ("HD{year}.zip",          "hd{year}.csv",          "hd"),
+    # ── Institutional Characteristics ───────────────────────────────────────
+    ("IC{year}.zip",          "ic{year}.csv",          "ic"),
+    ("IC{year}_AY.zip",       "ic{year}_ay.csv",       "ic"),
+    ("IC{year}_PY.zip",       "ic{year}_py.csv",       "ic"),
+    # ── Completions ─────────────────────────────────────────────────────────
+    ("C{year}_A.zip",         "c{year}_a.csv",         "completions"),
+    ("C{year}_B.zip",         "c{year}_b.csv",         "completions"),
+    # ── 12-month Enrollment (EFFY) ───────────────────────────────────────────
+    ("EFFY{year}.zip",        "effy{year}.csv",        "enrollment"),
+    ("EFFY{year}_DIST.zip",   "effy{year}_dist.csv",   "enrollment"),
+    ("EFFY{year}_HS.zip",     "effy{year}_hs.csv",     "enrollment"),
+    ("EFIA{year}.zip",        "efia{year}.csv",        "enrollment"),
+    # ── Fall Enrollment (EF) ─────────────────────────────────────────────────
+    ("EF{year}A.zip",         "ef{year}a.csv",         "enrollment"),
+    ("EF{year}B.zip",         "ef{year}b.csv",         "enrollment"),
+    ("EF{year}C.zip",         "ef{year}c.csv",         "enrollment"),
+    ("EF{year}D.zip",         "ef{year}d.csv",         "enrollment"),
+    ("EF{year}A_DIST.zip",    "ef{year}a_dist.csv",    "enrollment"),
+    ("EF{year}CP.zip",        "ef{year}cp.csv",        "enrollment"),
+    # ── Graduation Rates ─────────────────────────────────────────────────────
+    ("GR{year}.zip",          "gr{year}.csv",          "graduation"),
+    ("GR{year}_L2.zip",       "gr{year}_l2.csv",       "graduation"),
+    ("GR{year}_PELL_SSL.zip", "gr{year}_pell_ssl.csv", "graduation"),
+    ("GR200_{yy}.zip",        "gr200_{yy}.csv",        "graduation"),  # 2-digit year
+    # ── Student Financial Aid  (fiscal year pair: SFA2223 = AY2022-23) ──────
+    ("SFA{ppyy}.zip",         "sfa{ppyy}.csv",         "sfa"),
+    ("SFAV{ppyy}.zip",        "sfav{ppyy}.csv",        "sfa"),
+    # ── Admissions ───────────────────────────────────────────────────────────
+    ("ADM{year}.zip",         "adm{year}.csv",         "admissions"),
+    # ── Finance (fiscal year pair: F2324 = FY2023-24) ────────────────────────
+    ("F{ppyy}_F1A.zip",       "f{ppyy}_f1a.csv",       "finance"),
+    ("F{ppyy}_F2.zip",        "f{ppyy}_f2.csv",        "finance"),
+    ("F{ppyy}_F3.zip",        "f{ppyy}_f3.csv",        "finance"),
+    # ── Staff ────────────────────────────────────────────────────────────────
+    ("S{year}_OC.zip",        "s{year}_oc.csv",        "staff"),
+    ("S{year}_SIS.zip",       "s{year}_sis.csv",       "staff"),
+    ("S{year}_IS.zip",        "s{year}_is.csv",        "staff"),
+    ("S{year}_NH.zip",        "s{year}_nh.csv",        "staff"),
+    ("EAP{year}.zip",         "eap{year}.csv",         "staff"),
+    # ── Salaries ─────────────────────────────────────────────────────────────
+    ("SAL{year}_IS.zip",      "sal{year}_is.csv",      "salaries"),
+    ("SAL{year}_NIS.zip",     "sal{year}_nis.csv",     "salaries"),
 ]
+
+# Named subsets for --surveys filter
+SURVEY_GROUPS: dict[str, list[str]] = {
+    "core":        ["hd", "ic", "completions"],
+    "enrollment":  ["enrollment"],
+    "graduation":  ["graduation"],
+    "sfa":         ["sfa"],
+    "admissions":  ["admissions"],
+    "finance":     ["finance"],
+    "staff":       ["staff", "salaries"],
+    "all":         ["hd", "ic", "completions", "enrollment", "graduation",
+                    "sfa", "admissions", "finance", "staff", "salaries"],
+}
 
 # Crosswalk files — downloaded once, not per-year.
 # CIP titles are extracted from the crosswalk CIPTitle column directly,
@@ -160,9 +236,25 @@ def write_manifest(entries: list[dict]) -> None:
 # ---------------------------------------------------------------------------
 # Main download logic
 # ---------------------------------------------------------------------------
-def download_ipeds_year(year: int, force: bool) -> list[dict]:
-    """Download HD, C_A, and IC files for one year. Returns manifest entries."""
-    print(f"\n── Year {year} ──")
+def download_ipeds_year(year: int, force: bool, surveys: list[str] | None = None) -> list[dict]:
+    """Download IPEDS survey files for one year. Returns manifest entries.
+
+    Args:
+        year: IPEDS data year.
+        force: Re-download even if file already exists.
+        surveys: Survey group names to include (e.g. ['core', 'enrollment']).
+                 None or empty = use 'core' (hd + ic + completions).
+    """
+    # Resolve which groups to download
+    active_groups: set[str]
+    if not surveys:
+        active_groups = set(SURVEY_GROUPS["core"])
+    else:
+        active_groups = set()
+        for s in surveys:
+            active_groups.update(SURVEY_GROUPS.get(s, [s]))
+
+    print(f"\n── Year {year} (surveys: {', '.join(sorted(active_groups))}) ──")
     year_dir = IPEDS_DIR / str(year)
     year_dir.mkdir(parents=True, exist_ok=True)
 
@@ -170,9 +262,12 @@ def download_ipeds_year(year: int, force: bool) -> list[dict]:
     tmp_dir = IPEDS_DIR / "_zips"
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    for _dest_path_tmpl, zip_name_tmpl, csv_name_tmpl in IPEDS_FILES_PER_YEAR:
-        zip_name = zip_name_tmpl.format(year=year)
-        csv_name = csv_name_tmpl.format(year=year)
+    for zip_name_tmpl, csv_name_tmpl, group in IPEDS_FILES_PER_YEAR:
+        if group not in active_groups:
+            continue
+
+        zip_name = _fmt(zip_name_tmpl, year)
+        csv_name = _fmt(csv_name_tmpl, year)
         csv_dest = year_dir / csv_name
 
         if csv_dest.exists() and not force:
@@ -182,7 +277,7 @@ def download_ipeds_year(year: int, force: bool) -> list[dict]:
         # Download zip to temp location
         zip_dest = tmp_dir / zip_name
         url = f"{IPEDS_BASE}/{zip_name}"
-        downloaded = download_file(url, zip_dest, force=force, label=zip_name)
+        download_file(url, zip_dest, force=force, label=zip_name)
 
         if not zip_dest.exists():
             print(f"  [warn] Skipping extraction — {zip_name} not available")
@@ -260,6 +355,16 @@ def main() -> None:
         action="store_true",
         help="Only download crosswalk files (skip IPEDS year files)",
     )
+    parser.add_argument(
+        "--surveys",
+        nargs="+",
+        metavar="SURVEY",
+        help=(
+            "Survey groups to download. Options: core (default), enrollment, "
+            "graduation, sfa, admissions, finance, staff, all. "
+            "Example: --surveys core enrollment graduation"
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -287,8 +392,17 @@ def main() -> None:
 
     # Download IPEDS year files
     if not args.crosswalks_only:
+        surveys = args.surveys or None
+        if surveys:
+            # Expand named groups and show what will be downloaded
+            active: set[str] = set()
+            for s in surveys:
+                active.update(SURVEY_GROUPS.get(s, [s]))
+            print(f"Survey filter: {', '.join(sorted(active))}")
+        else:
+            print("Survey filter: core (hd, ic, completions) — use --surveys all for everything")
         for year in years:
-            year_entries = download_ipeds_year(year, force=args.force)
+            year_entries = download_ipeds_year(year, force=args.force, surveys=surveys)
             all_manifest_entries.extend(year_entries)
 
     # Write manifest

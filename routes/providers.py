@@ -12,7 +12,9 @@ Implements:
   GET /providers/<org_id>/tab/methods     — HTMX: static caveat copy
 """
 
+import sqlite3
 from collections import Counter
+from pathlib import Path
 
 from flask import abort, render_template, request
 from sqlalchemy import func
@@ -23,6 +25,8 @@ from models import (
 )
 
 from . import root_bp
+
+_DB_PATH = Path(__file__).resolve().parent.parent / "db" / "haystack.db"
 
 
 # ---------------------------------------------------------------------------
@@ -113,6 +117,70 @@ def _provider_snapshot(org_id: str) -> dict:
         "data_source": ds.name if ds else "IPEDS",
         "data_as_of": ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown",
     }
+
+
+# IPEDS lookup codes -> human-readable labels
+_CALSYS = {"1": "Semester", "2": "Quarter", "3": "Trimester", "4": "4-1-4", "5": "Other", "6": "Varies", "7": "Continuous"}
+_OPENADMP = {"1": "Open Admission", "2": "Selective Admission"}
+
+
+def _get_ipeds_enrichment(unitid: str) -> dict:
+    """Fetch IC, cost, admissions, and graduation data from IPEDS SQLite tables."""
+    if not unitid:
+        return {}
+    try:
+        conn = sqlite3.connect(_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+
+        _ic  = cur.execute('SELECT * FROM ipeds_ic2024 WHERE UNITID=? LIMIT 1', (unitid,)).fetchone()
+        _cost = cur.execute('SELECT * FROM ipeds_cost1_2024 WHERE UNITID=? LIMIT 1', (unitid,)).fetchone()
+        _adm = cur.execute('SELECT * FROM ipeds_adm2024 WHERE UNITID=? LIMIT 1', (unitid,)).fetchone()
+        _gr  = cur.execute(
+            'SELECT GRTOTLT, GRTOTLM, GRTOTLW FROM ipeds_gr2024 WHERE UNITID=? AND GRTYPE=2 LIMIT 1',
+            (unitid,)
+        ).fetchone()
+        conn.close()
+        ic   = dict(_ic)   if _ic   else None
+        cost = dict(_cost) if _cost else None
+        adm  = dict(_adm)  if _adm  else None
+        gr   = dict(_gr)   if _gr   else None
+    except Exception:
+        return {}
+
+    def _int(row, key):
+        try: return int(row[key]) if row and row[key] and row[key] not in ('-1', '-2', '') else None
+        except (ValueError, TypeError): return None
+
+    result = {}
+
+    if ic:
+        result["calendar"] = _CALSYS.get(ic["CALSYS"], None)
+        result["open_admissions"] = _OPENADMP.get(ic["OPENADMP"], None)
+        result["ft_undergrad"] = ic.get("FT_UG", "0") == "1"
+        result["pt_undergrad"] = ic.get("PT_UG", "0") == "1"
+
+    if cost:
+        result["instate_tuition"] = _int(cost, "CHG1AT0")
+        result["outstate_tuition"] = _int(cost, "CHG2AT0")
+        result["room_board"] = _int(cost, "CHG5AY0") or _int(cost, "CHG5AY1")
+        result["tuition_varies"] = cost.get("TUITVARY", "0") == "1"
+
+    if adm:
+        apps = _int(adm, "APPLCN")
+        admits = _int(adm, "ADMSSN")
+        if apps and admits and apps > 0:
+            result["acceptance_rate"] = round(admits / apps * 100, 1)
+        result["sat_reading_75"] = _int(adm, "SATVR75")
+        result["sat_math_75"] = _int(adm, "SATMT75")
+        result["act_composite_75"] = _int(adm, "ACTCM75")
+
+    if gr:
+        grad_total = _int(gr, "GRTOTLT")
+        result["grad_rate_cohort"] = grad_total
+
+    return result
+
 
 
 # ---------------------------------------------------------------------------
@@ -268,6 +336,7 @@ def provider_detail(org_id: str):
         snapshot=snapshot,
         top_programs=top_programs,
         cred_mix=cred_mix,
+        ipeds=_get_ipeds_enrichment(org.unitid),
         active_tab="overview",
     )
 

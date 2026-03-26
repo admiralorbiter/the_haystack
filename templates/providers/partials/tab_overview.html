@@ -1,4 +1,71 @@
 {# Overview tab — server-rendered on initial page load #}
+
+{# ── IPEDS Institutional Data ─────────────────────────────────────────────── #}
+{% if ipeds %}
+<div class="tab-section" style="margin-bottom:1.25rem;">
+  <h3 class="section-title">Institutional Data <span style="font-size:0.78rem;font-weight:normal;color:var(--text-muted);">IPEDS 2024</span></h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:0.6rem;">
+
+    {% if ipeds.instate_tuition is not none %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
+      <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">In-State Tuition</div>
+      <div style="font-size:1.1rem;font-weight:700;margin-top:2px;">${{ "{:,}".format(ipeds.instate_tuition) }}</div>
+    </div>
+    {% endif %}
+
+    {% if ipeds.outstate_tuition is not none %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
+      <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Out-of-State Tuition</div>
+      <div style="font-size:1.1rem;font-weight:700;margin-top:2px;">${{ "{:,}".format(ipeds.outstate_tuition) }}</div>
+    </div>
+    {% endif %}
+
+    {% if ipeds.room_board is not none %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
+      <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Room &amp; Board</div>
+      <div style="font-size:1.1rem;font-weight:700;margin-top:2px;">${{ "{:,}".format(ipeds.room_board) }}</div>
+    </div>
+    {% endif %}
+
+    {% if ipeds.acceptance_rate is not none %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
+      <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Acceptance Rate</div>
+      <div style="font-size:1.1rem;font-weight:700;margin-top:2px;">{{ ipeds.acceptance_rate }}%</div>
+    </div>
+    {% endif %}
+
+    {% if ipeds.open_admissions %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
+      <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Admissions Policy</div>
+      <div style="font-size:0.9rem;font-weight:600;margin-top:2px;">{{ ipeds.open_admissions }}</div>
+    </div>
+    {% endif %}
+
+    {% if ipeds.calendar %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
+      <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Academic Calendar</div>
+      <div style="font-size:0.9rem;font-weight:600;margin-top:2px;">{{ ipeds.calendar }}</div>
+    </div>
+    {% endif %}
+
+    {% if ipeds.act_composite_75 is not none %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
+      <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">ACT 75th Pctile</div>
+      <div style="font-size:1.1rem;font-weight:700;margin-top:2px;">{{ ipeds.act_composite_75 }}</div>
+    </div>
+    {% elif ipeds.sat_math_75 is not none %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
+      <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">SAT Math 75th Pctile</div>
+      <div style="font-size:1.1rem;font-weight:700;margin-top:2px;">{{ ipeds.sat_math_75 }}</div>
+    </div>
+    {% endif %}
+
+  </div>
+  <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.5rem;">Source: IPEDS IC/Cost/Admissions 2024</p>
+</div>
+{% endif %}
+
+{# ── Top Programs ─────────────────────────────────────────────────────────── #}
 {% if top_programs %}
 <div class="tab-section">
   <h3 class="section-title">Top Programs by Completions</h3>

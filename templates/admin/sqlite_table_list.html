@@ -1,0 +1,50 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}SQLite Tables — Admin — The Haystack{% endblock %}
+
+{% block content %}
+<div style="display:flex; align-items:baseline; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+    <h1 style="margin:0; font-size:1.3rem;">🗃 SQLite Database Tables</h1>
+    <span style="color:var(--text-muted,#888); font-size:0.875rem;">{{ tables | length }} tables total</span>
+</div>
+
+<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap:0.75rem;">
+    {% for t in tables %}
+    {% set is_ipeds = t.name.startswith('ipeds_') %}
+    {% set is_model = not is_ipeds and not t.name.startswith('sqlite_') %}
+    <a href="{{ url_for('admin.sqlite_table_view', table=t.name) }}" style="text-decoration:none;">
+        <div style="
+            background: var(--color-surface, #ede3d4);
+            border: 1px solid var(--color-border, #c4a882);
+            border-left: 4px solid {{ '#6b2737' if is_ipeds else '#7b68ee' if is_model else '#888' }};
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            transition: transform 0.1s, box-shadow 0.1s;
+        " onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'"
+           onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <div style="font-family:monospace; font-size:0.85rem; font-weight:600; color:var(--color-primary,#6b2737); margin-bottom:0.25rem;">{{ t.name }}</div>
+            <div style="font-size:0.78rem; color:var(--text-muted,#888);">
+                {% if t.count is not none %}
+                    {{ "{:,}".format(t.count) }} rows
+                {% else %}
+                    —
+                {% endif %}
+                &nbsp;·&nbsp;
+                {% if is_ipeds %}
+                    <span style="color:#7b9e6b;">IPEDS raw</span>
+                {% elif is_model %}
+                    <span style="color:#7b68ee;">model</span>
+                {% else %}
+                    <span style="color:var(--text-muted,#888);">system</span>
+                {% endif %}
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<p style="margin-top:1.5rem; font-size:0.78rem; color:var(--text-muted,#888);">
+    <strong>Maroon</strong> = IPEDS survey tables (loaded by <code>loaders/load_ipeds_tables.py</code>).
+    <strong>Purple</strong> = SQLAlchemy application models.
+    All tables are browseable and searchable.
+</p>
+{% endblock %}
