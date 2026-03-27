@@ -205,7 +205,7 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
         grp.PGCMTOT as gr_pell_comp, grp.PGADJCT as gr_pell_adj,
         gr200.BAREVCT as gr200_cohort, gr200.BAGR200 as gr200_comp,
         effy.EFYTOTLT, effy.EFYTOTLM, effy.EFYTOTLW,
-        dist.EFYDETOT,
+        dist.EFYDEEXC,
         ef4d.RET_PCF, ef4d.RET_NMP, ef4d.STUFACR,
         sfa.NPIST2,
         sfa24.UAGRNTP as sfa24_any_grant_pct, sfa24.UAGRNTA as sfa24_any_grant_avg,
@@ -281,7 +281,7 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
     result["enrollment_male"]   = _int(row, "EFYTOTLM")
     result["enrollment_female"] = _int(row, "EFYTOTLW")
 
-    de_total = _int(row, "EFYDETOT")
+    de_total = _int(row, "EFYDEEXC")
     en_total = _int(row, "EFYTOTLT")
     if de_total is not None and en_total and en_total > 0:
         result["distance_ed_pct"] = round(de_total / en_total * 100, 1)
