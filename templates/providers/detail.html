@@ -2,6 +2,7 @@
 {% import "partials/components.html" as components %}
 
 {% block title %}{{ org.name }} | The Haystack{% endblock %}
+{% block meta_description %}<meta name="description" content="{{ org.name }} in {{ org.city }}, {{ org.state }} — {{ snapshot.total_programs }} programs, {{ snapshot.total_completions or '—' }} annual completions. Top credential: {{ snapshot.top_credential }}.">{% endblock %}
 
 {% block content %}
 <script>document.body.dataset.entityType = 'provider'; document.body.dataset.entityId = '{{ org.org_id }}'; document.body.dataset.entityName = {{ org.name | tojson }};</script>
@@ -15,15 +16,7 @@
   <div class="title-row">
     <h1 class="m-0">{{ org.name }}</h1>
     {{ components.entity_badge('provider', 'Training Provider') }}
-    {# Institution type badge derived from top credential #}
-    {% set _cred = snapshot.top_credential | lower %}
-    {% if '4' in _cred or 'bachelor' in _cred or 'master' in _cred or 'doctor' in _cred %}
-      <span class="inst-type-badge">🎓 4-year</span>
-    {% elif 'associate' in _cred %}
-      <span class="inst-type-badge">📋 2-year</span>
-    {% elif 'certificate' in _cred or 'post' in _cred %}
-      <span class="inst-type-badge">📜 Certificate</span>
-    {% endif %}
+    <span class="inst-type-badge">{{ inst_type }}</span>
   </div>
   <div style="color:var(--text-muted); margin-bottom:var(--spacing-sm);">
     {{ org.city }}{% if org.city and org.state %}, {% endif %}{{ org.state }}

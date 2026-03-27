@@ -272,11 +272,10 @@
   border-bottom: 2px solid var(--color-surface);
   margin-bottom: var(--spacing-lg);
   position: sticky;
-  top: 0;
+  top: var(--nav-height, 56px);  /* offset by nav bar so tabs don't hide behind it */
   background: var(--color-bg);
   z-index: 100;
   padding: var(--spacing-sm) 0 0;
-  /* shadow when stuck */
   box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
@@ -461,4 +460,24 @@
 .cred-mix-bar-wrap { background: var(--color-surface); border-radius: 6px; height: 10px; overflow: hidden; }
 .cred-mix-bar  { height: 100%; background: var(--color-primary); border-radius: 6px; transition: width 0.3s ease; }
 .cred-mix-count { font-size: 0.85rem; font-weight: 600; text-align: right; }
+
+/* ── Mobile responsive overrides ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Snapshot strip: collapse 5-column forced grid to 2 columns on small screens */
+  .snapshot-strip {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Tab bar: allow horizontal scroll on tiny viewports */
+  .tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cred mix label: shrink on small screens */
+  .cred-mix-row {
+    grid-template-columns: 120px 1fr 50px;
+  }
+}
 

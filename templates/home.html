@@ -12,26 +12,26 @@
         <span class="badge badge-freshness">Data as of Mar 2026 &bull; IPEDS</span>
     </div>
 
-    {# Regional stat strip — will be wired to real DB data in Epic 3 #}
+    {# Regional stat strip — wired to DB #}
     <div class="snapshot-strip">
         <div class="stat-card">
             <div class="stat-label">Training Providers</div>
-            <div class="stat-value">—</div>
+            <div class="stat-value">{{ '{:,}'.format(provider_count) }}</div>
             <div class="stat-caveat">IPEDS institutions in MSA</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Programs Offered</div>
-            <div class="stat-value">—</div>
+            <div class="stat-value">{{ '{:,}'.format(program_count) }}</div>
             <div class="stat-caveat">Unique CIP &amp; credential combos</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Annual Completions</div>
-            <div class="stat-value">—</div>
+            <div class="stat-value">{{ '{:,}'.format(total_completions) }}</div>
             <div class="stat-caveat">Awards conferred, most recent year</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Linked Occupations</div>
-            <div class="stat-value">—</div>
+            <div class="stat-value">{{ '{:,}'.format(occ_count) }}</div>
             <div class="stat-caveat">SOC codes via CIP crosswalk</div>
         </div>
     </div>

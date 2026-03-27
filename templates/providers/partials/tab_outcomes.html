@@ -17,12 +17,12 @@
 </nav>
 
 {# ── Graduation Rates (150%) ──────────────────────────────────────────────── #}
-{% if ipeds and (ipeds.grad_rate_150 is not none or ipeds.grad_rate_pell is not none or ipeds.grad_rate_200 is not none) %}
+{% if ipeds and (ipeds.grad_rate_150 or ipeds.grad_rate_pell or ipeds.grad_rate_200) %}
 <div class="tab-section" id="section-grad">
   <h3 class="section-title">Graduation Rates <span style="font-size:0.78rem;font-weight:normal;color:var(--text-muted);">IPEDS 2024</span></h3>
   <div style="display:flex;flex-direction:column;gap:0.75rem;max-width:480px;">
 
-    {% if ipeds.grad_rate_150 is not none %}
+    {% if ipeds.grad_rate_150 %}
     <div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
         <span style="font-weight:600;">All Students — 150%</span>
@@ -37,7 +37,7 @@
     </div>
     {% endif %}
 
-    {% if ipeds.grad_rate_pell is not none %}
+    {% if ipeds.grad_rate_pell %}
     <div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
         <span style="font-weight:600;">Pell / SSL Recipients — 150%</span>
@@ -50,7 +50,7 @@
     </div>
     {% endif %}
 
-    {% if ipeds.grad_rate_200 is not none %}
+    {% if ipeds.grad_rate_200 %}
     <div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
         <span style="font-weight:600;">All Students — 200%</span>
@@ -250,8 +250,8 @@
 {# ── Institutional Expenditures (f2223_f1a) ───────────────────────────────── #}
 {% if ipeds and ipeds.exp_total %}
 <div class="tab-section">
-  <h3 class="section-title">How This Institution Invests
-    <span class="section-hint">(FY 2022–23, in $000s)</span>
+  <h3 class="section-title">Selected Expenditure Categories
+    <span class="section-hint">(IPEDS Finance, FY 2022–23, in $000s — 3 of 8 categories)</span>
   </h3>
   {% set exp_cats = [
     ('Instruction',      ipeds.exp_instruction,      'var(--color-primary)'),

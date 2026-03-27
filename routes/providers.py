@@ -12,11 +12,13 @@ Implements:
   GET /providers/<org_id>/tab/methods     — HTMX: static caveat copy
 """
 
+import re
 import sqlite3
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 
-from flask import abort, render_template, request
+from flask import abort, current_app, render_template, request
 from sqlalchemy import func
 
 from models import (
@@ -27,6 +29,7 @@ from models import (
 from . import root_bp
 
 _DB_PATH = Path(__file__).resolve().parent.parent / "db" / "haystack.db"
+_UUID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
 
 
 # ---------------------------------------------------------------------------
@@ -124,11 +127,37 @@ _CALSYS = {"1": "Semester", "2": "Quarter", "3": "Trimester", "4": "4-1-4", "5":
 _OPENADMP = {"1": "Open Admission", "2": "Selective Admission"}
 
 
+def _empty_ipeds() -> dict:
+    """Return a fully-keyed IPEDS dict with all values None.
+    Ensures Jinja2 templates can safely use 'is not none' on any key
+    without an UndefinedError, even for providers with no IPEDS data.
+    """
+    keys = [
+        "calendar", "open_admissions", "ft_ug", "pt_ug",
+        "tuition_in", "tuition_out", "room_board", "tuition_varies",
+        "applications", "admissions", "acceptance_rate",
+        "sat_erw_75", "sat_math_75", "act_75",
+        "grad_rate_150", "grad_rate_150_cohort",
+        "grad_rate_pell", "grad_rate_200", "grad_rate_200_cohort",
+        "enrollment_total", "enrollment_male", "enrollment_female",
+        "distance_ed_pct", "retention_ft", "retention_pt",
+        "student_faculty_ratio", "net_price",
+        "aid_any_grant_pct", "aid_any_grant_avg",
+        "aid_pell_pct", "aid_pell_avg",
+        "aid_loan_pct", "aid_loan_avg",
+        "faculty_count",
+        "exp_instruction", "exp_academic_support", "exp_student_services", "exp_total",
+    ]
+    return dict.fromkeys(keys, None)
+
+
+# Memoize per-unitid to avoid re-running the 15-table JOIN on every tab load
+@lru_cache(maxsize=256)
 def _get_ipeds_enrichment(unitid: str) -> dict:
     """Fetch IC, cost, admissions, enrollment, retention, graduation, financial aid,
     200% graduation rate, faculty/staff counts, and expenditure data from IPEDS tables."""
     if not unitid:
-        return {}
+        return _empty_ipeds()
     
     query = '''
     SELECT 
@@ -178,13 +207,12 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
         _row = cur.execute(query, (unitid,)).fetchone()
         conn.close()
         row = dict(_row) if _row else None
+        if not row:
+            return _empty_ipeds()
     except sqlite3.Error as e:
         import sys
         print(f"IPEDS DB Error for {unitid}: {e}", file=sys.stderr)
-        return {}
-
-    if not row:
-        return {}
+        return _empty_ipeds()
 
     def _int(r, key):
         try: return int(r[key]) if r and r.get(key) and str(r[key]) not in ('-1', '-2', 'None', '') else None
@@ -194,7 +222,7 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
         try: return float(r[key]) if r and r.get(key) and str(r[key]) not in ('-1', '-2', 'None', '') else None
         except (ValueError, TypeError): return None
 
-    result = {}
+    result = _empty_ipeds()
 
     result["calendar"]        = _CALSYS.get(str(row.get("CALSYS", "")), None)
     result["open_admissions"] = _OPENADMP.get(str(row.get("OPENADMP", "")), None)
@@ -272,6 +300,35 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
     result["exp_total"] = sum(v for v in _exp_vals if v) or None
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# /providers/mock — DEV ONLY (guarded)
+# ---------------------------------------------------------------------------
+
+@root_bp.route("/providers/mock")
+def provider_detail_mock():
+    """Dev shortcut — only active in DEBUG mode."""
+    if not current_app.debug:
+        abort(404)
+    try:
+        from mock_data import MOCK_PROVIDER  # noqa: PLC0415
+    except ImportError:
+        abort(404)
+    return render_template(
+        "providers/detail.html",
+        org=type("O", (), MOCK_PROVIDER)(),
+        snapshot={
+            "total_programs": 5, "total_completions": 120,
+            "suppressed_count": 0, "top_credential": "Bachelor's degree",
+            "top_cip_family": "51", "linked_occupations": 12,
+            "data_source": "IPEDS Mock", "data_as_of": "2024-01-01",
+        },
+        top_programs=[],
+        cred_mix=[],
+        active_tab="overview",
+        inst_type="4-year",
+    )
 
 
 
@@ -475,27 +532,6 @@ def providers_directory():
     )
 
 
-# ---------------------------------------------------------------------------
-# Mock detail (retained for dev/testing reference)
-# ---------------------------------------------------------------------------
-
-@root_bp.route("/providers/mock")
-def provider_detail_mock():
-    from mock_data import MOCK_PROVIDER
-    return render_template(
-        "providers/detail.html",
-        org=type("O", (), MOCK_PROVIDER)(),
-        snapshot={
-            "total_programs": 5, "total_completions": 120,
-            "suppressed_count": 0, "top_credential": "Bachelor's degree",
-            "top_cip_family": "51", "linked_occupations": 12,
-            "data_source": "IPEDS Mock", "data_as_of": "2024-01-01",
-        },
-        top_programs=[],
-        cred_mix=[],
-        active_tab="overview",
-    )
-
 
 # ---------------------------------------------------------------------------
 # Detail page — GET /providers/<org_id>
@@ -503,8 +539,20 @@ def provider_detail_mock():
 
 @root_bp.route("/providers/<org_id>")
 def provider_detail(org_id: str):
+    # Validate UUID format to return clean 404 instead of DB error
+    if not _UUID_RE.match(org_id):
+        abort(404)
     org = _get_provider_or_404(org_id)
     snapshot = _provider_snapshot(org_id)
+
+    # Derive institution type badge from top credential (aligns with IPEDS program data)
+    _cred = (snapshot.get('top_credential') or '').lower()
+    if any(k in _cred for k in ('bachelor', 'master', 'doctor', 'first-prof')):
+        inst_type = '\U0001f393 4-year'
+    elif 'associate' in _cred:
+        inst_type = '\U0001f4cb 2-year'
+    else:
+        inst_type = '\U0001f4dc Certificate'
 
     top_programs = (
         db.session.query(Program)
@@ -532,6 +580,7 @@ def provider_detail(org_id: str):
             top_programs=top_programs,
             cred_mix=cred_mix,
             ipeds=ipeds_data,
+            inst_type=inst_type,
         )
 
     return render_template(
@@ -542,6 +591,7 @@ def provider_detail(org_id: str):
         cred_mix=cred_mix,
         ipeds=ipeds_data,
         active_tab="overview",
+        inst_type=inst_type,
     )
 
 
