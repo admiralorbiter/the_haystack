@@ -13,13 +13,11 @@ Implements:
 """
 
 import re
-import sqlite3
 from collections import Counter
 from functools import lru_cache
-from pathlib import Path
 
 from flask import abort, current_app, render_template, request
-from sqlalchemy import func
+from sqlalchemy import func, text
 
 from models import (
     DatasetSource, Occupation, OrgAlias, Organization,
@@ -28,8 +26,16 @@ from models import (
 
 from . import root_bp
 
-_DB_PATH = Path(__file__).resolve().parent.parent / "db" / "haystack.db"
 _UUID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
+
+
+def _valid_unitid(unitid: str | None) -> bool:
+    """IPEDS UNITID is a 6-digit numeric string. Reject anything else
+    before it reaches raw SQL to prevent unexpected query behaviour."""
+    if not unitid:
+        return False
+    s = str(unitid).strip()
+    return s.isdigit() and 1 <= len(s) <= 8
 
 
 # ---------------------------------------------------------------------------
@@ -129,26 +135,57 @@ _OPENADMP = {"1": "Open Admission", "2": "Selective Admission"}
 
 def _empty_ipeds() -> dict:
     """Return a fully-keyed IPEDS dict with all values None.
-    Ensures Jinja2 templates can safely use 'is not none' on any key
-    without an UndefinedError, even for providers with no IPEDS data.
+    Key names MUST match exactly what _get_ipeds_enrichment() writes —
+    this guards Jinja2 templates for providers that have no IPEDS row.
     """
-    keys = [
-        "calendar", "open_admissions", "ft_ug", "pt_ug",
-        "tuition_in", "tuition_out", "room_board", "tuition_varies",
-        "applications", "admissions", "acceptance_rate",
-        "sat_erw_75", "sat_math_75", "act_75",
-        "grad_rate_150", "grad_rate_150_cohort",
-        "grad_rate_pell", "grad_rate_200", "grad_rate_200_cohort",
-        "enrollment_total", "enrollment_male", "enrollment_female",
-        "distance_ed_pct", "retention_ft", "retention_pt",
-        "student_faculty_ratio", "net_price",
-        "aid_any_grant_pct", "aid_any_grant_avg",
-        "aid_pell_pct", "aid_pell_avg",
-        "aid_loan_pct", "aid_loan_avg",
-        "faculty_count",
-        "exp_instruction", "exp_academic_support", "exp_student_services", "exp_total",
-    ]
-    return dict.fromkeys(keys, None)
+    return {
+        # Institutional characteristics
+        "calendar":            None,
+        "open_admissions":     None,
+        "ft_undergrad":        None,
+        "pt_undergrad":        None,
+        # Tuition / cost
+        "instate_tuition":     None,
+        "outstate_tuition":    None,
+        "room_board":          None,
+        "tuition_varies":      None,
+        "net_price":           None,
+        # Admissions
+        "acceptance_rate":     None,
+        "sat_reading_75":      None,
+        "sat_math_75":         None,
+        "act_composite_75":    None,
+        # Graduation rates
+        "grad_rate_150":       None,
+        "grad_rate_150_cohort":None,
+        "grad_rate_pell":      None,
+        "grad_rate_200":       None,
+        "grad_rate_200_cohort":None,
+        # Enrollment
+        "enrollment_total":    None,
+        "enrollment_male":     None,
+        "enrollment_female":   None,
+        "distance_ed_pct":     None,
+        "distance_ed_n":       None,
+        # Retention
+        "retention_ft":        None,
+        "retention_pt":        None,
+        "student_faculty_ratio":None,
+        # Financial aid
+        "aid_any_grant_pct":   None,
+        "aid_any_grant_avg":   None,
+        "aid_pell_pct":        None,
+        "aid_pell_avg":        None,
+        "aid_loan_pct":        None,
+        "aid_loan_avg":        None,
+        # Faculty
+        "faculty_count":       None,
+        # Expenditures
+        "exp_instruction":     None,
+        "exp_academic_support":None,
+        "exp_student_services":None,
+        "exp_total":           None,
+    }
 
 
 # Memoize per-unitid to avoid re-running the 15-table JOIN on every tab load
@@ -197,19 +234,16 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
         GROUP BY UNITID
     ) eap ON ic.UNITID = eap.UNITID
     LEFT JOIN ipeds_f2223_f1a fin ON ic.UNITID = fin.UNITID
-    WHERE ic.UNITID = ?
+    WHERE ic.UNITID = :unitid
     '''
     
     try:
-        conn = sqlite3.connect(_DB_PATH)
-        conn.row_factory = sqlite3.Row
-        cur = conn.cursor()
-        _row = cur.execute(query, (unitid,)).fetchone()
-        conn.close()
+        with db.engine.connect() as conn:
+            _row = conn.execute(text(query), {"unitid": str(unitid)}).mappings().first()
         row = dict(_row) if _row else None
         if not row:
             return _empty_ipeds()
-    except sqlite3.Error as e:
+    except Exception as e:
         import sys
         print(f"IPEDS DB Error for {unitid}: {e}", file=sys.stderr)
         return _empty_ipeds()
@@ -332,24 +366,23 @@ def provider_detail_mock():
 
 
 
+@lru_cache(maxsize=256)
 def _ipeds_outcome_measures(unitid: str) -> list[dict]:
     """
     Pull Outcome Measures (om2024) for a provider.
     OMCHRT=10 → full-time first-time students; OMCHRT=11 → part-time/transfer.
     Returns [{cohort_type, cohort_n, pct_4yr, pct_6yr, pct_8yr}, ...].
     """
-    if not unitid:
+    if not _valid_unitid(unitid):
         return []
     _OMCHRT = {"10": "Full-time, first-time", "11": "Part-time / transfer"}
     try:
-        conn = sqlite3.connect(_DB_PATH)
-        cur = conn.cursor()
-        rows = cur.execute(
-            """SELECT OMCHRT, OMACHRT, OMAWDP4, OMAWDP6, OMAWDP8
-               FROM ipeds_om2024 WHERE UNITID=? AND OMCHRT IN ('10','11')""",
-            (str(unitid),),
-        ).fetchall()
-        conn.close()
+        with db.engine.connect() as conn:
+            rows = conn.execute(
+                text("""SELECT OMCHRT, OMACHRT, OMAWDP4, OMAWDP6, OMAWDP8
+                       FROM ipeds_om2024 WHERE UNITID=:uid AND OMCHRT IN ('10','11')"""),
+                {"uid": str(unitid)},
+            ).fetchall()
 
         def _iv(v):
             try: return int(v) if v and v not in ('-1','-2','') else None
@@ -368,31 +401,30 @@ def _ipeds_outcome_measures(unitid: str) -> list[dict]:
                 "pct_8yr":  _iv(r[4]),
             })
         return result
-    except sqlite3.OperationalError:
+    except Exception:
         return []
 
 
+@lru_cache(maxsize=256)
 def _ipeds_enrollment_demographics(unitid: str) -> dict | None:
     """
     Pull fall enrollment by race/ethnicity from ipeds_ef2024a.
     EFALEVEL=1 is the total undergraduate aggregate.
     Returns dict of race group → count, plus total/male/female.
     """
-    if not unitid:
+    if not _valid_unitid(unitid):
         return None
     try:
-        conn = sqlite3.connect(_DB_PATH)
-        cur = conn.cursor()
-        row = cur.execute(
-            """SELECT EFTOTLT, EFTOTLM, EFTOTLW,
-                      EFAIANT, EFASIAT, EFBKAAT, EFHISPT, EFWHITT, EF2MORT,
-                      EFNRALT, EFUNKNT
-               FROM ipeds_ef2024a
-               WHERE UNITID=? AND EFALEVEL='1'
-               LIMIT 1""",
-            (str(unitid),),
-        ).fetchone()
-        conn.close()
+        with db.engine.connect() as conn:
+            row = conn.execute(
+                text("""SELECT EFTOTLT, EFTOTLM, EFTOTLW,
+                              EFAIANT, EFASIAT, EFBKAAT, EFHISPT, EFWHITT, EF2MORT,
+                              EFNRALT, EFUNKNT
+                       FROM ipeds_ef2024a
+                       WHERE UNITID=:uid AND EFALEVEL='1'
+                       LIMIT 1"""),
+                {"uid": str(unitid)},
+            ).fetchone()
         if not row:
             return None
 
@@ -404,21 +436,20 @@ def _ipeds_enrollment_demographics(unitid: str) -> dict | None:
         if not total:
             return None
         return {
-            "total":            total,
-            "male":             _iv(row[1]),
-            "female":           _iv(row[2]),
-            "aian":             _iv(row[3]),   # Am. Indian/Alaska Native
-            "asian":            _iv(row[4]),
-            "black":            _iv(row[5]),
-            "hispanic":         _iv(row[6]),
-            "white":            _iv(row[7]),
-            "two_or_more":      _iv(row[8]),
-            "nonresident":      _iv(row[9]),
-            "unknown":          _iv(row[10]),
+            "total":       total,
+            "male":        _iv(row[1]),
+            "female":      _iv(row[2]),
+            "aian":        _iv(row[3]),
+            "asian":       _iv(row[4]),
+            "black":       _iv(row[5]),
+            "hispanic":    _iv(row[6]),
+            "white":       _iv(row[7]),
+            "two_or_more": _iv(row[8]),
+            "nonresident": _iv(row[9]),
+            "unknown":     _iv(row[10]),
         }
-    except sqlite3.OperationalError:
+    except Exception:
         return None
-
 
 
 # ---------------------------------------------------------------------------
@@ -429,7 +460,10 @@ def _ipeds_enrollment_demographics(unitid: str) -> dict | None:
 def providers_directory():
     county_filter = request.args.get("county", "").strip()
     cred_filter = request.args.get("cred", "").strip()
-    cip_filter = request.args.get("cip", "").strip()
+    # CIP filter: only accept 1-2 digit family codes (e.g. "51") to prevent
+    # open-ended LIKE matches or erroneous partial strings.
+    _raw_cip = request.args.get("cip", "").strip()
+    cip_filter = _raw_cip if _raw_cip.isdigit() and 1 <= len(_raw_cip) <= 2 else ""
     sort = request.args.get("sort", "completions")
     page = max(1, int(request.args.get("page", 1)))
     per_page = 50
@@ -443,11 +477,25 @@ def providers_directory():
         if not comparing_name:
             comparing_id = ""  # invalid id, clear it
 
+    # When a credential filter is active, restrict the completions aggregate
+    # to only programs matching that credential — otherwise orgs with mixed
+    # credential offerings would show inflated totals in the directory.
+    _completions_sum = (
+        func.sum(
+            db.case(
+                (Program.credential_type == cred_filter, Program.completions),
+                else_=None,
+            )
+        )
+        if cred_filter
+        else func.sum(Program.completions)
+    )
+
     q = (
         db.session.query(
             Organization,
             func.count(Program.program_id).label("program_count"),
-            func.sum(Program.completions).label("total_completions"),
+            _completions_sum.label("total_completions"),
             func.count(func.distinct(ProgramOccupation.soc)).label("occ_count"),
         )
         .outerjoin(Program, Program.org_id == Organization.org_id)

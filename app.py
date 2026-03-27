@@ -1,11 +1,21 @@
 from flask import Flask, render_template
+from flask_caching import Cache
 
 from config import config
 
+# Simple in-memory cache — no Redis / extra infra needed.
+# Exported so routes can use @cache.memoize(timeout=86400).
+cache = Cache()
 
 def create_app(config_name="default"):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+
+    # SimpleCache — in-process dict cache, 24h default TTL.
+    # Upgrade path: swap CACHE_TYPE to 'RedisCache' with CACHE_REDIS_URL for production.
+    app.config.setdefault("CACHE_TYPE", "SimpleCache")
+    app.config.setdefault("CACHE_DEFAULT_TIMEOUT", 86400)  # 24h — IPEDS ships annually
+    cache.init_app(app)
 
     # SQLAlchemy init
     from models import db

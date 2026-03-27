@@ -59,10 +59,10 @@ class TestErrorHandlers:
 # Provider routes (stub — these will expand in Epic 3 when DB is wired up)
 # ---------------------------------------------------------------------------
 class TestProviderRoutes:
-    def test_providers_mock_returns_200(self, client):
-        """The mock provider detail page renders without errors."""
+    def test_providers_mock_returns_404_in_testing(self, client):
+        """The mock route is debug-only and returns 404 in testing mode (not 500)."""
         res = client.get("/providers/mock")
-        assert res.status_code == 200
+        assert res.status_code == 404
 
     def test_provider_detail_missing_id_returns_404(self, client):
         """A provider with a totally unknown ID returns 404, not 500."""
