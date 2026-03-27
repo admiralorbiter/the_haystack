@@ -94,23 +94,23 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>Program</th>
-          <th>Institution</th>
-          <th class="num-col">Completions</th>
+          <th data-sort="text">Program <span class="sort-ind">↕</span></th>
+          <th data-sort="text">Institution <span class="sort-ind">↕</span></th>
+          <th class="num-col" data-sort="num">Completions <span class="sort-ind">↕</span></th>
         </tr>
       </thead>
       <tbody>
         {% for row in similar_programs %}
         {% set detail_url = url_for('root.program_detail', program_id=row.program.program_id) %}
         <tr class="program-row" data-href="{{ detail_url }}" style="cursor:pointer;">
-          <td>
+          <td data-sort-val="{{ row.cip_title | lower }}">
             <a href="{{ detail_url }}">
               {{ row.cip_title }}
             </a>
             <span class="cred-badge">{{ row.program.credential_type }}</span>
           </td>
-          <td style="color:var(--text-muted); font-size:0.9rem;">{{ row.org_name }}</td>
-          <td class="num-col">
+          <td style="color:var(--text-muted); font-size:0.9rem;" data-sort-val="{{ row.org_name | lower }}">{{ row.org_name }}</td>
+          <td class="num-col" data-sort-val="{{ row.program.completions if row.program.completions is not none else -999999999 }}">
             {% if row.program.completions is not none %}
               {{ '{:,}'.format(row.program.completions) }}
             {% else %}

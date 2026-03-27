@@ -67,6 +67,155 @@
   background: var(--color-primary-hover, #5a0a3d);
 }
 
+/* ── Filter selects (replaces chip rows for long-list filters) ─ */
+.filter-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.filter-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.filter-select-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding-left: 2px;
+}
+
+.filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: white;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: var(--radius-sm);
+  padding: 6px 32px 6px 10px;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  cursor: pointer;
+  min-width: 160px;
+  max-width: 260px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(106, 13, 63, 0.1);
+}
+
+.filter-select:hover {
+  border-color: var(--color-primary);
+}
+
+.filter-select-active {
+  border-color: var(--color-primary) !important;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.filter-clear-link {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border, #ddd);
+  background: white;
+  white-space: nowrap;
+  align-self: flex-end;
+  margin-bottom: 1px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.filter-clear-link:hover {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  text-decoration: none;
+}
+
+/* ── Sortable column headers ────────────────────────────────── */
+.sortable-th {
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.sortable-th a {
+  color: inherit;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end; /* right-align for num cols */
+}
+
+.sortable-th.sort-asc a,
+.sortable-th.sort-desc a {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.sortable-th a:hover {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+/* left-align for text columns */
+.sortable-th.text-col a {
+  justify-content: flex-start;
+}
+
+.sort-ind {
+  font-size: 0.75rem;
+  opacity: 0.5;
+}
+
+.sort-ind-active {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+/* ── Client-side sortable headers (th[data-sort] via table_sort.js) ── */
+th[data-sort] {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+th[data-sort]:hover {
+  color: var(--color-primary);
+}
+
+th[data-sort].sort-asc,
+th[data-sort].sort-desc {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .filter-inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-select {
+    max-width: 100%;
+  }
+}
+
 /* ── Results header ───────────────────────────────────────── */
 .results-header {
   display: flex;
@@ -136,10 +285,7 @@
   background: var(--color-bg);
 }
 
-.num-col {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
+/* Numeric column handling consolidated in components.css under .data-table */
 
 .provider-name-link {
   font-weight: 500;

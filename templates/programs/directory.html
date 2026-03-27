@@ -43,36 +43,53 @@
 </form>
 
 {# ── Filter bar ─────────────────────────────────────────────────────────── #}
-<form method="get" action="{{ url_for('root.programs_directory') }}" class="filter-bar" id="filter-form">
-  {% if search_q %}<input type="hidden" name="q" value="{{ search_q }}">{% endif %}
+<div class="filter-bar">
 
-  <div class="filter-group">
-    <label class="filter-label">Credential Type</label>
-    <div class="chip-row">
-      <a href="{{ url_for('root.programs_directory', cip=cip_filter, org=org_filter, comp=comp_filter, sort=sort, q=search_q) }}"
-         class="chip {% if not cred_filter %}chip-active{% endif %}">All</a>
-      {% for cred in all_creds %}
-      <a href="{{ url_for('root.programs_directory', cred=cred, cip=cip_filter, org=org_filter, comp=comp_filter, sort=sort, q=search_q) }}"
-         class="chip {% if cred_filter == cred %}chip-active{% endif %}">{{ cred }}</a>
-      {% endfor %}
+  {# Row 1: Credential + CIP dropdowns — labels too long for chips #}
+  <form method="get" action="{{ url_for('root.programs_directory') }}" id="dropdown-filter-form">
+    {% if search_q %}<input type="hidden" name="q" value="{{ search_q }}">{% endif %}
+    {% if comp_filter %}<input type="hidden" name="comp" value="{{ comp_filter }}">{% endif %}
+    {% if org_filter %}<input type="hidden" name="org" value="{{ org_filter }}">{% endif %}
+    {% if sort != 'completions' %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+
+    <div class="filter-inline">
+      {# Credential type select #}
+      <div class="filter-select-wrap">
+        <label class="filter-select-label" for="cred-select">Credential Type</label>
+        <select name="cred" id="cred-select"
+                class="filter-select {% if cred_filter %}filter-select-active{% endif %}"
+                onchange="document.getElementById('dropdown-filter-form').submit()">
+          <option value="">All credentials</option>
+          {% for cred in all_creds %}
+          <option value="{{ cred }}" {% if cred_filter == cred %}selected{% endif %}>{{ cred }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {# Field of Study (CIP) select #}
+      <div class="filter-select-wrap">
+        <label class="filter-select-label" for="cip-select">Field of Study</label>
+        <select name="cip" id="cip-select"
+                class="filter-select {% if cip_filter %}filter-select-active{% endif %}"
+                onchange="document.getElementById('dropdown-filter-form').submit()">
+          <option value="">All fields</option>
+          {% for family in all_cip_families %}
+          <option value="{{ family }}" {% if cip_filter == family %}selected{% endif %}
+                  title="{{ cip_family_names.get(family, '') }}">
+            {{ cip_family_names.get(family, family) }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {# Clear link #}
+      {% if cred_filter or cip_filter or comp_filter or org_filter %}
+      <a href="{{ url_for('root.programs_directory', q=search_q) }}" class="filter-clear-link">✕ Clear filters</a>
+      {% endif %}
     </div>
-  </div>
+  </form>
 
-  <div class="filter-group" style="margin-top: var(--spacing-sm);">
-    <label class="filter-label">Field of Study (CIP Family)</label>
-    <div class="chip-row">
-      <a href="{{ url_for('root.programs_directory', cred=cred_filter, org=org_filter, comp=comp_filter, sort=sort, q=search_q) }}"
-         class="chip {% if not cip_filter %}chip-active{% endif %}">All Fields</a>
-      {% for family in all_cip_families %}
-      <a href="{{ url_for('root.programs_directory', cred=cred_filter, cip=family, org=org_filter, comp=comp_filter, sort=sort, q=search_q) }}"
-         class="chip {% if cip_filter == family %}chip-active{% endif %}"
-         title="{{ cip_family_names.get(family, '') }}">
-        {{ cip_family_names.get(family, family) }}
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-
+  {# Row 2: Completions chips — only 5 options, chips work fine here #}
   <div class="filter-group" style="margin-top: var(--spacing-sm);">
     <label class="filter-label">Completions</label>
     <div class="chip-row">
@@ -88,9 +105,10 @@
          class="chip {% if comp_filter == 'suppressed' %}chip-active{% endif %}">Suppressed</a>
     </div>
   </div>
-</form>
 
-{# ── Results header ─────────────────────────────────────────────────────── #}
+</div>
+
+{# ── Results count ───────────────────────────────────────────────────────── #}
 <div class="results-header">
   <span class="results-count">
     {{ '{:,}'.format(total_count) }} program{{ 's' if total_count != 1 else '' }}
@@ -103,17 +121,9 @@
     <span style="font-weight:normal; color:var(--text-muted); font-size:0.9rem;"> &mdash; filtered</span>
     {% endif %}
   </span>
-  <div class="sort-row">
-    <span class="sort-label">Sort:</span>
-    {% set sort_options = [('completions', 'Completions'), ('name', 'Program Name'), ('provider', 'Provider')] %}
-    {% for key, label in sort_options %}
-    <a href="{{ url_for('root.programs_directory', cred=cred_filter, cip=cip_filter, org=org_filter, comp=comp_filter, q=search_q, sort=key) }}"
-       class="sort-link {% if sort == key %}sort-active{% endif %}">{{ label }}</a>
-    {% endfor %}
-  </div>
 </div>
 
-{# ── Compare selection banner (shown when ?comparing=<id> is active) ─────── #}
+{# ── Compare selection banner ─────────────────────────────────────────────── #}
 {% if comparing_id %}
 <div class="compare-banner" role="alert">
   <span class="compare-banner-icon">⊕</span>
@@ -130,11 +140,32 @@
   <table class="data-table program-table">
     <thead>
       <tr>
-        <th>Program</th>
-        <th>Institution</th>
-        <th>Field</th>
-        <th class="num-col" title="Awards conferred (IPEDS 2023–24). — means data is suppressed.">Completions ↓</th>
-        <th class="num-col">Occupations</th>
+        <th class="sortable-th text-col {% if sort == 'name' %}sort-desc{% endif %}" data-sort="text">
+          <a href="{{ url_for('root.programs_directory', cred=cred_filter, cip=cip_filter, org=org_filter, comp=comp_filter, q=search_q, sort='name') }}">
+            Program <span class="{% if sort == 'name' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'name' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="sortable-th text-col {% if sort == 'provider' %}sort-desc{% endif %}" data-sort="text">
+          <a href="{{ url_for('root.programs_directory', cred=cred_filter, cip=cip_filter, org=org_filter, comp=comp_filter, q=search_q, sort='provider') }}">
+            Institution <span class="{% if sort == 'provider' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'provider' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="sortable-th text-col {% if sort == 'field' %}sort-desc{% endif %}" data-sort="text">
+          <a href="{{ url_for('root.programs_directory', cred=cred_filter, cip=cip_filter, org=org_filter, comp=comp_filter, q=search_q, sort='field') }}">
+            Field <span class="{% if sort == 'field' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'field' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="num-col sortable-th {% if sort == 'completions' %}sort-desc{% endif %}" data-sort="num"
+            title="Awards conferred (IPEDS 2023–24). — means data is suppressed.">
+          <a href="{{ url_for('root.programs_directory', cred=cred_filter, cip=cip_filter, org=org_filter, comp=comp_filter, q=search_q, sort='completions') }}">
+            Completions <span class="{% if sort == 'completions' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'completions' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="num-col sortable-th {% if sort == 'occupations' %}sort-desc{% endif %}" data-sort="num">
+          <a href="{{ url_for('root.programs_directory', cred=cred_filter, cip=cip_filter, org=org_filter, comp=comp_filter, q=search_q, sort='occupations') }}">
+            Occupations <span class="{% if sort == 'occupations' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'occupations' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
         <th class="compare-col" title="Add to compare"></th>
       </tr>
     </thead>
@@ -142,29 +173,29 @@
       {% for row in programs %}
       {% set prog = row.program %}
       <tr class="program-row" onclick="window.location='{{ url_for('root.program_detail', program_id=prog.program_id) }}'">
-        <td>
+        <td data-sort-val="{{ row.cip_title | lower }}">
           <a href="{{ url_for('root.program_detail', program_id=prog.program_id) }}" class="provider-name-link">
             {{ row.cip_title }}
           </a>
           <span class="cred-badge">{{ prog.credential_type }}</span>
         </td>
-        <td style="color:var(--text-muted); font-size:0.9rem;">
+        <td style="color:var(--text-muted); font-size:0.9rem;" data-sort-val="{{ row.org_name | lower }}">
           <a href="{{ url_for('root.provider_detail', org_id=row.org_id) }}" class="org-link"
              onclick="event.stopPropagation()">{{ row.org_name }}</a>
           {% if row.org_city %}<br><span style="font-size:0.8rem;">{{ row.org_city }}</span>{% endif %}
         </td>
-        <td style="font-size:0.85rem; color:var(--text-muted);">
+        <td style="font-size:0.85rem; color:var(--text-muted);" data-sort-val="{{ row.cip_family_label | lower }}">
           {{ row.cip_family_label }}
           <span style="font-family:monospace; font-size:0.75rem;">({{ prog.cip }})</span>
         </td>
-        <td class="num-col">
+        <td class="num-col" data-sort-val="{{ prog.completions if prog.completions is not none else -999999999 }}">
           {% if prog.completions is not none %}
             {{ '{:,}'.format(prog.completions) }}
           {% else %}
             <span class="suppressed-label" title="Data suppressed by IPEDS to protect student privacy">&mdash;</span>
           {% endif %}
         </td>
-        <td class="num-col">{{ '{:,}'.format(row.occ_count) }}</td>
+        <td class="num-col" data-sort-val="{{ row.occ_count }}">{{ '{:,}'.format(row.occ_count) }}</td>
         <td class="compare-col" onclick="event.stopPropagation()">
           {% if comparing_id %}
             {% if prog.program_id == comparing_id %}

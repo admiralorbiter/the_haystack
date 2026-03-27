@@ -529,7 +529,12 @@ def providers_directory():
         q = q.order_by(func.count(Program.program_id).desc())
     elif sort == "name":
         q = q.order_by(Organization.name.asc())
+    elif sort == "location":
+        q = q.order_by(Organization.city.asc().nulls_last())
+    elif sort == "occupations":
+        q = q.order_by(func.count(func.distinct(ProgramOccupation.soc)).desc())
     else:
+        sort = "completions"
         q = q.order_by(func.sum(Program.completions).desc().nulls_last())
 
     total_count = q.count()
@@ -537,6 +542,11 @@ def providers_directory():
 
     all_counties = (
         db.session.query(RegionCounty.county_fips, RegionCounty.county_name, RegionCounty.state)
+        .filter(RegionCounty.county_fips.in_(
+            db.session.query(Organization.county_fips)
+            .filter_by(org_type="training")
+            .filter(Organization.county_fips.isnot(None))
+        ))
         .order_by(RegionCounty.county_name)
         .all()
     )

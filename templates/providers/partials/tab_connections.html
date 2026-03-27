@@ -9,17 +9,17 @@
   <table class="data-table">
     <thead>
       <tr>
-        <th>Occupation</th>
-        <th>SOC Code</th>
-        <th class="num-col">Programs</th>
+        <th data-sort="text">Occupation <span class="sort-ind">↕</span></th>
+        <th data-sort="text">SOC Code <span class="sort-ind">↕</span></th>
+        <th class="num-col" data-sort="num">Programs <span class="sort-ind">↕</span></th>
       </tr>
     </thead>
     <tbody>
       {% for occ, prog_count in occ_links %}
       <tr>
-        <td>{{ occ.title }}</td>
-        <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);">{{ occ.soc }}</td>
-        <td class="num-col">{{ prog_count }}</td>
+        <td data-sort-val="{{ occ.title | lower }}">{{ occ.title }}</td>
+        <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);" data-sort-val="{{ occ.soc }}">{{ occ.soc }}</td>
+        <td class="num-col" data-sort-val="{{ prog_count }}">{{ prog_count }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -38,23 +38,23 @@
   <table class="data-table">
     <thead>
       <tr>
-        <th>Institution</th>
-        <th>Location</th>
-        <th class="num-col">Shared Fields</th>
+        <th data-sort="text">Institution <span class="sort-ind">↕</span></th>
+        <th data-sort="text">Location <span class="sort-ind">↕</span></th>
+        <th class="num-col" data-sort="num">Shared Fields <span class="sort-ind">↕</span></th>
       </tr>
     </thead>
     <tbody>
       {% for row in similar_providers %}
       <tr class="provider-row" onclick="window.location='{{ url_for('root.provider_detail', org_id=row.org.org_id) }}'">
-        <td>
+        <td data-sort-val="{{ row.org.name | lower }}">
           <a href="{{ url_for('root.provider_detail', org_id=row.org.org_id) }}" class="provider-name-link">
             {{ row.org.name }}
           </a>
         </td>
-        <td style="color:var(--text-muted); font-size:0.9rem;">
+        <td style="color:var(--text-muted); font-size:0.9rem;" data-sort-val="{{ ((row.org.city or '') ~ ', ' ~ (row.org.state or '')) | lower }}">
           {{ row.org.city }}{% if row.org.city and row.org.state %}, {% endif %}{{ row.org.state }}
         </td>
-        <td class="num-col">{{ row.shared_cip_count }}</td>
+        <td class="num-col" data-sort-val="{{ row.shared_cip_count }}">{{ row.shared_cip_count }}</td>
       </tr>
       {% endfor %}
     </tbody>

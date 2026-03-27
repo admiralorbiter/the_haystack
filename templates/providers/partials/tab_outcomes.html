@@ -214,17 +214,17 @@
   <table class="data-table">
     <thead>
       <tr>
-        <th>Program</th>
-        <th>Credential</th>
-        <th class="num-col">Completions</th>
+        <th data-sort="text">Program <span class="sort-ind">↕</span></th>
+        <th data-sort="text">Credential <span class="sort-ind">↕</span></th>
+        <th class="num-col" data-sort="num">Completions <span class="sort-ind">↕</span></th>
       </tr>
     </thead>
     <tbody>
       {% for p in programs %}
       <tr>
-        <td>{{ p.name }}</td>
-        <td style="font-size:0.85rem; color:var(--text-muted);">{{ p.credential_type }}</td>
-        <td class="num-col">
+        <td data-sort-val="{{ p.name | lower }}">{{ p.name }}</td>
+        <td style="font-size:0.85rem; color:var(--text-muted);" data-sort-val="{{ p.credential_type | lower }}">{{ p.credential_type }}</td>
+        <td class="num-col" data-sort-val="{{ p.completions if p.completions is not none else -999999999 }}">
           {% if p.completions is not none %}
             {{ p.completions }}
           {% else %}

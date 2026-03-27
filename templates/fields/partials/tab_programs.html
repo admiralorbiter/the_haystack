@@ -11,24 +11,24 @@
     <table class="data-table program-table">
       <thead>
         <tr>
-          <th>Program</th>
-          <th>Institution</th>
-          <th class="num-col">Completions ↓</th>
+          <th data-sort="text">Program <span class="sort-ind">↕</span></th>
+          <th data-sort="text">Institution <span class="sort-ind">↕</span></th>
+          <th class="num-col" data-sort="num">Completions <span class="sort-ind-active">↓</span></th>
         </tr>
       </thead>
       <tbody>
         {% for row in programs %}
         {% set prog_url = url_for('root.program_detail', program_id=row.program.program_id) %}
         <tr class="program-row" data-href="{{ prog_url }}">
-          <td>
+          <td data-sort-val="{{ row.cip_title | lower }}">
             <a href="{{ prog_url }}" class="provider-name-link">{{ row.cip_title }}</a>
             <span class="cred-badge">{{ row.program.credential_type }}</span>
           </td>
-          <td>
+          <td data-sort-val="{{ row.org_name | lower }}">
             <a href="{{ url_for('root.provider_detail', org_id=row.org_id) }}" class="org-link"
                onclick="event.stopPropagation()">{{ row.org_name }}</a>
           </td>
-          <td class="num-col">
+          <td class="num-col" data-sort-val="{{ row.program.completions if row.program.completions is not none else -999999999 }}">
             {% if row.program.completions is not none %}
               {{ '{:,}'.format(row.program.completions) }}
             {% else %}

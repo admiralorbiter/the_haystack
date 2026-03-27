@@ -17,7 +17,9 @@
 </header>
 
 {# ── Filter bar ─────────────────────────────────────────────────────────── #}
-<form method="get" action="{{ url_for('root.providers_directory') }}" class="filter-bar" id="filter-form">
+<div class="filter-bar" id="filter-form">
+
+  {# County chips — short labels, chips work well #}
   <div class="filter-group">
     <label class="filter-label">County</label>
     <div class="chip-row">
@@ -32,39 +34,46 @@
     </div>
   </div>
 
-  <div class="filter-group" style="margin-top: var(--spacing-sm);">
-    <label class="filter-label">Credential Type</label>
-    <div class="chip-row">
-      <a href="{{ url_for('root.providers_directory', county=county_filter, sort=sort, cip=cip_filter) }}"
-         class="chip {% if not cred_filter %}chip-active{% endif %}">All</a>
-      {% for cred in all_creds %}
-      <a href="{{ url_for('root.providers_directory', county=county_filter, cred=cred, sort=sort, cip=cip_filter) }}"
-         class="chip {% if cred_filter == cred %}chip-active{% endif %}">{{ cred }}</a>
-      {% endfor %}
-    </div>
-  </div>
-</form>
+  {# Credential type select — labels too long for chips #}
+  <div class="filter-inline" style="margin-top: var(--spacing-sm);">
+    <form method="get" action="{{ url_for('root.providers_directory') }}" id="cred-filter-form">
+      {# Preserve county + sort #}
+      {% if county_filter %}<input type="hidden" name="county" value="{{ county_filter }}">{% endif %}
+      {% if cip_filter %}<input type="hidden" name="cip" value="{{ cip_filter }}">{% endif %}
+      {% if sort != 'completions' %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
 
-{# ── Results header ─────────────────────────────────────────────────────── #}
+      <div class="filter-select-wrap">
+        <label class="filter-select-label" for="cred-select">Credential Type</label>
+        <select name="cred" id="cred-select"
+                class="filter-select {% if cred_filter %}filter-select-active{% endif %}"
+                onchange="this.form.submit()">
+          <option value="">All credentials</option>
+          {% for cred in all_creds %}
+          <option value="{{ cred }}" {% if cred_filter == cred %}selected{% endif %}>{{ cred }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+
+    {# Clear filters link — only show when something is active #}
+    {% if county_filter or cred_filter %}
+    <a href="{{ url_for('root.providers_directory') }}" class="filter-clear-link" title="Remove all filters">✕ Clear filters</a>
+    {% endif %}
+  </div>
+
+</div>
+
+{# ── Results count ───────────────────────────────────────────────────────── #}
 <div class="results-header">
   <span class="results-count">
     {{ total_count }} provider{{ 's' if total_count != 1 else '' }}
     {% if county_filter or cred_filter %}
     <span style="font-weight:normal; color:var(--text-muted); font-size:0.9rem;"> &mdash; filtered</span>
-    <a href="{{ url_for('root.providers_directory') }}" class="clear-filters-link" title="Clear all filters">✕ Clear filters</a>
     {% endif %}
   </span>
-  <div class="sort-row">
-    <span class="sort-label">Sort:</span>
-    {% set sort_options = [('completions', 'Completions'), ('programs', 'Programs'), ('name', 'Name')] %}
-    {% for key, label in sort_options %}
-    <a href="{{ url_for('root.providers_directory', county=county_filter, cred=cred_filter, cip=cip_filter, sort=key) }}"
-       class="sort-link {% if sort == key %}sort-active{% endif %}">{{ label }}{% if sort == key %} ↓{% endif %}</a>
-    {% endfor %}
-  </div>
 </div>
 
-{# ── Compare selection banner (shown when ?comparing=<id> is active) ─────── #}
+{# ── Compare selection banner ─────────────────────────────────────────────── #}
 {% if comparing_id %}
 <div class="compare-banner" role="alert">
   <span class="compare-banner-icon">⊕</span>
@@ -81,11 +90,32 @@
   <table class="data-table provider-table">
     <thead>
       <tr>
-        <th>Institution</th>
-        <th>Location</th>
-        <th class="num-col {% if sort == 'programs' %}sort-col-active{% endif %}">Programs{% if sort == 'programs' %} ↓{% endif %}</th>
-        <th class="num-col {% if sort == 'completions' %}sort-col-active{% endif %}" title="Awards conferred (IPEDS 2023–24). — means data is suppressed to protect student privacy.">Completions{% if sort == 'completions' %} ↓{% endif %}</th>
-        <th class="num-col">Occupations</th>
+        <th class="sortable-th text-col {% if sort == 'name' %}sort-desc{% endif %}" data-sort="text">
+          <a href="{{ url_for('root.providers_directory', county=county_filter, cred=cred_filter, cip=cip_filter, sort='name') }}">
+            Institution <span class="{% if sort == 'name' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'name' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="sortable-th text-col {% if sort == 'location' %}sort-desc{% endif %}" data-sort="text">
+          <a href="{{ url_for('root.providers_directory', county=county_filter, cred=cred_filter, cip=cip_filter, sort='location') }}">
+            Location <span class="{% if sort == 'location' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'location' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="num-col sortable-th {% if sort == 'programs' %}sort-desc{% endif %}" data-sort="num">
+          <a href="{{ url_for('root.providers_directory', county=county_filter, cred=cred_filter, cip=cip_filter, sort='programs') }}">
+            Programs <span class="{% if sort == 'programs' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'programs' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="num-col sortable-th {% if sort == 'completions' %}sort-desc{% endif %}" data-sort="num"
+            title="Awards conferred (IPEDS 2023–24). — means data is suppressed to protect student privacy.">
+          <a href="{{ url_for('root.providers_directory', county=county_filter, cred=cred_filter, cip=cip_filter, sort='completions') }}">
+            Completions <span class="{% if sort == 'completions' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'completions' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="num-col sortable-th {% if sort == 'occupations' %}sort-desc{% endif %}" data-sort="num">
+          <a href="{{ url_for('root.providers_directory', county=county_filter, cred=cred_filter, cip=cip_filter, sort='occupations') }}">
+            Occupations <span class="{% if sort == 'occupations' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'occupations' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
         <th class="compare-col"></th>
       </tr>
     </thead>
@@ -93,37 +123,34 @@
       {% for row in providers %}
       {% set org = row.org %}
       <tr class="provider-row" onclick="window.location='{{ url_for('root.provider_detail', org_id=org.org_id) }}'">
-        <td>
+        <td data-sort-val="{{ org.name | lower }}">
           <a href="{{ url_for('root.provider_detail', org_id=org.org_id) }}" class="provider-name-link">
             {{ org.name }}
           </a>
         </td>
-        <td style="color:var(--text-muted); font-size:0.9rem;">
+        <td style="color:var(--text-muted); font-size:0.9rem;" data-sort-val="{{ ((org.city or '') ~ ', ' ~ (org.state or '')) | lower }}">
           {{ org.city }}{% if org.city and org.state %}, {% endif %}{{ org.state }}
         </td>
-        <td class="num-col">{{ '{:,}'.format(row.program_count) }}</td>
-        <td class="num-col">
+        <td class="num-col" data-sort-val="{{ row.program_count }}">{{ '{:,}'.format(row.program_count) }}</td>
+        <td class="num-col" data-sort-val="{{ row.total_completions if row.total_completions is not none else -999999999 }}">
           {% if row.total_completions is not none %}
             {{ '{:,}'.format(row.total_completions) }}
           {% else %}
             <span class="suppressed-label" title="Data suppressed by IPEDS to protect student privacy">&mdash;</span>
           {% endif %}
         </td>
-        <td class="num-col">{{ '{:,}'.format(row.occ_count) }}</td>
+        <td class="num-col" data-sort-val="{{ row.occ_count }}">{{ '{:,}'.format(row.occ_count) }}</td>
         <td class="compare-col" onclick="event.stopPropagation()">
           {% if comparing_id %}
             {% if org.org_id == comparing_id %}
-              {# This is the already-selected provider — show check mark #}
               <span class="compare-check-btn compare-selected" title="Already selected" aria-label="Selected for compare">✓</span>
             {% else %}
-              {# Second pick — complete the comparison #}
               <a href="{{ url_for('root.compare_providers', ids=comparing_id + ',' + org.org_id) }}"
                  class="compare-check-btn compare-pick"
                  title="Compare with {{ comparing_name }}"
                  aria-label="Compare {{ org.name }} with {{ comparing_name }}">Compare →</a>
             {% endif %}
           {% else %}
-            {# Normal mode — start a comparison with this provider #}
             <a href="{{ url_for('root.providers_directory', comparing=org.org_id) }}"
                class="compare-check-btn"
                title="Compare {{ org.name }}"

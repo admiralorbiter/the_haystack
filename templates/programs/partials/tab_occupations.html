@@ -13,18 +13,18 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>Occupation</th>
-          <th style="font-family:monospace; font-size:0.85rem;">SOC Code</th>
-          <th class="num-col" title="Structural mapping confidence from the CIP→SOC crosswalk">Confidence</th>
+          <th data-sort="text">Occupation <span class="sort-ind">↕</span></th>
+          <th style="font-family:monospace; font-size:0.85rem;" data-sort="text">SOC Code <span class="sort-ind">↕</span></th>
+          <th class="num-col" title="Structural mapping confidence from the CIP→SOC crosswalk" data-sort="num">Confidence <span class="sort-ind">↕</span></th>
           <th class="num-col" title="Median annual wage — coming in Phase 2">Median Wage</th>
         </tr>
       </thead>
       <tbody>
         {% for occ, confidence in occ_links %}
         <tr>
-          <td>{{ occ.title }}</td>
-          <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);">{{ occ.soc }}</td>
-          <td class="num-col">
+          <td data-sort-val="{{ occ.title | lower }}">{{ occ.title }}</td>
+          <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);" data-sort-val="{{ occ.soc }}">{{ occ.soc }}</td>
+          <td class="num-col" data-sort-val="{{ confidence if confidence is not none else -1 }}">
             {% if confidence is not none %}
               <span class="confidence-pill {% if confidence >= 0.9 %}conf-high{% elif confidence >= 0.5 %}conf-med{% else %}conf-low{% endif %}">
                 {{ '%.0f%%'|format(confidence * 100) }}

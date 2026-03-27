@@ -269,11 +269,15 @@ def programs_directory():
     elif comp_filter == "high":
         q = q.filter(Program.completions >= 50)
 
-    _SORT_SAFE = {"completions", "name", "provider"}
+    _SORT_SAFE = {"completions", "name", "provider", "field", "occupations"}
     if sort == "name":
         q = q.order_by(Program.name.asc())
     elif sort == "provider":
         q = q.order_by(Organization.name.asc())
+    elif sort == "field":
+        q = q.order_by(Program.cip.asc())
+    elif sort == "occupations":
+        q = q.order_by(func.count(ProgramOccupation.soc).desc())
     else:
         sort = "completions"
         q = q.order_by(Program.completions.desc().nulls_last())

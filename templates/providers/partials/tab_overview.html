@@ -156,20 +156,20 @@
   <table class="data-table">
     <thead>
       <tr>
-        <th>Program</th>
-        <th>Credential Type</th>
-        <th class="num-col">Completions</th>
+        <th data-sort="text">Program <span class="sort-ind">↕</span></th>
+        <th data-sort="text">Credential Type <span class="sort-ind">↕</span></th>
+        <th class="num-col" data-sort="num">Completions <span class="sort-ind">↕</span></th>
       </tr>
     </thead>
     <tbody>
       {% for p in top_programs %}
       <tr>
-        <td>
+        <td data-sort-val="{{ p.name | lower }}">
           {{ p.name }}
           <div style="font-size:0.78rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">CIP {{ p.cip }}</div>
         </td>
-        <td style="font-size:0.88rem; color:var(--text-muted);">{{ p.credential_type }}</td>
-        <td class="num-col">
+        <td style="font-size:0.88rem; color:var(--text-muted);" data-sort-val="{{ p.credential_type | lower }}">{{ p.credential_type }}</td>
+        <td class="num-col" data-sort-val="{{ p.completions if p.completions is not none else -999999999 }}">
           {% if p.completions is not none %}
             <strong>{{ '{:,}'.format(p.completions) }}</strong>
           {% else %}

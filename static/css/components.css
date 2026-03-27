@@ -324,6 +324,11 @@
   border-bottom: 1px solid var(--color-surface);
 }
 
+.data-table th.num-col, .data-table td.num-col {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .data-table th {
   background-color: var(--color-surface);
   color: var(--text-muted);
@@ -448,10 +453,7 @@
   font-style: italic;
 }
 
-/* ── Numeric column alignment ─────────────────────────────────────────────── */
-.num-col {
-  text-align: right;
-}
+/* Numeric column alignment moved up to .data-table section for specificity */
 
 /* ── Credential mix bar chart ─────────────────────────────────────────────── */
 .cred-mix-list { display: flex; flex-direction: column; gap: 0.5rem; }

@@ -16,19 +16,11 @@
   </p>
 </header>
 
-{# ── Results header ─────────────────────────────────────────────────────── #}
+{# ── Results count ───────────────────────────────────────────────────────── #}
 <div class="results-header">
   <span class="results-count">
     {{ total_count }} field{{ 's' if total_count != 1 else '' }} of study
   </span>
-  <div class="sort-row">
-    <span class="sort-label">Sort:</span>
-    {% set sort_options = [('completions', 'Completions'), ('programs', 'Programs'), ('providers', 'Providers'), ('name', 'Field Name')] %}
-    {% for key, label in sort_options %}
-    <a href="{{ url_for('root.fields_directory', sort=key) }}"
-       class="sort-link {% if sort == key %}sort-active{% endif %}">{{ label }}</a>
-    {% endfor %}
-  </div>
 </div>
 
 {# ── Fields table ───────────────────────────────────────────────────────── #}
@@ -37,23 +29,40 @@
   <table class="data-table field-table">
     <thead>
       <tr>
-        <th>Field of Study</th>
-        <th class="num-col">Programs</th>
-        <th class="num-col">Providers</th>
-        <th class="num-col" title="Annual awards conferred (IPEDS 2023–24). — means all data is suppressed.">Completions ↓</th>
+        <th class="sortable-th text-col {% if sort == 'name' %}sort-desc{% endif %}" data-sort="text">
+          <a href="{{ url_for('root.fields_directory', sort='name') }}">
+            Field of Study <span class="{% if sort == 'name' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'name' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="num-col sortable-th {% if sort == 'programs' %}sort-desc{% endif %}" data-sort="num">
+          <a href="{{ url_for('root.fields_directory', sort='programs') }}">
+            Programs <span class="{% if sort == 'programs' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'programs' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="num-col sortable-th {% if sort == 'providers' %}sort-desc{% endif %}" data-sort="num">
+          <a href="{{ url_for('root.fields_directory', sort='providers') }}">
+            Providers <span class="{% if sort == 'providers' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'providers' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="num-col sortable-th {% if sort == 'completions' %}sort-desc{% endif %}" data-sort="num"
+            title="Annual awards conferred (IPEDS 2023–24). — means all data is suppressed.">
+          <a href="{{ url_for('root.fields_directory', sort='completions') }}">
+            Completions <span class="{% if sort == 'completions' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'completions' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
       </tr>
     </thead>
     <tbody>
       {% for field in fields %}
       {% set detail_url = url_for('root.field_detail', cip_family=field.cip_family) %}
       <tr class="field-row" data-href="{{ detail_url }}">
-        <td>
+        <td data-sort-val="{{ field.family_label | lower }}">
           <a href="{{ detail_url }}" class="provider-name-link">{{ field.family_label }}</a>
           <span class="cip-family-code">{{ field.cip_family }}</span>
         </td>
-        <td class="num-col">{{ '{:,}'.format(field.program_count) }}</td>
-        <td class="num-col">{{ '{:,}'.format(field.provider_count) }}</td>
-        <td class="num-col">
+        <td class="num-col" data-sort-val="{{ field.program_count }}">{{ '{:,}'.format(field.program_count) }}</td>
+        <td class="num-col" data-sort-val="{{ field.provider_count }}">{{ '{:,}'.format(field.provider_count) }}</td>
+        <td class="num-col" data-sort-val="{{ field.total_completions if field.total_completions is not none else -999999999 }}">
           {% if field.total_completions is not none %}
             {{ '{:,}'.format(field.total_completions) }}
           {% else %}

@@ -17,18 +17,18 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>Occupation</th>
-          <th style="font-family:monospace; font-size:0.85rem;">SOC Code</th>
-          <th class="num-col" title="Number of programs in this field that link to this occupation">Programs</th>
+          <th data-sort="text">Occupation <span class="sort-ind">↕</span></th>
+          <th style="font-family:monospace; font-size:0.85rem;" data-sort="text">SOC Code <span class="sort-ind">↕</span></th>
+          <th class="num-col" title="Number of programs in this field that link to this occupation" data-sort="num">Programs <span class="sort-ind">↕</span></th>
           <th class="num-col" title="Median annual wage — coming in Phase 2">Median Wage</th>
         </tr>
       </thead>
       <tbody>
         {% for row in occ_links %}
         <tr>
-          <td>{{ row.occ.title }}</td>
-          <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);">{{ row.occ.soc }}</td>
-          <td class="num-col">{{ row.prog_count }}</td>
+          <td data-sort-val="{{ row.occ.title | lower }}">{{ row.occ.title }}</td>
+          <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);" data-sort-val="{{ row.occ.soc }}">{{ row.occ.soc }}</td>
+          <td class="num-col" data-sort-val="{{ row.prog_count }}">{{ row.prog_count }}</td>
           <td class="num-col" style="color:var(--text-muted); font-size:0.85rem;" title="Wage data coming in Phase 2">&mdash;</td>
         </tr>
         {% endfor %}
