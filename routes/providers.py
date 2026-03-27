@@ -199,7 +199,7 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
     query = '''
     SELECT 
         ic.CALSYS, ic.OPENADMP, ic.FT_UG, ic.PT_UG,
-        cost.CHG1AT0, cost.CHG2AT0, cost.CHG5AY0, cost.CHG5AY1, cost.TUITVARY,
+        cost.CHG1AT0, cost.CHG2AT0, cost.CHG4AY0, cost.CHG5AY0, cost.CHG5AY1, cost.CHG7AY0, cost.TUITVARY,
         adm.APPLCN, adm.ADMSSN, adm.SATVR75, adm.SATMT75, adm.ACTCM75,
         grn.GRTOTLT as gr_150, grd.GRTOTLT as gr_150_cohort,
         grp.PGCMTOT as gr_pell_comp, grp.PGADJCT as gr_pell_adj,
@@ -263,11 +263,16 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
     result["ft_undergrad"]    = str(row.get("FT_UG", "0")) == "1"
     result["pt_undergrad"]    = str(row.get("PT_UG", "0")) == "1"
 
-    result["instate_tuition"]  = _int(row, "CHG1AT0")
+    in_tuit = _int(row, "CHG1AT0")
+    result["instate_tuition"]  = in_tuit
     result["outstate_tuition"] = _int(row, "CHG2AT0")
     result["room_board"]       = _int(row, "CHG5AY0") or _int(row, "CHG5AY1")
     result["tuition_varies"]   = str(row.get("TUITVARY", "0")) == "1"
     result["net_price"]        = _int(row, "NPIST2")
+
+    books = _int(row, "CHG4AY0")
+    if in_tuit is not None and books is not None:
+        result["commuter_sticker"] = in_tuit + books
 
     apps   = _int(row, "APPLCN")
     admits = _int(row, "ADMSSN")

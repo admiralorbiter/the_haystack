@@ -6,9 +6,10 @@
   <h3 class="section-title">Institutional Data <span style="font-size:0.78rem;font-weight:normal;color:var(--text-muted);">IPEDS 2024</span></h3>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:0.6rem;">
 
-    {% macro stat_card(label, value) %}
-    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
-      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">{{ label }}</div>
+    {% macro stat_card(label, value, tooltip="") %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;" 
+         {% if tooltip %}title="{{ tooltip }}"{% endif %}>
+      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;{% if tooltip %}cursor:help;border-bottom:1px dotted var(--text-muted);display:inline-block;{% endif %}">{{ label }}</div>
       <div style="font-size:1.05rem;font-weight:700;margin-top:3px;">{{ value }}</div>
     </div>
     {% endmacro %}
@@ -25,9 +26,9 @@
 
     {# Retention #}
     {% if ipeds.retention_ft is not none %}
-      {{ stat_card("Retention (FT)", ipeds.retention_ft ~ "%") }}
+      {{ stat_card("Retention (FT)", ipeds.retention_ft ~ "%", "Percentage of first-time, full-time undergraduate students from the previous fall who re-enrolled or successfully completed their program by the current fall.") }}
     {% elif ipeds.retention_pt is not none %}
-      {{ stat_card("Retention (PT)", ipeds.retention_pt ~ "%") }}
+      {{ stat_card("Retention (PT)", ipeds.retention_pt ~ "%", "Percentage of first-time, part-time undergraduate students from the previous fall who re-enrolled or successfully completed their program by the current fall.") }}
     {% endif %}
 
     {# Student:Faculty ratio #}
@@ -52,7 +53,12 @@
 
     {# Net Price #}
     {% if ipeds.net_price is not none %}
-      {{ stat_card("Avg Net Price", "$" ~ "{:,}".format(ipeds.net_price)) }}
+      {{ stat_card("Avg Net Price", "$" ~ "{:,}".format(ipeds.net_price), "Average total cost of attendance (tuition, room, board, books/supplies) minus average grant and scholarship aid awarded to full-time, first-time degree/certificate-seeking undergraduates.") }}
+    {% endif %}
+
+    {# Commuter Sticker Price #}
+    {% if ipeds.commuter_sticker is not none %}
+      {{ stat_card("Local Sticker Price", "$" ~ "{:,}".format(ipeds.commuter_sticker), "Total direct, billed cost (Tuition + Fees + Books/Supplies) for a student living at home, before financial aid.") }}
     {% endif %}
 
     {# Acceptance rate — only show if positive, open-admission schools have no rate #}
@@ -163,9 +169,11 @@
     </thead>
     <tbody>
       {% for p in top_programs %}
-      <tr>
+      <tr style="cursor:pointer;" onclick="window.location='{{ url_for('root.program_detail', program_id=p.program_id) }}'">
         <td data-sort-val="{{ p.name | lower }}">
-          {{ p.name }}
+          <a href="{{ url_for('root.program_detail', program_id=p.program_id) }}" style="text-decoration:none; color:var(--text-main); font-weight:500;">
+            {{ p.name }}
+          </a>
           <div style="font-size:0.78rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">CIP {{ p.cip }}</div>
         </td>
         <td style="font-size:0.88rem; color:var(--text-muted);" data-sort-val="{{ p.credential_type | lower }}">{{ p.credential_type }}</td>
