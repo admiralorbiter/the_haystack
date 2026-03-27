@@ -350,6 +350,15 @@ def providers_directory():
     page = max(1, int(request.args.get("page", 1)))
     per_page = 50
 
+    # Compare selection mode — user clicked ⊕ on one provider, now picking a second
+    comparing_id = request.args.get("comparing", "").strip()
+    comparing_name = None
+    if comparing_id:
+        cmp_org = db.session.query(Organization).filter_by(org_id=comparing_id, org_type="training").first()
+        comparing_name = cmp_org.name if cmp_org else None
+        if not comparing_name:
+            comparing_id = ""  # invalid id, clear it
+
     q = (
         db.session.query(
             Organization,
@@ -434,6 +443,8 @@ def providers_directory():
         sort=sort,
         all_counties=all_counties,
         all_creds=[r.credential_type for r in all_creds],
+        comparing_id=comparing_id,
+        comparing_name=comparing_name,
     )
 
 

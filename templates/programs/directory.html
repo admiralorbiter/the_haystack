@@ -113,6 +113,17 @@
   </div>
 </div>
 
+{# ── Compare selection banner (shown when ?comparing=<id> is active) ─────── #}
+{% if comparing_id %}
+<div class="compare-banner" role="alert">
+  <span class="compare-banner-icon">⊕</span>
+  <span class="compare-banner-text">
+    <strong>{{ comparing_name }}</strong> selected &mdash; now pick a second program to compare.
+  </span>
+  <a href="{{ url_for('root.programs_directory') }}" class="compare-banner-cancel" aria-label="Cancel compare">✕ Cancel</a>
+</div>
+{% endif %}
+
 {# ── Programs table ──────────────────────────────────────────────────────── #}
 {% if programs %}
 <div class="table-wrapper">
@@ -155,10 +166,21 @@
         </td>
         <td class="num-col">{{ '{:,}'.format(row.occ_count) }}</td>
         <td class="compare-col" onclick="event.stopPropagation()">
-          <a href="{{ url_for('root.compare_programs', ids=prog.program_id) }}"
-             class="compare-check-btn"
-             title="Compare {{ row.cip_title }}"
-             aria-label="Add {{ row.cip_title }} to compare">⊕</a>
+          {% if comparing_id %}
+            {% if prog.program_id == comparing_id %}
+              <span class="compare-check-btn compare-selected" title="Already selected" aria-label="Selected for compare">✓</span>
+            {% else %}
+              <a href="{{ url_for('root.compare_programs', ids=comparing_id + ',' + prog.program_id) }}"
+                 class="compare-check-btn compare-pick"
+                 title="Compare with {{ comparing_name }}"
+                 aria-label="Compare {{ row.cip_title }} with {{ comparing_name }}">Compare →</a>
+            {% endif %}
+          {% else %}
+            <a href="{{ url_for('root.programs_directory', comparing=prog.program_id) }}"
+               class="compare-check-btn"
+               title="Compare {{ row.cip_title }}"
+               aria-label="Add {{ row.cip_title }} to compare">⊕</a>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}

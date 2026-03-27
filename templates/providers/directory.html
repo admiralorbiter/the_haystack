@@ -63,6 +63,17 @@
   </div>
 </div>
 
+{# ── Compare selection banner (shown when ?comparing=<id> is active) ─────── #}
+{% if comparing_id %}
+<div class="compare-banner" role="alert">
+  <span class="compare-banner-icon">⊕</span>
+  <span class="compare-banner-text">
+    <strong>{{ comparing_name }}</strong> selected &mdash; now pick a second provider to compare.
+  </span>
+  <a href="{{ url_for('root.providers_directory') }}" class="compare-banner-cancel" aria-label="Cancel compare">✕ Cancel</a>
+</div>
+{% endif %}
+
 {# ── Provider table ─────────────────────────────────────────────────────── #}
 {% if providers %}
 <div class="table-wrapper">
@@ -99,10 +110,24 @@
         </td>
         <td class="num-col">{{ '{:,}'.format(row.occ_count) }}</td>
         <td class="compare-col" onclick="event.stopPropagation()">
-          <a href="{{ url_for('root.compare_providers', ids=org.org_id) }}"
-             class="compare-check-btn"
-             title="Compare {{ org.name }}"
-             aria-label="Add {{ org.name }} to compare">⊕</a>
+          {% if comparing_id %}
+            {% if org.org_id == comparing_id %}
+              {# This is the already-selected provider — show check mark #}
+              <span class="compare-check-btn compare-selected" title="Already selected" aria-label="Selected for compare">✓</span>
+            {% else %}
+              {# Second pick — complete the comparison #}
+              <a href="{{ url_for('root.compare_providers', ids=comparing_id + ',' + org.org_id) }}"
+                 class="compare-check-btn compare-pick"
+                 title="Compare with {{ comparing_name }}"
+                 aria-label="Compare {{ org.name }} with {{ comparing_name }}">Compare →</a>
+            {% endif %}
+          {% else %}
+            {# Normal mode — start a comparison with this provider #}
+            <a href="{{ url_for('root.providers_directory', comparing=org.org_id) }}"
+               class="compare-check-btn"
+               title="Compare {{ org.name }}"
+               aria-label="Add {{ org.name }} to compare">⊕</a>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}

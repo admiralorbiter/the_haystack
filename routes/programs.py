@@ -214,6 +214,15 @@ def programs_directory():
     page = max(1, int(request.args.get("page", 1) or 1))
     per_page = 50
 
+    # Compare selection mode — user clicked ⊕ on one program, now picking a second
+    comparing_id = request.args.get("comparing", "").strip()
+    comparing_name = None
+    if comparing_id:
+        cmp_prog = db.session.query(Program).filter_by(program_id=comparing_id).first()
+        comparing_name = cip_title(cmp_prog.name) if cmp_prog else None
+        if not comparing_name:
+            comparing_id = ""  # invalid id, clear it
+
     q = (
         db.session.query(
             Program,
@@ -324,6 +333,8 @@ def programs_directory():
         all_cip_families=all_cip_families,
         all_orgs=all_orgs,
         cip_family_names=CIP_FAMILY_NAMES,
+        comparing_id=comparing_id,
+        comparing_name=comparing_name,
     )
 
 

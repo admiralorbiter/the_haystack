@@ -529,6 +529,72 @@
   text-decoration: none;
 }
 
+/* Wider col when in compare-pick mode */
+.compare-pick {
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 1;
+  padding: 3px 8px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+
+.compare-pick:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.compare-selected {
+  color: var(--winner-color, #2a7a2a);
+  font-size: 1.1rem;
+  opacity: 1;
+  cursor: default;
+}
+
+/* ── Compare selection mode banner ─────────────────────────────── */
+.compare-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1.1rem;
+  margin-bottom: 1rem;
+  background: #fff8e8;
+  border: 1.5px solid #e8b84b;
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+}
+
+.compare-banner-icon {
+  font-size: 1.2rem;
+  color: #b87c00;
+  flex-shrink: 0;
+}
+
+.compare-banner-text {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.compare-banner-cancel {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 2px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.compare-banner-cancel:hover {
+  background: var(--color-surface);
+  color: var(--text-primary);
+}
+
 /* ── Confidence pills ──────────────────────────────────────── */
 .confidence-pill {
   display: inline-block;
