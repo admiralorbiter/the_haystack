@@ -298,6 +298,15 @@ Each entry is a hard-won lesson. Read before starting a new loader or route.
 - Use raw SQL in Alembic to create the `_fts` virtual table.
 - Use `INSERT`, `UPDATE`, and `DELETE` database triggers to keep the FTS virtual table synchronized with the core tables. This isolates the FTS logic cleanly within the database layer so data loaders (like IPEDS) do not need to be modified.
 
+### SQLite Dynamic Typing & Broad Exceptions
+- **SQLite matches types strictly in WHERE clauses**: A column defined or imported as text containing numeric strings (e.g. `EFFYLEV='1'`) will silently return 0 rows if queried as an integer (`EFFYLEV=1`). Always verify the exact SQLite type or cast explicitly.
+- **Never swallow Database Exceptions**: When wrapping database execution logic, never use a bare `except Exception: return {}`. This masks syntax errors and makes debugging impossible. Always use `except sqlite3.Error as e:` and `import traceback; traceback.print_exc()` or log to `stderr` so AI subagents can detect the failure.
+
+### Flask Hot-Reloader & Stale Server States
+- If you introduce a `SyntaxError` while live-patching a route file, the background Flask development server will often crash its inner watchdog or freeze. 
+- Subsequent automated or manual browser testing will return HTTP 200 but serve a **stale version** of the app from memory, masking the fact that your new code failed to compile.
+- **Fix:** If changes suddenly stop reflecting in the UI, manually kill the `python app.py` process and restart it.
+
 ---
 
 ## Key docs (reference, don't re-derive)

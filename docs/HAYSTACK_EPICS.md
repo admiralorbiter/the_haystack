@@ -522,3 +522,100 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 - "Export" renders a print-optimized HTML page (no nav, clean layout, logo, data-as-of date, sources)
 
 **Future:** connect to Collections (save briefings across sessions), PDF export via browser print, email delivery.
+
+---
+
+## IPEDS Data Wiring — Full Table Map
+
+> All 57 IPEDS tables are loaded into SQLite (`ipeds_*` prefix).
+> Browseable now at `/admin/sqlite`. This section maps each table to the Epic where it gets wired into a user-facing UI component.
+
+### Already Wired (shipped with Epic 3 expansion — 2026-03-26)
+
+| Table | What it powers | Where |
+|---|---|---|
+| `ipeds_ic2024` | Calendar type, admissions policy (open/selective) | Provider Overview tab |
+| `ipeds_cost1_2024` | In-state tuition, out-of-state tuition, room & board | Provider Overview tab |
+| `ipeds_cost2_2024` | Available for cost detail expansion | Provider Overview tab (spare) |
+| `ipeds_adm2024` | Acceptance rate, ACT/SAT 75th percentile | Provider Overview tab |
+
+### Epic 3 Expansion (Provider detail — next sprint)
+
+| Table | What it powers | Where |
+|---|---|---|
+| `ipeds_gr2024` | 150% graduation rate (cohort) | Provider Outcomes tab |
+| `ipeds_gr2024_l2` | 2-year graduation rate | Provider Outcomes tab |
+| `ipeds_gr2024_pell_ssl` | Pell/SSL recipient graduation rate | Provider Outcomes tab |
+| `ipeds_gr200_24` | 200% graduation rate | Provider Outcomes tab |
+| `ipeds_effy2024` | Total unduplicated 12-month headcount | Provider Overview snapshot strip |
+| `ipeds_effy2024_dist` | % enrollment via distance education | Provider Overview (online delivery signal) |
+| `ipeds_ef2024d` | Student-to-faculty ratio, retention rate | Provider Overview tab |
+| `ipeds_sfa2324` | Net price by income bracket (5 bands) | Provider Overview tab (Financial Aid section) |
+| `ipeds_sfav2324` | Military/veterans benefit recipients | Provider Overview tab |
+| `ipeds_efia2024` | FTE enrollment (instructional activity) | Provider Outcomes tab |
+| `ipeds_om2024` | Outcome measures (8-year completion) | Provider Outcomes tab |
+| `ipeds_al2024` | Library volumes, digital resources | Provider Outcomes tab (optional) |
+
+### Epic 4 — Program pages
+
+| Table | What it powers | Where |
+|---|---|---|
+| `ipeds_c2024_b` | Program-level completion counts by race/ethnicity/gender | Program detail — Outcomes tab equity breakdown |
+| `ipeds_ef2024cp` | Enrollment by major field (CIP) — demand signal | Program detail — enrollment context |
+| `ipeds_ef2024a` | Total fall enrollment by level (UG, GR, PB) | Program detail — institutional context |
+
+### Epic 5 — Field (CIP) pages
+
+| Table | What it powers | Where |
+|---|---|---|
+| `ipeds_ef2024cp` | Enrollment by CIP family — demand signal across schools | Field detail page — enrollment trends |
+| `ipeds_c2024_b` | Completions by CIP — equity data | Field detail page — outcomes equity |
+| `ipeds_gr2024` | Graduation rates by provider in this CIP | Field detail — provider performance comparison |
+
+### Epic 6 — Compare
+
+| Table | What it powers | Where |
+|---|---|---|
+| `ipeds_cost1_2024` | Side-by-side tuition comparison | Provider compare — Cost row |
+| `ipeds_adm2024` | Acceptance rate comparison | Provider compare — Selectivity row |
+| `ipeds_gr2024` | Graduation rate comparison | Provider compare — Outcomes row |
+| `ipeds_sfa2324` | Net price comparison by income band | Provider compare — Aid row |
+| `ipeds_f2324_f1a/f2/f3` | Revenue per student, instruction spending % | Provider compare — Financial Health row (advanced) |
+| `ipeds_s2024_oc` | Full-time vs part-time faculty ratio | Provider compare — Faculty row |
+
+### Epic 7 — Map
+
+| Table | What it powers | Where |
+|---|---|---|
+| `ipeds_effy2024` | Enrollment size = map pin size / cluster weight | Map — provider pins |
+| `ipeds_cost1_2024` | Tuition = tooltip on pin | Map — popup card |
+| `ipeds_ic2024` | Calendar / admissions = filter chip on map | Map — filter layer |
+
+### Epic 8 — Search
+
+| Table | What it powers | Where |
+|---|---|---|
+| `ipeds_ic2024` | Institutional type filter in search results | Search — filter chips |
+| `ipeds_adm2024` | Admission selectivity signal in result cards | Search — result card metadata |
+
+### Epic 9 — Quality pass
+
+| Table | What it powers | Where |
+|---|---|---|
+| `ipeds_gr2024` + `ipeds_gr2023` | Year-over-year graduation rate delta | Methods tab — data provenance |
+| All `*2023` tables | Prior-year comparison baseline | Methods tab — freshness badges |
+
+### Deferred / Phase 2+
+
+| Table | Potential future use |
+|---|---|
+| `ipeds_f2324_f1a/f2/f3` | Financial health dashboard, revenue per student |
+| `ipeds_s2024_oc/sis/is/nh` | Staff equity analysis, tenure-track ratios |
+| `ipeds_sal2024_is/nis` | Faculty salary benchmarking |
+| `ipeds_eap2024` | Employee headcount by functional category |
+| `ipeds_ef2024a` | Enrollment demographics (race/gender) — equity lens |
+| `ipeds_ef2024b` | Age distribution of student body |
+| `ipeds_ef2024c` | Student migration / state-of-origin data |
+| `ipeds_al2024` | Library resources indicator |
+
+> **Note:** All deferred tables are already in SQLite and explorable via `/admin/sqlite`. No re-loading needed when these features are built — just write the query.

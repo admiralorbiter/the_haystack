@@ -1,12 +1,45 @@
 {# Outcomes tab — HTMX fragment #}
 
+{# ── Graduation Rates ─────────────────────────────────────────────────────── #}
+{% if ipeds and (ipeds.grad_rate_150 is not none or ipeds.grad_rate_pell is not none) %}
 <div class="tab-section">
-  <h3 class="section-title">Completions by Program</h3>
+  <h3 class="section-title">Graduation Rates <span style="font-size:0.78rem;font-weight:normal;color:var(--text-muted);">IPEDS 2024 — 150% of normal time</span></h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.6rem;margin-bottom:0.75rem;">
+
+    {% if ipeds.grad_rate_150 is not none %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
+      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">All Students</div>
+      <div style="font-size:1.4rem;font-weight:700;color:var(--color-primary);margin-top:3px;">{{ ipeds.grad_rate_150 }}%</div>
+      {% if ipeds.grad_rate_150_cohort %}
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">cohort: {{ "{:,}".format(ipeds.grad_rate_150_cohort) }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if ipeds.grad_rate_pell is not none %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
+      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Pell / SSL Recipients</div>
+      <div style="font-size:1.4rem;font-weight:700;color:var(--color-primary);margin-top:3px;">{{ ipeds.grad_rate_pell }}%</div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">grant/loan recipients</div>
+    </div>
+    {% endif %}
+
+  </div>
+  <p style="font-size:0.7rem;color:var(--text-muted);">
+    150% graduation rate = % of full-time, first-time degree-seeking students who completed within 150% of normal program time.
+    Source: IPEDS GR 2024 survey.
+  </p>
+</div>
+{% endif %}
+
+{# ── Completions by Program ───────────────────────────────────────────────── #}
+<div class="tab-section">
+  <h3 class="section-title">Completions by Program <span style="font-size:0.78rem;font-weight:normal;color:var(--text-muted);">IPEDS 2023–24</span></h3>
 
   {% if total_completions %}
   <div class="outcome-summary">
     <span class="outcome-total">{{ '{:,}'.format(total_completions) }}</span>
-    <span class="outcome-label">total awards conferred (IPEDS 2023–24)</span>
+    <span class="outcome-label">total awards conferred</span>
     {% if suppressed_count > 0 %}
     <span class="suppressed-note">
       &mdash; {{ suppressed_count }} program{{ 's' if suppressed_count != 1 }} with suppressed data not included
@@ -33,7 +66,7 @@
           {% if p.completions is not none %}
             {{ p.completions }}
           {% else %}
-            <span class="suppressed-label" title="Suppressed by NCES to protect student privacy">—</span>
+            <span class="suppressed-label" title="Suppressed by NCES to protect student privacy">&mdash;</span>
           {% endif %}
         </td>
       </tr>
@@ -54,5 +87,6 @@
 
 <p class="methods-note" style="margin-top: var(--spacing-lg);">
   Completions are awards conferred, not enrollments.
-  Values shown as — are suppressed by NCES when fewer than 3 completers are reported, to protect student privacy.
+  Values shown as &mdash; are suppressed by NCES when fewer than 3 completers are reported, to protect student privacy.
+  Graduation rates reflect full-time, first-time degree-seeking students only and may not reflect the full student body.
 </p>

@@ -125,59 +125,103 @@ _OPENADMP = {"1": "Open Admission", "2": "Selective Admission"}
 
 
 def _get_ipeds_enrichment(unitid: str) -> dict:
-    """Fetch IC, cost, admissions, and graduation data from IPEDS SQLite tables."""
+    """Fetch IC, cost, admissions, enrollment, retention, and graduation data from IPEDS SQLite tables using a monolithic LEFT JOIN."""
     if not unitid:
         return {}
+    
+    query = '''
+    SELECT 
+        ic.CALSYS, ic.OPENADMP, ic.FT_UG, ic.PT_UG,
+        cost.CHG1AT0, cost.CHG2AT0, cost.CHG5AY0, cost.CHG5AY1, cost.TUITVARY,
+        adm.APPLCN, adm.ADMSSN, adm.SATVR75, adm.SATMT75, adm.ACTCM75,
+        grn.GRTOTLT as gr_150, grd.GRTOTLT as gr_150_cohort,
+        grp.PGCMTOT as gr_pell_comp, grp.PGADJCT as gr_pell_adj,
+        effy.EFYTOTLT, effy.EFYTOTLM, effy.EFYTOTLW,
+        dist.EFYDETOT,
+        ef4d.RET_PCF, ef4d.RET_NMP, ef4d.STUFACR,
+        sfa.NPIST2
+    FROM ipeds_ic2024 ic
+    LEFT JOIN ipeds_cost1_2024 cost ON ic.UNITID = cost.UNITID
+    LEFT JOIN ipeds_adm2024 adm ON ic.UNITID = adm.UNITID
+    LEFT JOIN ipeds_gr2024 grd ON ic.UNITID = grd.UNITID AND grd.GRTYPE IN (2, 29) AND grd.GRTOTLT != '-1'
+    LEFT JOIN ipeds_gr2024 grn ON ic.UNITID = grn.UNITID AND grn.GRTYPE IN (3, 30) AND grn.GRTOTLT != '-1'
+    LEFT JOIN ipeds_gr2024_pell_ssl grp ON ic.UNITID = grp.UNITID AND grp.PSGRTYPE IN ('2','4') AND grp.PGCMTOT != '-1'
+    LEFT JOIN ipeds_effy2024 effy ON ic.UNITID = effy.UNITID AND effy.EFFYLEV = '1'
+    LEFT JOIN ipeds_effy2024_dist dist ON ic.UNITID = dist.UNITID AND dist.EFFYDLEV = '1'
+    LEFT JOIN ipeds_ef2024d ef4d ON ic.UNITID = ef4d.UNITID
+    LEFT JOIN ipeds_sfa2223 sfa ON ic.UNITID = sfa.UNITID
+    WHERE ic.UNITID = ?
+    '''
+    
     try:
         conn = sqlite3.connect(_DB_PATH)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
-
-        _ic  = cur.execute('SELECT * FROM ipeds_ic2024 WHERE UNITID=? LIMIT 1', (unitid,)).fetchone()
-        _cost = cur.execute('SELECT * FROM ipeds_cost1_2024 WHERE UNITID=? LIMIT 1', (unitid,)).fetchone()
-        _adm = cur.execute('SELECT * FROM ipeds_adm2024 WHERE UNITID=? LIMIT 1', (unitid,)).fetchone()
-        _gr  = cur.execute(
-            'SELECT GRTOTLT, GRTOTLM, GRTOTLW FROM ipeds_gr2024 WHERE UNITID=? AND GRTYPE=2 LIMIT 1',
-            (unitid,)
-        ).fetchone()
+        _row = cur.execute(query, (unitid,)).fetchone()
         conn.close()
-        ic   = dict(_ic)   if _ic   else None
-        cost = dict(_cost) if _cost else None
-        adm  = dict(_adm)  if _adm  else None
-        gr   = dict(_gr)   if _gr   else None
-    except Exception:
+        row = dict(_row) if _row else None
+    except sqlite3.Error as e:
+        import sys
+        print(f"IPEDS DB Error for {unitid}: {e}", file=sys.stderr)
         return {}
 
-    def _int(row, key):
-        try: return int(row[key]) if row and row[key] and row[key] not in ('-1', '-2', '') else None
+    if not row:
+        return {}
+
+    def _int(r, key):
+        try: return int(r[key]) if r and r.get(key) and str(r[key]) not in ('-1', '-2', 'None', '') else None
+        except (ValueError, TypeError): return None
+
+    def _float(r, key):
+        try: return float(r[key]) if r and r.get(key) and str(r[key]) not in ('-1', '-2', 'None', '') else None
         except (ValueError, TypeError): return None
 
     result = {}
 
-    if ic:
-        result["calendar"] = _CALSYS.get(ic["CALSYS"], None)
-        result["open_admissions"] = _OPENADMP.get(ic["OPENADMP"], None)
-        result["ft_undergrad"] = ic.get("FT_UG", "0") == "1"
-        result["pt_undergrad"] = ic.get("PT_UG", "0") == "1"
+    result["calendar"]        = _CALSYS.get(str(row.get("CALSYS", "")), None)
+    result["open_admissions"] = _OPENADMP.get(str(row.get("OPENADMP", "")), None)
+    result["ft_undergrad"]    = str(row.get("FT_UG", "0")) == "1"
+    result["pt_undergrad"]    = str(row.get("PT_UG", "0")) == "1"
 
-    if cost:
-        result["instate_tuition"] = _int(cost, "CHG1AT0")
-        result["outstate_tuition"] = _int(cost, "CHG2AT0")
-        result["room_board"] = _int(cost, "CHG5AY0") or _int(cost, "CHG5AY1")
-        result["tuition_varies"] = cost.get("TUITVARY", "0") == "1"
+    result["instate_tuition"]  = _int(row, "CHG1AT0")
+    result["outstate_tuition"] = _int(row, "CHG2AT0")
+    result["room_board"]       = _int(row, "CHG5AY0") or _int(row, "CHG5AY1")
+    result["tuition_varies"]   = str(row.get("TUITVARY", "0")) == "1"
+    result["net_price"]        = _int(row, "NPIST2")
 
-    if adm:
-        apps = _int(adm, "APPLCN")
-        admits = _int(adm, "ADMSSN")
-        if apps and admits and apps > 0:
-            result["acceptance_rate"] = round(admits / apps * 100, 1)
-        result["sat_reading_75"] = _int(adm, "SATVR75")
-        result["sat_math_75"] = _int(adm, "SATMT75")
-        result["act_composite_75"] = _int(adm, "ACTCM75")
+    apps   = _int(row, "APPLCN")
+    admits = _int(row, "ADMSSN")
+    if apps and admits and apps > 0:
+        result["acceptance_rate"] = round(admits / apps * 100, 1)
+    result["sat_reading_75"]   = _int(row, "SATVR75")
+    result["sat_math_75"]      = _int(row, "SATMT75")
+    result["act_composite_75"] = _int(row, "ACTCM75")
 
-    if gr:
-        grad_total = _int(gr, "GRTOTLT")
-        result["grad_rate_cohort"] = grad_total
+    result["enrollment_total"]  = _int(row, "EFYTOTLT")
+    result["enrollment_male"]   = _int(row, "EFYTOTLM")
+    result["enrollment_female"] = _int(row, "EFYTOTLW")
+
+    de_total = _int(row, "EFYDETOT")
+    en_total = _int(row, "EFYTOTLT")
+    if de_total is not None and en_total and en_total > 0:
+        result["distance_ed_pct"] = round(de_total / en_total * 100, 1)
+        result["distance_ed_n"]   = de_total
+
+    result["retention_ft"]         = _int(row, "RET_PCF")
+    result["retention_pt"]         = _int(row, "RET_NMP")
+    sf = _float(row, "STUFACR")
+    result["student_faculty_ratio"] = round(sf, 1) if sf else None
+
+    gr_150 = _int(row, "gr_150")
+    gr_co  = _int(row, "gr_150_cohort")
+    if gr_150 is not None and gr_co and gr_co > 0:
+        result["grad_rate_150"]        = round(gr_150 / gr_co * 100)
+        result["grad_rate_150_cohort"] = gr_co
+
+    pg_comp = _int(row, "gr_pell_comp")
+    pg_adj  = _int(row, "gr_pell_adj")
+    if pg_comp is not None and pg_adj and pg_adj > 0:
+        result["grad_rate_pell"] = round(pg_comp / pg_adj * 100)
 
     return result
 
@@ -330,13 +374,25 @@ def provider_detail(org_id: str):
         .all()
     )
 
+    ipeds_data = _get_ipeds_enrichment(org.unitid)
+
+    if request.headers.get("HX-Request"):
+        return render_template(
+            "providers/partials/tab_overview.html",
+            org=org,
+            snapshot=snapshot,
+            top_programs=top_programs,
+            cred_mix=cred_mix,
+            ipeds=ipeds_data,
+        )
+
     return render_template(
         "providers/detail.html",
         org=org,
         snapshot=snapshot,
         top_programs=top_programs,
         cred_mix=cred_mix,
-        ipeds=_get_ipeds_enrichment(org.unitid),
+        ipeds=ipeds_data,
         active_tab="overview",
     )
 
@@ -429,6 +485,7 @@ def provider_tab_outcomes(org_id: str):
         programs=programs,
         total_completions=total,
         suppressed_count=len(programs) - len(with_data),
+        ipeds=_get_ipeds_enrichment(org.unitid),
     )
 
 
