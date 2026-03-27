@@ -125,7 +125,8 @@ _OPENADMP = {"1": "Open Admission", "2": "Selective Admission"}
 
 
 def _get_ipeds_enrichment(unitid: str) -> dict:
-    """Fetch IC, cost, admissions, enrollment, retention, and graduation data from IPEDS SQLite tables using a monolithic LEFT JOIN."""
+    """Fetch IC, cost, admissions, enrollment, retention, graduation, financial aid,
+    and 200% graduation rate data from IPEDS SQLite tables using a monolithic LEFT JOIN."""
     if not unitid:
         return {}
     
@@ -136,20 +137,26 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
         adm.APPLCN, adm.ADMSSN, adm.SATVR75, adm.SATMT75, adm.ACTCM75,
         grn.GRTOTLT as gr_150, grd.GRTOTLT as gr_150_cohort,
         grp.PGCMTOT as gr_pell_comp, grp.PGADJCT as gr_pell_adj,
+        gr200.BAREVCT as gr200_cohort, gr200.BAGR200 as gr200_comp,
         effy.EFYTOTLT, effy.EFYTOTLM, effy.EFYTOTLW,
         dist.EFYDETOT,
         ef4d.RET_PCF, ef4d.RET_NMP, ef4d.STUFACR,
-        sfa.NPIST2
+        sfa.NPIST2,
+        sfa24.UAGRNTP as sfa24_any_grant_pct, sfa24.UAGRNTA as sfa24_any_grant_avg,
+        sfa24.UPGRNTP as sfa24_pell_pct,    sfa24.UPGRNTA as sfa24_pell_avg,
+        sfa24.UFLOANP as sfa24_loan_pct,    sfa24.UFLOANA as sfa24_loan_avg
     FROM ipeds_ic2024 ic
     LEFT JOIN ipeds_cost1_2024 cost ON ic.UNITID = cost.UNITID
     LEFT JOIN ipeds_adm2024 adm ON ic.UNITID = adm.UNITID
     LEFT JOIN ipeds_gr2024 grd ON ic.UNITID = grd.UNITID AND grd.GRTYPE IN (2, 29) AND grd.GRTOTLT != '-1'
     LEFT JOIN ipeds_gr2024 grn ON ic.UNITID = grn.UNITID AND grn.GRTYPE IN (3, 30) AND grn.GRTOTLT != '-1'
     LEFT JOIN ipeds_gr2024_pell_ssl grp ON ic.UNITID = grp.UNITID AND grp.PSGRTYPE IN ('2','4') AND grp.PGCMTOT != '-1'
+    LEFT JOIN ipeds_gr200_24 gr200 ON ic.UNITID = gr200.UNITID
     LEFT JOIN ipeds_effy2024 effy ON ic.UNITID = effy.UNITID AND effy.EFFYLEV = '1'
     LEFT JOIN ipeds_effy2024_dist dist ON ic.UNITID = dist.UNITID AND dist.EFFYDLEV = '1'
     LEFT JOIN ipeds_ef2024d ef4d ON ic.UNITID = ef4d.UNITID
     LEFT JOIN ipeds_sfa2223 sfa ON ic.UNITID = sfa.UNITID
+    LEFT JOIN ipeds_sfa2324 sfa24 ON ic.UNITID = sfa24.UNITID
     WHERE ic.UNITID = ?
     '''
     
@@ -223,7 +230,110 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
     if pg_comp is not None and pg_adj and pg_adj > 0:
         result["grad_rate_pell"] = round(pg_comp / pg_adj * 100)
 
+    # 200% graduation rate (completion within twice the normal time)
+    gr200_co   = _int(row, "gr200_cohort")
+    gr200_comp = _int(row, "gr200_comp")
+    if gr200_co and gr200_comp is not None and gr200_co > 0:
+        result["grad_rate_200"]        = round(gr200_comp / gr200_co * 100)
+        result["grad_rate_200_cohort"] = gr200_co
+
+    # Financial aid — 2023-24 (sfa2324)
+    result["aid_any_grant_pct"]  = _int(row, "sfa24_any_grant_pct")
+    result["aid_any_grant_avg"]  = _int(row, "sfa24_any_grant_avg")
+    result["aid_pell_pct"]       = _int(row, "sfa24_pell_pct")
+    result["aid_pell_avg"]       = _int(row, "sfa24_pell_avg")
+    result["aid_loan_pct"]       = _int(row, "sfa24_loan_pct")
+    result["aid_loan_avg"]       = _int(row, "sfa24_loan_avg")
+
     return result
+
+
+def _ipeds_outcome_measures(unitid: str) -> list[dict]:
+    """
+    Pull Outcome Measures (om2024) for a provider.
+    OMCHRT=10 → full-time first-time students; OMCHRT=11 → part-time/transfer.
+    Returns [{cohort_type, cohort_n, pct_4yr, pct_6yr, pct_8yr}, ...].
+    """
+    if not unitid:
+        return []
+    _OMCHRT = {"10": "Full-time, first-time", "11": "Part-time / transfer"}
+    try:
+        conn = sqlite3.connect(_DB_PATH)
+        cur = conn.cursor()
+        rows = cur.execute(
+            """SELECT OMCHRT, OMACHRT, OMAWDP4, OMAWDP6, OMAWDP8
+               FROM ipeds_om2024 WHERE UNITID=? AND OMCHRT IN ('10','11')""",
+            (str(unitid),),
+        ).fetchall()
+        conn.close()
+
+        def _iv(v):
+            try: return int(v) if v and v not in ('-1','-2','') else None
+            except: return None
+
+        result = []
+        for r in rows:
+            cohort_n = _iv(r[1])
+            if not cohort_n:
+                continue
+            result.append({
+                "label":    _OMCHRT.get(str(r[0]), str(r[0])),
+                "cohort_n": cohort_n,
+                "pct_4yr":  _iv(r[2]),
+                "pct_6yr":  _iv(r[3]),
+                "pct_8yr":  _iv(r[4]),
+            })
+        return result
+    except sqlite3.OperationalError:
+        return []
+
+
+def _ipeds_enrollment_demographics(unitid: str) -> dict | None:
+    """
+    Pull fall enrollment by race/ethnicity from ipeds_ef2024a.
+    EFALEVEL=1 is the total undergraduate aggregate.
+    Returns dict of race group → count, plus total/male/female.
+    """
+    if not unitid:
+        return None
+    try:
+        conn = sqlite3.connect(_DB_PATH)
+        cur = conn.cursor()
+        row = cur.execute(
+            """SELECT EFTOTLT, EFTOTLM, EFTOTLW,
+                      EFAIANT, EFASIAT, EFBKAAT, EFHISPT, EFWHITT, EF2MORT,
+                      EFNRALT, EFUNKNT
+               FROM ipeds_ef2024a
+               WHERE UNITID=? AND EFALEVEL='1'
+               LIMIT 1""",
+            (str(unitid),),
+        ).fetchone()
+        conn.close()
+        if not row:
+            return None
+
+        def _iv(v):
+            try: return int(v) if v and v not in ('-1','-2','') else None
+            except: return None
+
+        total = _iv(row[0])
+        if not total:
+            return None
+        return {
+            "total":            total,
+            "male":             _iv(row[1]),
+            "female":           _iv(row[2]),
+            "aian":             _iv(row[3]),   # Am. Indian/Alaska Native
+            "asian":            _iv(row[4]),
+            "black":            _iv(row[5]),
+            "hispanic":         _iv(row[6]),
+            "white":            _iv(row[7]),
+            "two_or_more":      _iv(row[8]),
+            "nonresident":      _iv(row[9]),
+            "unknown":          _iv(row[10]),
+        }
+    except sqlite3.OperationalError:
+        return None
 
 
 
@@ -486,6 +596,8 @@ def provider_tab_outcomes(org_id: str):
         total_completions=total,
         suppressed_count=len(programs) - len(with_data),
         ipeds=_get_ipeds_enrichment(org.unitid),
+        outcome_measures=_ipeds_outcome_measures(org.unitid),
+        enrollment_demo=_ipeds_enrollment_demographics(org.unitid),
     )
 
 
