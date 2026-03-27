@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/providers.css') }}">
     {% block extra_css %}{% endblock %}
+    {% block head %}{% endblock %}
 </head>
 <body>
     <header class="top-nav">
@@ -47,5 +48,6 @@
       }
     });
     </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

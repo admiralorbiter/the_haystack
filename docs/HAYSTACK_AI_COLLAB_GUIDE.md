@@ -307,6 +307,15 @@ Each entry is a hard-won lesson. Read before starting a new loader or route.
 - Subsequent automated or manual browser testing will return HTTP 200 but serve a **stale version** of the app from memory, masking the fact that your new code failed to compile.
 - **Fix:** If changes suddenly stop reflecting in the UI, manually kill the `python app.py` process and restart it.
 
+### Jinja to JavaScript Variable Escaping
+- When passing variables from a Jinja template into a JavaScript block (e.g. `const myVar = "{{ python_var }}";`), Jinja will HTML-escape special characters like apostrophes (`&#39;`). 
+- This will silently break exact database string matching when the JS variable is sent back to an API or filter query (e.g. "Associate's degree" becomes "Associate&#39;s degree").
+- **Fix:** Always use the `|tojson` filter when hydrating JS variables from Jinja: `const myVar = {{ python_var|tojson }};`. This securely encodes the string as a valid JS literal.
+
+### Global Pytest Coverage Fluctuation
+- Running `pytest --cov` calculates coverage globally across the entire project unless strictly isolated. Adding a new module with 100% coverage will not necessarily offset massive missing coverage in existing files.
+- While individual PRs or epic routes might be flawlessly covered, the V1 global coverage threshold (70%) may fail on CI hooks. When developing solo routes, trust the module-level coverage metric rather than fighting the global average unnecessarily.
+
 ---
 
 ## Key docs (reference, don't re-derive)

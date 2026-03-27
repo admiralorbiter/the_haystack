@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}Map | The Haystack{% endblock %}
+
+{% block head %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<!-- MarkerCluster CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+<style>
+  #map-container {
+    width: 100%;
+    height: 600px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    margin-top: var(--spacing-md);
+    background-color: var(--card-bg); /* acts as empty state bg */
+    z-index: 1; /* Keep Leaflet below header */
+  }
+
+  .map-popup {
+    font-size: 0.95rem;
+  }
+  .map-popup h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.05rem;
+  }
+  .map-popup p {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-muted);
+  }
+  .map-popup .popup-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-weight: 500;
+    color: var(--primary-color);
+  }
+
+  /* Empty state for the map if 0 results */
+  #map-empty {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000; /* above map */
+    text-align: center;
+    background: white;
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('root.index') }}">Home</a> &rsaquo; Map</div>
+
+<header class="page-header">
+  <div class="title-row">
+    <h1 class="m-0">Provider Map</h1>
+    {{ components.entity_badge('map', 'KC Region') }}
+  </div>
+  <p style="color:var(--text-muted); margin:0;">
+    Spatial discovery of training providers in the Kansas City MSA.
+  </p>
+</header>
+
+{# <!-- Filter bar --> #}
+<form method="get" action="{{ url_for('root.map_view') }}" class="filter-bar" id="map-filter-form">
+  <div class="filter-group">
+    <label class="filter-label">Credential Type</label>
+    <div class="chip-row">
+      <a href="{{ url_for('root.map_view', cip=cip_filter) }}"
+         class="chip {% if not cred_filter %}chip-active{% endif %}">All</a>
+      {% for cred in all_creds %}
+      <a href="{{ url_for('root.map_view', cred=cred, cip=cip_filter) }}"
+         class="chip {% if cred_filter == cred %}chip-active{% endif %}">{{ cred }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</form>
+
+<div style="position: relative;">
+  <div id="map-container"></div>
+  <div id="map-empty" class="empty-state">
+    <div class="empty-icon">📍</div>
+    <h3>No providers match these filters</h3>
+    <p>Try removing a filter or <a href="{{ url_for('root.map_view') }}">viewing all providers</a>.</p>
+  </div>
+</div>
+
+<div class="methods-footer">
+  <strong>Data:</strong> IPEDS Institutional Characteristics (HD) 2023–24. Pins indicate main campus or reported coordinates. Providers missing coordinates in IPEDS are omitted.
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- MarkerCluster JS -->
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const defaultLat = {{ default_lat }};
+  const defaultLon = {{ default_lon }};
+  const defaultZoom = {{ default_zoom }};
+  const credFilter = {{ cred_filter|tojson }};
+  const cipFilter = {{ cip_filter|tojson }};
+
+  // Initialize map
+  const map = L.map('map-container').setView([defaultLat, defaultLon], defaultZoom);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  const markers = L.markerClusterGroup({
+    maxClusterRadius: 50,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true
+  });
+
+  // Construct API URL
+  let apiUrl = '{{ url_for("root.map_providers_geojson") }}';
+  const params = new URLSearchParams();
+  if (credFilter) params.append('cred', credFilter);
+  if (cipFilter) params.append('cip', cipFilter);
+  if (params.toString()) apiUrl += '?' + params.toString();
+
+  fetch(apiUrl)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.features || data.features.length === 0) {
+        document.getElementById('map-empty').style.display = 'block';
+        return;
+      }
+      
+      const geoJsonLayer = L.geoJSON(data, {
+        pointToLayer: function (feature, latlng) {
+          return L.marker(latlng);
+        },
+        onEachFeature: function (feature, layer) {
+          const props = feature.properties;
+          const url = '/providers/' + props.org_id;
+          const cmp = props.completions !== null && props.completions !== undefined 
+                      ? props.completions.toLocaleString() 
+                      : '—';
+          
+          let popupContent = `
+            <div class="map-popup">
+              <h4>${props.name}</h4>
+              <p>${props.city}</p>
+              <p>Top Credential: ${props.top_credential}</p>
+              <p>Completions: ${cmp}</p>
+              <a href="${url}" class="popup-link">View provider →</a>
+            </div>
+          `;
+          layer.bindPopup(popupContent);
+        }
+      });
+
+      markers.addLayer(geoJsonLayer);
+      map.addLayer(markers);
+      
+      // Auto-fit bounds if we have points, unless it's just 1 point
+      if (data.features.length > 1) {
+        map.fitBounds(markers.getBounds(), { padding: [30, 30] });
+      }
+    })
+    .catch(err => {
+      console.error("Failed to load map data:", err);
+    });
+});
+</script>
+{% endblock %}

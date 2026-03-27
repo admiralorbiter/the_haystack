@@ -340,25 +340,35 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 
 **Effort estimate:** 1–1.5 weeks
 
+**Status: ✅ COMPLETE** — Shipped 2026-03-27
+
+**What shipped:**
+- New map route (`/map`) and GeoJSON provider endpoint (`/api/map/providers.geojson`).
+- Client-side Leaflet.js rendering with MarkerCluster integration.
+- Map filter chips syncing credential type and CIP family URL state.
+- Embedded popups with quick stats and "View provider →" links.
+- Edge case handling for empty search results with a custom zero-match UI component.
+- Complete route tests covering both the HTML and API endpoints locally.
+
 ### Tasks
 
 #### Map route
-- [ ] `/map` renders map page with provider GeoJSON endpoint
-- [ ] `/api/map/providers.geojson` — returns filtered provider points (lat, lon, name, org_id, top credential, completions)
-- [ ] GeoJSON clustered server-side or client-side (Leaflet.markercluster is the simplest option)
+- [x] `/map` renders map page with provider GeoJSON endpoint
+- [x] `/api/map/providers.geojson` — returns filtered provider points (lat, lon, name, org_id, top credential, completions)
+- [x] GeoJSON clustered server-side or client-side (Leaflet.markercluster is the simplest option)
 
 #### Map frontend
-- [ ] Leaflet.js (CDN) — lightweight, no build step
-- [ ] Cluster providers by zoom level
-- [ ] Filter controls: credential type, CIP family (same chips as directory)
-- [ ] Click opens popup: name, city, completions, "View provider →" link
-- [ ] Default map center: KC (39.0997° N, -94.5786° W), zoom 10
-- [ ] Empty state if filters return no providers
+- [x] Leaflet.js (CDN) — lightweight, no build step
+- [x] Cluster providers by zoom level
+- [x] Filter controls: credential type, CIP family (same chips as directory)
+- [x] Click opens popup: name, city, completions, "View provider →" link
+- [x] Default map center: KC (39.0997° N, -94.5786° W), zoom 10
+- [x] Empty state if filters return no providers
 
 #### Avoid in V1
-- [ ] No choropleth overlays
-- [ ] No travel time rings
-- [ ] No civic signal overlays
+- [x] No choropleth overlays
+- [x] No travel time rings
+- [x] No civic signal overlays
 
 ---
 
@@ -430,7 +440,7 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 | 4 — Program pages | 1–1.5 weeks | Week 10 | ✅ Done |
 | 5 — Field pages | 1 week | Week 11 | ✅ Done |
 | 6 — Compare | 1 week | Week 12 | ✅ Done |
-| 7 — Map | 1–1.5 weeks | Week 13.5 | 🔲 Planned |
+| 7 — Map | 1–1.5 weeks | Week 13.5 | ✅ Done |
 | 8 — Search | 1 week | Week 14.5 | 🔲 Planned |
 | 9 — Quality pass | 3–5 days | Week 15 | 🔲 Planned |
 
