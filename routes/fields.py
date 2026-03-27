@@ -19,6 +19,7 @@ from models import (
 )
 
 from .cip_utils import CIP_FAMILY_NAMES, cip_family_label, cip_title
+from .programs import _ipeds_cip_enrollment_by_family
 from . import root_bp
 
 
@@ -236,6 +237,7 @@ def field_detail(cip_family: str):
     top_programs = _top_programs(code, limit=10)
     top_providers = _top_providers(code, limit=5)
     top_occs = _top_occupations(code, limit=8)
+    enrollment_by_cip = _ipeds_cip_enrollment_by_family(code, limit=10)
 
     if request.headers.get("HX-Request"):
         return render_template(
@@ -245,6 +247,7 @@ def field_detail(cip_family: str):
             top_programs=top_programs,
             top_providers=top_providers,
             top_occs=top_occs,
+            enrollment_by_cip=enrollment_by_cip,
         )
 
     return render_template(
@@ -254,6 +257,7 @@ def field_detail(cip_family: str):
         top_programs=top_programs,
         top_providers=top_providers,
         top_occs=top_occs,
+        enrollment_by_cip=enrollment_by_cip,
     )
 
 
@@ -265,6 +269,7 @@ def field_detail(cip_family: str):
 def field_tab_overview(cip_family: str):
     code = _validate_family(cip_family)
     snapshot = _field_snapshot(code)
+    enrollment_by_cip = _ipeds_cip_enrollment_by_family(code, limit=10)
     return render_template(
         "fields/partials/tab_overview.html",
         cip_family=code,
@@ -272,6 +277,7 @@ def field_tab_overview(cip_family: str):
         top_programs=_top_programs(code, limit=10),
         top_providers=_top_providers(code, limit=5),
         top_occs=_top_occupations(code, limit=8),
+        enrollment_by_cip=enrollment_by_cip,
     )
 
 

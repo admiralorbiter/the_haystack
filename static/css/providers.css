@@ -683,3 +683,37 @@ tr[data-href]:hover {
 .program-table .program-row:hover {
   background: var(--color-bg);
 }
+
+/*  Equity bar (ef2024cp / c2024_b gender breakdown)  */
+.equity-bar-wrap {
+  margin: var(--spacing-md) 0;
+}
+
+.equity-bar {
+  display: flex;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-surface);
+  margin-bottom: var(--spacing-xs);
+}
+
+.equity-bar-female {
+  background: #7b68ee;
+  transition: width 0.4s ease;
+}
+
+.equity-bar-male {
+  background: #4a9eca;
+  transition: width 0.4s ease;
+}
+
+.equity-legend {
+  display: flex;
+  gap: var(--spacing-md);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.eq-female { color: #7b68ee; font-weight: 600; }
+.eq-male   { color: #4a9eca; font-weight: 600; }
