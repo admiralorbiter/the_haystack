@@ -22,7 +22,8 @@
     {{ components.data_freshness_badge(snapshot.data_as_of, snapshot.data_source) }}
   </div>
   <div class="quick-actions">
-    <button class="btn btn-secondary" disabled title="Compare coming in Epic 6">Add to Compare</button>
+    <a href="{{ url_for('root.compare_programs', ids=prog.program_id) }}"
+       class="btn btn-secondary" title="Compare this program with another">⊕ Compare</a>
     <a href="{{ url_for('root.provider_detail', org_id=org.org_id) }}" class="btn btn-secondary">
       View Provider &rarr;
     </a>

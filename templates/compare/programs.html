@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}Compare Programs | The Haystack{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/compare.css') }}">
+{% endblock %}
+
+{% macro fmt_cell(val, fmt) %}
+  {%- if val is none or val == '' -%}
+    <span class="no-data">—</span>
+  {%- elif fmt == 'currency' -%}
+    ${{ '{:,}'.format(val|int) }}
+  {%- elif fmt == 'percent' -%}
+    {{ val }}%
+  {%- elif fmt == 'number' or fmt == 'neutral' -%}
+    {{ '{:,}'.format(val|int) if val is number else val }}
+  {%- else -%}
+    {{ val }}
+  {%- endif -%}
+{% endmacro %}
+
+{% macro winner_badge(status) %}
+  {%- if status == 'winner' %}<span class="winner-badge">✓ Better</span>
+  {%- elif status == 'tie' %}<span class="tie-badge">Tie</span>{% endif -%}
+{% endmacro %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('root.index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('root.programs_directory') }}">Programs</a> &rsaquo;
+  Compare
+</div>
+
+<div class="compare-page">
+
+  <header class="page-header">
+    <div class="title-row">
+      <h1 class="m-0">Comparing Programs</h1>
+      {{ components.entity_badge('program', 'Side-by-Side') }}
+    </div>
+    <div style="color:var(--text-muted); margin-top:var(--spacing-xs);">
+      {{ components.data_freshness_badge(data_as_of, data_source) }}
+    </div>
+  </header>
+
+  {# ── Action bar ─────────────────────────────────────────────────── #}
+  <div class="compare-actions">
+    <a href="{{ url_for('root.programs_directory') }}" class="btn btn-secondary">&larr; Back to Programs</a>
+    <button class="copy-link-btn" id="copy-link-btn"
+            onclick="copyCompareLink(this)"
+            title="Copy a shareable link to this comparison">
+      🔗 Copy Link
+    </button>
+  </div>
+
+  {# ── Auto-generated summary sentence ────────────────────────────── #}
+  {% if summary %}
+  <div class="compare-summary">
+    <strong>Quick read:</strong> {{ summary }}
+  </div>
+  {% endif %}
+
+  {# ── Entity header row ──────────────────────────────────────────── #}
+  <div class="compare-header" role="row">
+    <div class="compare-header-label">Metric</div>
+    <div class="compare-header-entity">
+      <div class="compare-entity-name">
+        <a href="{{ url_for('root.program_detail', program_id=prog_a.program_id) }}">{{ cip_title_a }}</a>
+      </div>
+      <div class="compare-entity-meta">
+        <a href="{{ url_for('root.provider_detail', org_id=org_a.org_id) }}" style="color:var(--color-primary);">{{ org_a.name }}</a>
+        {% if org_a.city %}&bull; {{ org_a.city }}{% if org_a.state %}, {{ org_a.state }}{% endif %}{% endif %}
+      </div>
+    </div>
+    <div class="compare-header-entity">
+      <div class="compare-entity-name">
+        <a href="{{ url_for('root.program_detail', program_id=prog_b.program_id) }}">{{ cip_title_b }}</a>
+      </div>
+      <div class="compare-entity-meta">
+        <a href="{{ url_for('root.provider_detail', org_id=org_b.org_id) }}" style="color:var(--color-primary);">{{ org_b.name }}</a>
+        {% if org_b.city %}&bull; {{ org_b.city }}{% if org_b.state %}, {{ org_b.state }}{% endif %}{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Comparison table ────────────────────────────────────────────── #}
+  <table class="compare-table" aria-label="Program comparison">
+    <tbody>
+
+      {# Program profile — text/label rows #}
+      <tr class="compare-section-header"><td colspan="3">Program Profile</td></tr>
+      <tr>
+        <td class="compare-row-label">Credential Type</td>
+        <td class="compare-cell label-only neutral">{{ prog_a.credential_type or '—' }}</td>
+        <td class="compare-cell label-only neutral">{{ prog_b.credential_type or '—' }}</td>
+      </tr>
+      <tr>
+        <td class="compare-row-label">CIP Code</td>
+        <td class="compare-cell label-only neutral" style="font-family:monospace;">{{ prog_a.cip or '—' }}</td>
+        <td class="compare-cell label-only neutral" style="font-family:monospace;">{{ prog_b.cip or '—' }}</td>
+      </tr>
+      <tr>
+        <td class="compare-row-label">Field of Study</td>
+        <td class="compare-cell label-only neutral">
+          {% if cip_fam_a %}
+            <a href="{{ url_for('root.field_detail', cip_family=cip_fam_a) }}" style="color:var(--color-primary);">{{ cip_label_a }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td class="compare-cell label-only neutral">
+          {% if cip_fam_b %}
+            <a href="{{ url_for('root.field_detail', cip_family=cip_fam_b) }}" style="color:var(--color-primary);">{{ cip_label_b }}</a>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      <tr>
+        <td class="compare-row-label">Institution</td>
+        <td class="compare-cell label-only neutral">
+          <a href="{{ url_for('root.provider_detail', org_id=org_a.org_id) }}" style="color:var(--color-primary);">{{ org_a.name }}</a>
+        </td>
+        <td class="compare-cell label-only neutral">
+          <a href="{{ url_for('root.provider_detail', org_id=org_b.org_id) }}" style="color:var(--color-primary);">{{ org_b.name }}</a>
+        </td>
+      </tr>
+
+      {# Numeric outcomes #}
+      <tr class="compare-section-header"><td colspan="3">Outcomes</td></tr>
+      {% for row in rows %}
+      <tr>
+        <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
+        <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>
+        <td class="compare-cell {{ row.status_b }}">{{ fmt_cell(row.val_b, row.fmt) }}{{ winner_badge(row.status_b) }}</td>
+      </tr>
+      {% endfor %}
+
+      {# Suppression note if applicable #}
+      {% if prog_a.completions is none or prog_b.completions is none %}
+      <tr>
+        <td colspan="3" style="padding:var(--spacing-xs) var(--spacing-md); font-size:0.8rem; color:var(--text-muted);">
+          ℹ️ — means NCES suppressed this value to protect student privacy (small cohort size).
+        </td>
+      </tr>
+      {% endif %}
+
+    </tbody>
+  </table>
+
+  {# ── Methods footer ──────────────────────────────────────────────── #}
+  <div class="methods-footer">
+    <strong>Data sources:</strong> IPEDS (NCES) Completions 2023–24.
+    CIP codes follow the 2020 taxonomy. Occupation links derived from CIP↔SOC 2020 crosswalk (NCES).
+    Suppressed values shown as —.
+  </div>
+
+</div>
+
+<script>
+function copyCompareLink(btn) {
+  navigator.clipboard.writeText(window.location.href).then(function() {
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.textContent = '🔗 Copy Link';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+</script>
+{% endblock %}

@@ -21,7 +21,8 @@
     {{ components.data_freshness_badge(snapshot.data_as_of, snapshot.data_source) }}
   </div>
   <div class="quick-actions">
-    <button class="btn btn-secondary">Add to Compare</button>
+    <a href="{{ url_for('root.compare_providers', ids=org.org_id) }}"
+       class="btn btn-secondary" title="Compare this provider with another">⊕ Compare</a>
     {% if org.website %}
     <a href="{{ org.website }}" target="_blank" rel="noopener" class="btn btn-secondary">Visit Website &rarr;</a>
     {% endif %}

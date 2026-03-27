@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}Compare Providers | The Haystack{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/compare.css') }}">
+{% endblock %}
+
+{# ── Formatting macro — renders a cell value based on fmt type ──────────── #}
+{% macro fmt_cell(val, fmt) %}
+  {%- if val is none or val == '' -%}
+    <span class="no-data">—</span>
+  {%- elif fmt == 'currency' -%}
+    ${{ '{:,}'.format(val|int) }}
+  {%- elif fmt == 'percent' -%}
+    {{ val }}%
+  {%- elif fmt == 'number' or fmt == 'neutral' -%}
+    {{ '{:,}'.format(val|int) if val is number else val }}
+  {%- else -%}
+    {{ val }}
+  {%- endif -%}
+{% endmacro %}
+
+{# ── Winner badge macro ─────────────────────────────────────────────────── #}
+{% macro winner_badge(status) %}
+  {%- if status == 'winner' %}<span class="winner-badge">✓ Better</span>
+  {%- elif status == 'tie' %}<span class="tie-badge">Tie</span>{% endif -%}
+{% endmacro %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('root.index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('root.providers_directory') }}">Providers</a> &rsaquo;
+  Compare
+</div>
+
+<div class="compare-page">
+
+  <header class="page-header">
+    <div class="title-row">
+      <h1 class="m-0">Comparing Providers</h1>
+      {{ components.entity_badge('provider', 'Side-by-Side') }}
+    </div>
+    <div style="color:var(--text-muted); margin-top:var(--spacing-xs);">
+      {{ components.data_freshness_badge(data_as_of, data_source) }}
+    </div>
+  </header>
+
+  {# ── Action bar ─────────────────────────────────────────────────── #}
+  <div class="compare-actions">
+    <a href="{{ url_for('root.providers_directory') }}" class="btn btn-secondary">&larr; Back to Providers</a>
+    <button class="copy-link-btn" id="copy-link-btn"
+            onclick="copyCompareLink(this)"
+            title="Copy a shareable link to this comparison">
+      🔗 Copy Link
+    </button>
+  </div>
+
+  {# ── Auto-generated summary sentence ────────────────────────────── #}
+  {% if summary %}
+  <div class="compare-summary">
+    <strong>Quick read:</strong> {{ summary }}
+  </div>
+  {% endif %}
+
+  {# ── Entity header row ──────────────────────────────────────────── #}
+  <div class="compare-header" role="row">
+    <div class="compare-header-label">Metric</div>
+    <div class="compare-header-entity">
+      <div class="compare-entity-name">
+        <a href="{{ url_for('root.provider_detail', org_id=org_a.org_id) }}">{{ org_a.name }}</a>
+      </div>
+      <div class="compare-entity-meta">
+        {{ org_a.city }}{% if org_a.city and org_a.state %}, {% endif %}{{ org_a.state }}
+      </div>
+    </div>
+    <div class="compare-header-entity">
+      <div class="compare-entity-name">
+        <a href="{{ url_for('root.provider_detail', org_id=org_b.org_id) }}">{{ org_b.name }}</a>
+      </div>
+      <div class="compare-entity-meta">
+        {{ org_b.city }}{% if org_b.city and org_b.state %}, {% endif %}{{ org_b.state }}
+      </div>
+    </div>
+  </div>
+
+  {# ── Comparison table ────────────────────────────────────────────── #}
+  <table class="compare-table" aria-label="Provider comparison">
+    <tbody>
+
+      {# ── Helper: render a single metric row ──────────────────────── #}
+      {# We loop over the pre-built rows list from the route context    #}
+
+      {# Programs #}
+      <tr class="compare-section-header"><td colspan="3">Programs &amp; Offerings</td></tr>
+      {% for row in rows[:3] %}
+      <tr>
+        <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
+        <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>
+        <td class="compare-cell {{ row.status_b }}">{{ fmt_cell(row.val_b, row.fmt) }}{{ winner_badge(row.status_b) }}</td>
+      </tr>
+      {% endfor %}
+
+      {# Enrollment #}
+      <tr class="compare-section-header"><td colspan="3">Enrollment</td></tr>
+      {% for row in rows[3:5] %}
+      <tr>
+        <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
+        <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>
+        <td class="compare-cell {{ row.status_b }}">{{ fmt_cell(row.val_b, row.fmt) }}{{ winner_badge(row.status_b) }}</td>
+      </tr>
+      {% endfor %}
+
+      {# Admissions & Cost #}
+      <tr class="compare-section-header"><td colspan="3">Admissions &amp; Cost</td></tr>
+      {% for row in rows[5:8] %}
+      <tr>
+        <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
+        <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>
+        <td class="compare-cell {{ row.status_b }}">{{ fmt_cell(row.val_b, row.fmt) }}{{ winner_badge(row.status_b) }}</td>
+      </tr>
+      {% endfor %}
+
+      {# Financial Aid #}
+      <tr class="compare-section-header"><td colspan="3">Financial Aid</td></tr>
+      {% for row in rows[8:10] %}
+      <tr>
+        <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
+        <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>
+        <td class="compare-cell {{ row.status_b }}">{{ fmt_cell(row.val_b, row.fmt) }}{{ winner_badge(row.status_b) }}</td>
+      </tr>
+      {% endfor %}
+
+      {# Outcomes #}
+      <tr class="compare-section-header"><td colspan="3">Outcomes &amp; Graduation</td></tr>
+      {% for row in rows[10:] %}
+      <tr>
+        <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
+        <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>
+        <td class="compare-cell {{ row.status_b }}">{{ fmt_cell(row.val_b, row.fmt) }}{{ winner_badge(row.status_b) }}</td>
+      </tr>
+      {% endfor %}
+
+      {# Institutional profile — text-only rows #}
+      <tr class="compare-section-header"><td colspan="3">Institutional Profile</td></tr>
+      <tr>
+        <td class="compare-row-label">Admissions Policy</td>
+        <td class="compare-cell label-only neutral">{{ ipeds_a.get('open_admissions') or '—' }}</td>
+        <td class="compare-cell label-only neutral">{{ ipeds_b.get('open_admissions') or '—' }}</td>
+      </tr>
+      <tr>
+        <td class="compare-row-label">Calendar System</td>
+        <td class="compare-cell label-only neutral">{{ ipeds_a.get('calendar') or '—' }}</td>
+        <td class="compare-cell label-only neutral">{{ ipeds_b.get('calendar') or '—' }}</td>
+      </tr>
+      <tr>
+        <td class="compare-row-label">Top Credential</td>
+        <td class="compare-cell label-only neutral">{{ snap_a.get('top_credential') or '—' }}</td>
+        <td class="compare-cell label-only neutral">{{ snap_b.get('top_credential') or '—' }}</td>
+      </tr>
+      <tr>
+        <td class="compare-row-label">Top CIP Family</td>
+        <td class="compare-cell label-only neutral">{{ snap_a.get('top_cip_label') or '—' }}</td>
+        <td class="compare-cell label-only neutral">{{ snap_b.get('top_cip_label') or '—' }}</td>
+      </tr>
+
+    </tbody>
+  </table>
+
+  {# ── Methods footer ──────────────────────────────────────────────── #}
+  <div class="methods-footer">
+    <strong>Data sources:</strong> IPEDS (NCES) 2023–24.
+    Graduation rates use 150% normal-time cohorts (bachelor's) or 150% completion time for sub-baccalaureate programs.
+    Net price reflects average cost after all grant aid.
+    Suppressed or missing values shown as —.
+    <strong>Winner indicators</strong> reflect direction only — a lower acceptance rate means more selective, not better.
+  </div>
+
+</div>
+
+<script>
+function copyCompareLink(btn) {
+  navigator.clipboard.writeText(window.location.href).then(function() {
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.textContent = '🔗 Copy Link';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+</script>
+{% endblock %}

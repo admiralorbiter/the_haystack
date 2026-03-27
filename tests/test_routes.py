@@ -108,9 +108,15 @@ class TestStubRoutes:
         res = client.get("/map")
         assert res.status_code == 200
 
-    def test_compare_route_returns_200(self, client):
+    def test_compare_providers_no_ids_redirects(self, client):
+        """No ids param → redirect to /providers directory (not a crash)."""
         res = client.get("/compare/providers")
-        assert res.status_code == 200
+        assert res.status_code == 302
+
+    def test_compare_programs_no_ids_redirects(self, client):
+        """No ids param → redirect to /programs directory (not a crash)."""
+        res = client.get("/compare/programs")
+        assert res.status_code == 302
 
 
 # ---------------------------------------------------------------------------
@@ -524,3 +530,140 @@ class TestFieldHTMXTabs:
         """Error path: tab for unknown family → 404."""
         res = client.get("/fields/99/tab/overview", headers=self._htmx_headers())
         assert res.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Compare routes — Epic 6
+# ---------------------------------------------------------------------------
+
+class TestCompareProviders:
+    """Provider compare — GET /compare/providers?ids=A,B"""
+
+    def test_compare_two_valid_providers_returns_200(self, client, seeded_program, seeded_second_org):
+        """Happy path: two valid org_ids → 200, both names visible."""
+        id_a = seeded_program["org_id"]
+        id_b = seeded_second_org["org_id"]
+        res = client.get(f"/compare/providers?ids={id_a},{id_b}")
+        assert res.status_code == 200
+        assert b"Test Community College" in res.data
+        assert b"Second Test College" in res.data
+
+    def test_compare_providers_contains_compare_heading(self, client, seeded_program, seeded_second_org):
+        """Happy path: compare page renders the comparison heading."""
+        id_a = seeded_program["org_id"]
+        id_b = seeded_second_org["org_id"]
+        res = client.get(f"/compare/providers?ids={id_a},{id_b}")
+        assert b"Comparing Providers" in res.data
+
+    def test_compare_providers_contains_metrics(self, client, seeded_program, seeded_second_org):
+        """Happy path: comparison table renders metric rows."""
+        id_a = seeded_program["org_id"]
+        id_b = seeded_second_org["org_id"]
+        res = client.get(f"/compare/providers?ids={id_a},{id_b}")
+        assert b"Programs" in res.data
+        assert b"Annual Completions" in res.data.lower() or b"Completions" in res.data
+
+    def test_compare_providers_no_ids_redirects(self, client):
+        """Error path: no ids param → redirect to directory, not 500."""
+        res = client.get("/compare/providers")
+        assert res.status_code == 302
+
+    def test_compare_providers_one_id_redirects(self, client, seeded_program):
+        """Error path: only one id → redirect to directory."""
+        res = client.get(f"/compare/providers?ids={seeded_program['org_id']}")
+        assert res.status_code == 302
+
+    def test_compare_providers_invalid_ids_return_404(self, client):
+        """Error path: two syntactically valid but non-existent IDs → 404."""
+        fake_a = "00000000-0000-0000-0000-000000000001"
+        fake_b = "00000000-0000-0000-0000-000000000002"
+        res = client.get(f"/compare/providers?ids={fake_a},{fake_b}")
+        assert res.status_code == 404
+
+    def test_compare_providers_one_invalid_id_returns_404(self, client, seeded_program):
+        """Error path: one valid + one non-existent ID → 404."""
+        fake = "00000000-0000-0000-0000-000000000099"
+        res = client.get(f"/compare/providers?ids={seeded_program['org_id']},{fake}")
+        assert res.status_code == 404
+
+    def test_compare_providers_sql_injection_id_is_safe(self, client):
+        """Error path: SQL-injection-style ID strings are filtered by _parse_ids."""
+        res = client.get("/compare/providers?ids='; DROP TABLE organization; --,another")
+        # Either redirect (failed UUID validation → < 2 valid IDs) or 404
+        assert res.status_code in (302, 404)
+        assert b"Internal Server Error" not in res.data
+
+    def test_compare_providers_extra_ids_uses_first_two(self, client, seeded_program, seeded_second_org):
+        """Edge case: passing 3+ IDs only uses first 2."""
+        id_a = seeded_program["org_id"]
+        id_b = seeded_second_org["org_id"]
+        fake_c = "00000000-0000-0000-0000-000000000099"
+        res = client.get(f"/compare/providers?ids={id_a},{id_b},{fake_c}")
+        # Third ID is ignored — first two are valid → 200
+        assert res.status_code == 200
+
+    def test_compare_providers_no_ipeds_data_shows_dash(self, client, seeded_program, seeded_second_org):
+        """Edge case: providers with no IPEDS rows → metric cells show — not crash."""
+        id_a = seeded_program["org_id"]
+        id_b = seeded_second_org["org_id"]
+        res = client.get(f"/compare/providers?ids={id_a},{id_b}")
+        assert res.status_code == 200
+        assert b"Internal Server Error" not in res.data
+
+
+class TestComparePrograms:
+    """Program compare — GET /compare/programs?ids=A,B"""
+
+    def test_compare_two_valid_programs_returns_200(self, client, seeded_program, seeded_second_org):
+        """Happy path: two valid program_ids → 200, both program names visible."""
+        pid_a = seeded_program["program_id"]
+        pid_b = seeded_second_org["program_id"]
+        res = client.get(f"/compare/programs?ids={pid_a},{pid_b}")
+        assert res.status_code == 200
+        assert b"Nursing" in res.data
+        assert b"Business" in res.data
+
+    def test_compare_programs_contains_heading(self, client, seeded_program, seeded_second_org):
+        """Happy path: compare page renders the comparison heading."""
+        pid_a = seeded_program["program_id"]
+        pid_b = seeded_second_org["program_id"]
+        res = client.get(f"/compare/programs?ids={pid_a},{pid_b}")
+        assert b"Comparing Programs" in res.data
+
+    def test_compare_programs_shows_credential_type(self, client, seeded_program, seeded_second_org):
+        """Happy path: credential type label appears in the compare table."""
+        pid_a = seeded_program["program_id"]
+        pid_b = seeded_second_org["program_id"]
+        res = client.get(f"/compare/programs?ids={pid_a},{pid_b}")
+        assert b"Credential" in res.data
+
+    def test_compare_programs_no_ids_redirects(self, client):
+        """Error path: no ids → redirect to programs directory."""
+        res = client.get("/compare/programs")
+        assert res.status_code == 302
+
+    def test_compare_programs_one_id_redirects(self, client, seeded_program):
+        """Error path: only one id → redirect."""
+        res = client.get(f"/compare/programs?ids={seeded_program['program_id']}")
+        assert res.status_code == 302
+
+    def test_compare_programs_invalid_ids_return_404(self, client):
+        """Error path: two non-existent program IDs → 404."""
+        fake_a = "00000000-0000-0000-0000-000000000001"
+        fake_b = "00000000-0000-0000-0000-000000000002"
+        res = client.get(f"/compare/programs?ids={fake_a},{fake_b}")
+        assert res.status_code == 404
+
+    def test_compare_programs_suppressed_completions_shows_dash(self, client, seeded_program, seeded_second_org):
+        """Edge case: one suppressed program → — shown, not crash."""
+        pid_suppressed = seeded_program["suppressed_id"]
+        pid_b = seeded_second_org["program_id"]
+        res = client.get(f"/compare/programs?ids={pid_suppressed},{pid_b}")
+        assert res.status_code == 200
+        assert b"Internal Server Error" not in res.data
+
+    def test_compare_programs_sql_injection_id_is_safe(self, client):
+        """Error path: SQL-injection-style ID strings are handled safely."""
+        res = client.get("/compare/programs?ids='; DROP TABLE program; --,another")
+        assert res.status_code in (302, 404)
+        assert b"Internal Server Error" not in res.data

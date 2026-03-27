@@ -74,6 +74,7 @@
         <th class="num-col">Programs</th>
         <th class="num-col" title="Awards conferred (IPEDS 2023–24). — means data is suppressed to protect student privacy.">Completions ↓</th>
         <th class="num-col">Occupations</th>
+        <th class="compare-col"></th>
       </tr>
     </thead>
     <tbody>
@@ -97,6 +98,12 @@
           {% endif %}
         </td>
         <td class="num-col">{{ '{:,}'.format(row.occ_count) }}</td>
+        <td class="compare-col" onclick="event.stopPropagation()">
+          <a href="{{ url_for('root.compare_providers', ids=org.org_id) }}"
+             class="compare-check-btn"
+             title="Compare {{ org.name }}"
+             aria-label="Add {{ org.name }} to compare">⊕</a>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

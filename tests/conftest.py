@@ -85,3 +85,44 @@ def seeded_program(app):
         "suppressed_id": suppressed_id,
     }
 
+
+@pytest.fixture(scope="session")
+def seeded_second_org(app):
+    """
+    Seeds a second training organization + one program into the in-memory test DB.
+    Used by Epic 6 compare tests to have two distinct entities.
+    Returns a dict with org_id and program_id.
+    """
+    from models import db, Organization, Program
+
+    with app.app_context():
+        org_id = str(uuid.uuid4())
+        prog_id = str(uuid.uuid4())
+
+        org = Organization(
+            org_id=org_id,
+            name="Second Test College",
+            org_type="training",
+            city="Overland Park",
+            state="KS",
+            county_fips="20091",
+            lat=38.9822,
+            lon=-94.6708,
+        )
+        prog = Program(
+            program_id=prog_id,
+            org_id=org_id,
+            name="Business Administration — Bachelor's degree",
+            credential_type="Bachelor's degree",
+            cip="52.0201",
+            completions=85,
+        )
+
+        db.session.add_all([org, prog])
+        db.session.commit()
+
+    return {
+        "org_id": org_id,
+        "program_id": prog_id,
+    }
+
