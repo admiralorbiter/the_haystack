@@ -150,6 +150,7 @@ def _empty_ipeds() -> dict:
         "room_board":          None,
         "tuition_varies":      None,
         "net_price":           None,
+        "commuter_sticker":    None,
         # Admissions
         "acceptance_rate":     None,
         "sat_reading_75":      None,
