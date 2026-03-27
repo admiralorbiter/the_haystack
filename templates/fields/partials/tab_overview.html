@@ -1,0 +1,115 @@
+{# Overview tab — HTMX fragment (also rendered server-side on first page load) #}
+{% import "partials/components.html" as components %}
+
+{# ── Top Programs ─────────────────────────────────────────────────────────── #}
+<div class="tab-section">
+  <h3 class="section-title">
+    Top Programs in this Field
+    <span class="section-hint">(by annual completions)</span>
+  </h3>
+
+  {% if top_programs %}
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Program</th>
+          <th>Institution</th>
+          <th class="num-col">Completions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in top_programs %}
+        {% set prog_url = url_for('root.program_detail', program_id=row.program.program_id) %}
+        <tr data-href="{{ prog_url }}">
+          <td>
+            <a href="{{ prog_url }}">{{ row.cip_title }}</a>
+            <span class="cred-badge">{{ row.program.credential_type }}</span>
+          </td>
+          <td style="color:var(--text-muted); font-size:0.9rem;">{{ row.org_name }}</td>
+          <td class="num-col">
+            {% if row.program.completions is not none %}
+              {{ '{:,}'.format(row.program.completions) }}
+            {% else %}
+              <span class="suppressed-label">&mdash;</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:var(--spacing-sm); font-size:0.85rem; color:var(--text-muted);">
+    <a href="#" onclick="document.getElementById('tab-btn-programs').click(); return false;">
+      View all programs in this field &rarr;
+    </a>
+  </p>
+  {% else %}
+  {{ components.empty_state('No programs found in this field.', 'No KC training providers offer programs under CIP ' ~ cip_family ~ '.') }}
+  {% endif %}
+</div>
+
+{# ── Providers in this Field ──────────────────────────────────────────────── #}
+<div class="tab-section">
+  <h3 class="section-title">
+    Providers in this Field
+    <span class="section-hint">(by total completions, top 5)</span>
+  </h3>
+
+  {% if top_providers %}
+  <div class="provider-roster">
+    {% for row in top_providers %}
+    <div class="provider-roster-card">
+      <div class="provider-roster-name">
+        <a href="{{ url_for('root.provider_detail', org_id=row.org.org_id) }}">{{ row.org.name }}</a>
+      </div>
+      <div class="provider-roster-meta">
+        <span>{{ row.prog_count }} program{{ 's' if row.prog_count != 1 else '' }}</span>
+        &bull;
+        {% if row.completions is not none %}
+          <span>{{ '{:,}'.format(row.completions) }} completions</span>
+        {% else %}
+          <span class="suppressed-label">— completions</span>
+        {% endif %}
+        {% if row.org.city %}
+        &bull; <span>{{ row.org.city }}{% if row.org.state %}, {{ row.org.state }}{% endif %}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  {{ components.empty_state('No providers found for this field.') }}
+  {% endif %}
+</div>
+
+{# ── Top Linked Occupations ───────────────────────────────────────────────── #}
+<div class="tab-section">
+  <h3 class="section-title">
+    Linked Occupations
+    <span class="section-hint">(via CIP→SOC crosswalk, top 8)</span>
+  </h3>
+
+  {% if top_occs %}
+  <ul class="occ-list">
+    {% for row in top_occs %}
+    <li class="occ-item">
+      <span class="occ-title">{{ row.occ.title }}</span>
+      <span style="display:flex; align-items:center; gap:var(--spacing-sm);">
+        <span class="occ-soc" style="font-family:monospace; font-size:0.8rem; color:var(--text-muted);">{{ row.occ.soc }}</span>
+        <span class="occ-prog-count" title="{{ row.prog_count }} program(s) in this field link to this occupation">
+          {{ row.prog_count }} prog.
+        </span>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  <p style="margin-top:var(--spacing-sm); font-size:0.85rem; color:var(--text-muted);">
+    <a href="#" onclick="document.getElementById('tab-btn-occupations').click(); return false;">
+      View all linked occupations &rarr;
+    </a>
+  </p>
+  {% else %}
+  {{ components.empty_state('No occupation links found for this field.', 'The CIP→SOC crosswalk has no mappings for CIP family ' ~ cip_family ~ '.') }}
+  {% endif %}
+</div>

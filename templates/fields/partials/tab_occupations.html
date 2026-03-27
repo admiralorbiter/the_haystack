@@ -1,0 +1,48 @@
+{# Occupations tab — HTMX fragment: all occupations linked to programs in this CIP family #}
+{% import "partials/components.html" as components %}
+
+<div class="tab-section">
+  <h3 class="section-title">
+    Linked Occupations
+    <span class="section-hint">(via NCES CIP 2020 → SOC 2018 crosswalk)</span>
+  </h3>
+  <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:var(--spacing-md);">
+    Occupations listed here are mapped from the <strong>{{ snapshot.family_label }}</strong> field
+    via the CIP→SOC crosswalk. "Programs" shows how many {{ snapshot.family_label }} programs in KC
+    share this occupation link — a proxy for structural breadth of connection.
+  </p>
+
+  {% if occ_links %}
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Occupation</th>
+          <th style="font-family:monospace; font-size:0.85rem;">SOC Code</th>
+          <th class="num-col" title="Number of programs in this field that link to this occupation">Programs</th>
+          <th class="num-col" title="Median annual wage — coming in Phase 2">Median Wage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in occ_links %}
+        <tr>
+          <td>{{ row.occ.title }}</td>
+          <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);">{{ row.occ.soc }}</td>
+          <td class="num-col">{{ row.prog_count }}</td>
+          <td class="num-col" style="color:var(--text-muted); font-size:0.85rem;" title="Wage data coming in Phase 2">&mdash;</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="methods-note" style="margin-top:var(--spacing-md);">
+    These links are structural mappings, not guaranteed employment outcomes.
+    SOC major group codes shown. Wage data will be added when the OEWS dataset is integrated in Phase 2.
+  </p>
+  {% else %}
+  {{ components.empty_state(
+      'No occupation links found for CIP family ' ~ cip_family ~ '.',
+      'The CIP→SOC crosswalk does not include mappings for programs in this field.'
+  ) }}
+  {% endif %}
+</div>

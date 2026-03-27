@@ -14,6 +14,8 @@ Implements:
 import sqlite3
 from pathlib import Path
 
+from .cip_utils import CIP_FAMILY_NAMES, cip_family_label, cip_title
+
 from flask import abort, render_template, request
 from sqlalchemy import func, text
 
@@ -25,49 +27,6 @@ from models import (
 from . import root_bp
 
 _DB_PATH = Path(__file__).resolve().parent.parent / "db" / "haystack.db"
-
-
-# ---------------------------------------------------------------------------
-# CIP family lookup (shared with providers.py — duplicated intentionally
-# to keep each route module self-contained; extract to utils.py if needed)
-# ---------------------------------------------------------------------------
-
-_CIP_FAMILY_NAMES = {
-    "01": "Agriculture", "03": "Natural Resources", "04": "Architecture",
-    "05": "Area & Cultural Studies", "09": "Communication", "10": "Communications Tech",
-    "11": "Computer Science", "12": "Personal Services", "13": "Education",
-    "14": "Engineering", "15": "Engineering Tech", "16": "Foreign Languages",
-    "19": "Family Sciences", "22": "Legal", "23": "English",
-    "24": "Liberal Arts", "25": "Library Science", "26": "Biology",
-    "27": "Mathematics", "28": "Military", "29": "Military Tech",
-    "30": "Interdisciplinary", "31": "Parks & Recreation", "38": "Philosophy",
-    "39": "Theology", "40": "Physical Sciences", "41": "Science Tech",
-    "42": "Psychology", "43": "Homeland Security", "44": "Public Admin",
-    "45": "Social Sciences", "46": "Construction", "47": "Mechanic & Repair",
-    "48": "Precision Production", "49": "Transportation", "50": "Visual & Performing Arts",
-    "51": "Health Professions", "52": "Business", "54": "History",
-    "60": "Residency Programs",
-}
-
-
-def _cip_family_label(cip: str) -> str:
-    """Return 'Health Professions (51)' style label for a CIP code."""
-    if not cip or "." not in cip:
-        return cip or "—"
-    family = cip.split(".")[0]
-    name = _CIP_FAMILY_NAMES.get(family, "")
-    return f"{name} ({family})" if name else family
-
-
-def _cip_title(program_name: str) -> str:
-    """
-    Strip the credential suffix from a stored program name.
-    Stored format: 'Nursing — Associate Degree'
-    Returns: 'Nursing'
-    """
-    if " — " in program_name:
-        return program_name.split(" — ")[0].strip()
-    return program_name
 
 
 def _get_program_or_404(program_id: str) -> Program:
@@ -93,8 +52,8 @@ def _program_snapshot(prog: Program, org: Organization) -> dict:
     )
     return {
         "org": org,
-        "cip_title": _cip_title(prog.name),
-        "cip_family_label": _cip_family_label(prog.cip),
+        "cip_title": cip_title(prog.name),
+        "cip_family_label": cip_family_label(prog.cip),
         "credential_type": prog.credential_type,
         "completions": prog.completions,
         "linked_occupations": occ_count,
@@ -234,8 +193,8 @@ def programs_directory():
     programs = [
         {
             "program": row.Program,
-            "cip_title": _cip_title(row.Program.name),
-            "cip_family_label": _cip_family_label(row.Program.cip),
+            "cip_title": cip_title(row.Program.name),
+            "cip_family_label": cip_family_label(row.Program.cip),
             "org_name": row.org_name,
             "org_id": row.org_id_val,
             "org_city": row.org_city,
@@ -263,7 +222,7 @@ def programs_directory():
         all_creds=[r.credential_type for r in all_creds],
         all_cip_families=all_cip_families,
         all_orgs=all_orgs,
-        cip_family_names=_CIP_FAMILY_NAMES,
+        cip_family_names=CIP_FAMILY_NAMES,
     )
 
 
@@ -309,7 +268,7 @@ def program_detail(program_id: str):
         similar_programs = [
             {
                 "program": r.Program,
-                "cip_title": _cip_title(r.Program.name),
+                "cip_title": cip_title(r.Program.name),
                 "org_name": r.org_name,
             }
             for r in sim_rows
@@ -323,7 +282,7 @@ def program_detail(program_id: str):
             snapshot=snapshot,
             top_occupations=top_occupations,
             similar_programs=similar_programs,
-            cip_family_label=_cip_family_label(prog.cip),
+            cip_family_label=cip_family_label(prog.cip),
         )
 
     return render_template(
@@ -333,7 +292,7 @@ def program_detail(program_id: str):
         snapshot=snapshot,
         top_occupations=top_occupations,
         similar_programs=similar_programs,
-        cip_family_label=_cip_family_label(prog.cip),
+        cip_family_label=cip_family_label(prog.cip),
         active_tab="overview",
     )
 
@@ -374,7 +333,7 @@ def program_tab_overview(program_id: str):
         similar_programs = [
             {
                 "program": r.Program,
-                "cip_title": _cip_title(r.Program.name),
+                "cip_title": cip_title(r.Program.name),
                 "org_name": r.org_name,
             }
             for r in sim_rows
@@ -387,7 +346,7 @@ def program_tab_overview(program_id: str):
         snapshot=_program_snapshot(prog, org),
         top_occupations=top_occupations,
         similar_programs=similar_programs,
-        cip_family_label=_cip_family_label(prog.cip),
+        cip_family_label=cip_family_label(prog.cip),
     )
 
 

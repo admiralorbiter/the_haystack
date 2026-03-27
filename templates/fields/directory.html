@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}Fields of Study | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('root.index') }}">Home</a> &rsaquo; Fields</div>
+
+<header class="page-header">
+  <div class="title-row">
+    <h1 class="m-0">Fields of Study</h1>
+    {{ components.entity_badge('field', 'KC Region') }}
+  </div>
+  <p style="color:var(--text-muted); margin:0;">
+    Browse KC training programs by field — a bridge between what you want to learn and the workforce it connects to.
+  </p>
+</header>
+
+{# ── Results header ─────────────────────────────────────────────────────── #}
+<div class="results-header">
+  <span class="results-count">
+    {{ total_count }} field{{ 's' if total_count != 1 else '' }} of study
+  </span>
+  <div class="sort-row">
+    <span class="sort-label">Sort:</span>
+    {% set sort_options = [('completions', 'Completions'), ('programs', 'Programs'), ('providers', 'Providers'), ('name', 'Field Name')] %}
+    {% for key, label in sort_options %}
+    <a href="{{ url_for('root.fields_directory', sort=key) }}"
+       class="sort-link {% if sort == key %}sort-active{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{# ── Fields table ───────────────────────────────────────────────────────── #}
+{% if fields %}
+<div class="table-wrapper">
+  <table class="data-table field-table">
+    <thead>
+      <tr>
+        <th>Field of Study</th>
+        <th class="num-col">Programs</th>
+        <th class="num-col">Providers</th>
+        <th class="num-col" title="Annual awards conferred (IPEDS 2023–24). — means all data is suppressed.">Completions ↓</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for field in fields %}
+      {% set detail_url = url_for('root.field_detail', cip_family=field.cip_family) %}
+      <tr class="field-row" data-href="{{ detail_url }}">
+        <td>
+          <a href="{{ detail_url }}" class="provider-name-link">{{ field.family_label }}</a>
+          <span class="cip-family-code">{{ field.cip_family }}</span>
+        </td>
+        <td class="num-col">{{ '{:,}'.format(field.program_count) }}</td>
+        <td class="num-col">{{ '{:,}'.format(field.provider_count) }}</td>
+        <td class="num-col">
+          {% if field.total_completions is not none %}
+            {{ '{:,}'.format(field.total_completions) }}
+          {% else %}
+            <span class="suppressed-label" title="All programs in this field have suppressed data">&mdash;</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">📚</div>
+  <h3>No fields of study found</h3>
+  <p>No programs have been loaded yet. Run the IPEDS pipeline from the <a href="{{ url_for('admin.dashboard') }}">admin dashboard</a>.</p>
+</div>
+{% endif %}
+
+{# ── Methods footer ──────────────────────────────────────────────────────── #}
+<div class="methods-footer">
+  <strong>Data:</strong> IPEDS Completions (C) 2023–24. Fields use 2-digit CIP family codes (NCES Classification of Instructional Programs, 2020 edition).
+  Suppressed values (—) are withheld by NCES to protect student privacy.
+</div>
+
+{% endblock %}

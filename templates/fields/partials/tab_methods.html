@@ -1,0 +1,63 @@
+{# Methods tab — HTMX fragment: CIP taxonomy and data methodology explanation #}
+
+<div class="tab-section">
+  <h3 class="section-title">How to read this data</h3>
+
+  <div class="methods-block">
+    <h4>What is a CIP family?</h4>
+    <p>
+      CIP stands for <strong>Classification of Instructional Programs</strong> — a taxonomy maintained by NCES
+      to standardize how educational programs are categorized. The 2-digit family code
+      (<code>{{ cip_family }}</code> — {{ family_label }}) groups related programs into a broad field of study.
+      Full 6-digit CIP codes identify specific programs within that field.
+    </p>
+  </div>
+
+  <div class="methods-block">
+    <h4>Why are programs linked to certain occupations?</h4>
+    <p>
+      The occupation links on this page come from the
+      <strong>NCES CIP 2020 → SOC 2018 crosswalk</strong>.
+      Each program's 6-digit CIP code is matched to one or more Standard Occupational Classification (SOC)
+      codes based on a structural mapping maintained by NCES.
+      This reflects typical career pathways — it is not a guaranteed employment outcome.
+    </p>
+  </div>
+
+  <div class="methods-block">
+    <h4>What do the "Programs" counts mean on the Occupations tab?</h4>
+    <p>
+      The Programs count shows how many individual training programs in the
+      <strong>{{ family_label }}</strong> field map to a given occupation.
+      A higher count means the occupation is broadly connected across many programs in this field —
+      a proxy for structural relevance, not labor demand.
+    </p>
+  </div>
+
+  <div class="methods-block">
+    <h4>What are "completions"?</h4>
+    <p>
+      Completions are <strong>awards conferred</strong> during the academic year — degrees, certificates,
+      and other credentials actually earned by students. This is not the same as enrollment or graduation rates.
+      A single student can earn multiple awards in one year.
+    </p>
+  </div>
+
+  <div class="methods-block">
+    <h4>Why do some programs show — instead of a number?</h4>
+    <p>
+      NCES suppresses completion values when fewer than 3 students completed a program in a given year,
+      to protect student privacy. A dash (—) means data exists but is withheld by NCES.
+      It does <em>not</em> mean zero completions.
+    </p>
+  </div>
+
+  <div class="methods-block">
+    <h4>Data currency</h4>
+    <p>
+      Program and completion data is sourced from <strong>IPEDS Completions (C) 2023–24</strong> (data year 2024).
+      CIP→SOC crosswalk is NCES CIP 2020 / SOC 2018.
+      IPEDS data is collected annually; this reflects the most recent finalized release available.
+    </p>
+  </div>
+</div>

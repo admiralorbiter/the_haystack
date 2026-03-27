@@ -268,29 +268,6 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 - Fixed pre-existing `load_cip_titles()` bug: explicit path miss no longer falls back to crosswalk silently.
 - 98 tests, all passing.
 
-#### Program FTS5 Architecture
-- [ ] Create Alembic migration for `program_fts` virtual table using SQLite FTS5.
-- [ ] Configure `program_fts` to use the `porter` stemming tokenizer (matches "nursing" to "nurse") to avoid `trigram` compatibility issues.
-- [ ] Add `INSERT`, `UPDATE`, `DELETE` triggers to `program` and `organization` tables to keep the FTS index automatically synchonized without pipeline logic changes.
-- [ ] Map `program_fts` in `models.py` for SQLAlchemy `MATCH` queries.
-
-#### Program directory (`/programs`)
-- [ ] SQLAlchemy query: list programs with org name, credential type, CIP label, completions, occupation link count
-- [ ] Filters: credential type, CIP family, provider (org_id), completions band
-- [ ] Sort: completions desc (default), provider alphabetic, credential type
-- [ ] Search: FTS5 query matching program title, institution name, and CIP code.
-- [ ] URL-synced filter state
-- [ ] Standardized `empty_state` UI usage
-
-#### Program detail (`/programs/<id>`)
-- [ ] Snapshot strip: provider name, credential type, CIP code + label, completions, linked occupation count, Scorecard available (yes/no)
-- [ ] Base shell route + HTMX lazy-loading architecture identical to Providers.
-- [ ] Tab: Overview — short descriptor, provider card (name, city, link), award level, CIP family context
-- [ ] Tab: Occupation links — related occupations ranked by confidence, SOC code shown, wage/demand placeholder
-- [ ] Tab: Outcomes — completions value; suppression note if NULL; Scorecard placeholder
-- [ ] Tab: Geography — provider map pin
-- [ ] Tab: Methods — CIP/SOC mapping explanation, completions definition
-- [ ] 404 handling
 
 ---
 
@@ -299,20 +276,25 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 
 **Exit criteria:** `/fields` lists CIP families. `/fields/<cip>` shows all providers and programs in that field with occupation links.
 
-**Effort estimate:** 1 week
+**Status: ✅ COMPLETE** — Shipped 2026-03-26
 
-### Tasks
+**Design decisions:**
+- 2-digit CIP families only at `/fields/<code>` (e.g. `/fields/51`). 6-digit lookup stays on `/programs/<id>` — keeps URL spaces distinct.
+- `CIP_FAMILY_NAMES` dict and helpers extracted to `routes/cip_utils.py` — shared single source of truth for programs, fields, and future compare route.
+- 4 tabs: Overview (top-5 preview of programs, providers, occupations), All Programs (full paginated), Occupations (all SOC links with program-count breadth indicator), Methods.
 
-#### Field directory (`/fields`)
-- [ ] Group programs by 2-digit CIP family
-- [ ] Show: CIP family label, provider count, total completions, top credential type
-- [ ] Sort: completions desc
-
-#### Field detail (`/fields/<cip>`)
-- [ ] Works for both 2-digit (family) and 6-digit (specific CIP)
-- [ ] Snapshot strip: providers offering, total completions, credential mix, linked occupations, top counties
-- [ ] Sections: provider list, top programs, linked occupations
-- [ ] Empty state: no programs in this CIP in KC region
+**What shipped:**
+- Field directory (`/fields`) — all 36 KC CIP families aggregated from `program.cip`, sorted by completions/programs/providers/name, clickable rows with CIP code chip.
+- Field detail (`/fields/<2-digit>`) — snapshot strip: Programs, Providers, Annual Completions, Linked Occupations, Top Credential.
+- Tab: Overview — top 10 programs table, top 5 provider roster cards (with completions), top 8 linked occupations list. Each section links to the full tab.
+- Tab: All Programs — full paginated program table (50/page) with HTMX pagination within the tab, credential badge, institution link.
+- Tab: Occupations — all distinct SOC codes linked via any program in the family, sorted by linking program count (breadth proxy); wage placeholder for Phase 2.
+- Tab: Methods — CIP taxonomy, CIP→SOC crosswalk explanation, completions definition, suppression note, data currency.
+- `routes/cip_utils.py` shared module (replaces duplicated dict in `programs.py`).
+- `badge-field` (teal), `badge-program`, `cip-family-code` chip, `.provider-roster-card` CSS added to `components.css`.
+- Fields nav link wired in `base.html`.
+- `_validate_family()` helper — strips 6-digit CIPs to family, zero-pads single-digit, aborts 404 for unknown codes.
+- 23 new tests (directory: 8; detail: 7; HTMX tabs: 8). 121 total tests, 0 failures.
 
 ---
 
@@ -436,7 +418,7 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 | 3 — Provider pages | 1.5–2 weeks | Week 8 | ✅ Done |
 | **2.5 — Admin UI + Data Explorer** | **1.5–2.5 days** | **Week 8.5** | **✅ Done** |
 | 4 — Program pages | 1–1.5 weeks | Week 10 | ✅ Done |
-| 5 — Field pages | 1 week | Week 11 | 🔲 Planned |
+| 5 — Field pages | 1 week | Week 11 | ✅ Done |
 | 6 — Compare | 1 week | Week 12 | 🔲 Planned |
 | 7 — Map | 1–1.5 weeks | Week 13.5 | 🔲 Planned |
 | 8 — Search | 1 week | Week 14.5 | 🔲 Planned |

@@ -75,9 +75,90 @@
   color: var(--text-light);
 }
 
+.badge-program {
+  background-color: var(--color-secondary, #2a6496);
+  color: var(--text-light);
+}
+
+.badge-field {
+  background-color: #4a7c59;
+  color: var(--text-light);
+}
+
 .badge-freshness {
   background-color: var(--color-accent);
   color: var(--text-main);
+}
+
+/* ── Field directory — CIP family code chip ────────────────────────────── */
+.cip-family-code {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  background: var(--color-surface);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+
+/* ── Field table row ──────────────────────────────────────────────────── */
+.field-table .field-row {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.field-table .field-row:hover {
+  background: var(--color-bg);
+}
+
+/* ── Provider roster (field overview tab) ─────────────────────────────── */
+.provider-roster {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.provider-roster-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.provider-roster-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.provider-roster-name a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.provider-roster-name a:hover {
+  text-decoration: underline;
+}
+
+.provider-roster-meta {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Occupation prog count badge ─────────────────────────────────────── */
+.occ-prog-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--color-surface);
+  border-radius: 10px;
+  padding: 1px 6px;
+}
+
+/* ── btn-sm ───────────────────────────────────────────────────────────── */
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 0.85rem;
 }
 
 /* Cards & Snapshots */

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}{{ snapshot.family_label }} | Fields | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('root.index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('root.fields_directory') }}">Fields</a> &rsaquo;
+  {{ snapshot.family_label }}
+</div>
+
+<header class="page-header">
+  <div class="title-row">
+    <h1 class="m-0">{{ snapshot.family_label }}</h1>
+    {{ components.entity_badge('field', 'CIP ' ~ cip_family) }}
+  </div>
+  <div style="color:var(--text-muted); margin-bottom:var(--spacing-sm);">
+    {{ components.data_freshness_badge(snapshot.data_as_of, snapshot.data_source) }}
+  </div>
+  <div class="quick-actions">
+    <a href="{{ url_for('root.programs_directory', cip=cip_family) }}" class="btn btn-secondary">
+      Browse All Programs in this Field &rarr;
+    </a>
+  </div>
+</header>
+
+{# ── Snapshot strip (5 cards) ────────────────────────────────────────────── #}
+<div class="snapshot-strip">
+  {{ components.stat_card('Programs', '{:,}'.format(snapshot.program_count)) }}
+  {{ components.stat_card('Providers', '{:,}'.format(snapshot.provider_count)) }}
+
+  {% if snapshot.total_completions is not none %}
+    {{ components.stat_card('Annual Completions', '{:,}'.format(snapshot.total_completions)) }}
+  {% else %}
+    {{ components.stat_card('Annual Completions', '—', caveat='Data suppressed') }}
+  {% endif %}
+
+  {{ components.stat_card('Linked Occupations', snapshot.linked_occupations) }}
+  {{ components.stat_card('Top Credential', snapshot.top_credential) }}
+</div>
+
+{# ── HTMX Tabs ────────────────────────────────────────────────────────────── #}
+<div class="tabs" id="field-tabs">
+  <button class="tab active" id="tab-btn-overview"
+    hx-get="{{ url_for('root.field_detail', cip_family=cip_family) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Overview</button>
+
+  <button class="tab" id="tab-btn-programs"
+    hx-get="{{ url_for('root.field_tab_programs', cip_family=cip_family) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">All Programs</button>
+
+  <button class="tab" id="tab-btn-occupations"
+    hx-get="{{ url_for('root.field_tab_occupations', cip_family=cip_family) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Occupations</button>
+
+  <button class="tab" id="tab-btn-methods"
+    hx-get="{{ url_for('root.field_tab_methods', cip_family=cip_family) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Methods</button>
+</div>
+
+{# ── Tab content — Overview server-side; others HTMX-deferred ─────────────── #}
+<section id="tab-content" class="tab-content">
+  {% include "fields/partials/tab_overview.html" %}
+</section>
+
+<script>
+function setActiveTab(btn) {
+  document.querySelectorAll('#field-tabs .tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+document.body.addEventListener('htmx:beforeRequest', function(e) {
+  if (e.target.closest('#field-tabs')) {
+    document.getElementById('tab-content').classList.add('tab-loading');
+  }
+});
+document.body.addEventListener('htmx:afterSettle', function() {
+  document.getElementById('tab-content').classList.remove('tab-loading');
+});
+</script>
+{% endblock %}

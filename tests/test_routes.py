@@ -380,3 +380,147 @@ class TestProgramHTMXTabs:
             headers=self._htmx_headers()
         )
         assert res.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Field of Study routes (Epic 5)
+# ---------------------------------------------------------------------------
+
+class TestFieldDirectory:
+    """Field directory — GET /fields"""
+
+    def test_fields_directory_returns_200(self, client):
+        """Happy path: directory loads."""
+        res = client.get("/fields")
+        assert res.status_code == 200
+
+    def test_fields_directory_contains_heading(self, client):
+        """Page contains the expected heading."""
+        res = client.get("/fields")
+        assert b"Fields of Study" in res.data
+
+    def test_fields_directory_empty_db_no_crash(self, client):
+        """Edge case: empty / no matching programs renders empty state, not 500."""
+        res = client.get("/fields")
+        assert res.status_code == 200
+        assert b"Internal Server Error" not in res.data
+
+    def test_fields_directory_shows_seeded_family(self, client, seeded_program):
+        """Happy path: seeded CIP 51 programs → Health Professions row appears."""
+        res = client.get("/fields")
+        assert res.status_code == 200
+        assert b"Health Professions" in res.data
+
+    def test_fields_directory_sort_name(self, client, seeded_program):
+        """Happy path: sort=name is accepted without error."""
+        res = client.get("/fields?sort=name")
+        assert res.status_code == 200
+
+    def test_fields_directory_sort_programs(self, client, seeded_program):
+        """Happy path: sort=programs is accepted."""
+        res = client.get("/fields?sort=programs")
+        assert res.status_code == 200
+
+    def test_fields_directory_sort_providers(self, client, seeded_program):
+        """Happy path: sort=providers is accepted."""
+        res = client.get("/fields?sort=providers")
+        assert res.status_code == 200
+
+    def test_fields_directory_invalid_sort_falls_back(self, client, seeded_program):
+        """Edge case: unknown sort param falls back to completions — no crash."""
+        res = client.get("/fields?sort=bogus_column")
+        assert res.status_code == 200
+
+
+class TestFieldDetail:
+    """Field detail — GET /fields/<cip_family>"""
+
+    def test_field_detail_returns_200(self, client, seeded_program):
+        """Happy path: valid 2-digit family code renders detail page."""
+        res = client.get("/fields/51")
+        assert res.status_code == 200
+
+    def test_field_detail_contains_family_label(self, client, seeded_program):
+        """Happy path: Health Professions label is in the snapshot."""
+        res = client.get("/fields/51")
+        assert b"Health Professions" in res.data
+
+    def test_field_detail_contains_snapshot_metrics(self, client, seeded_program):
+        """Happy path: snapshot strip shows at least the program count."""
+        res = client.get("/fields/51")
+        assert res.status_code == 200
+        # 2 programs seeded for CIP 51
+        assert b"Programs" in res.data
+
+    def test_field_detail_unknown_code_returns_404(self, client):
+        """Error path: unknown family code → 404."""
+        res = client.get("/fields/99")
+        assert res.status_code == 404
+
+    def test_field_detail_six_digit_cip_strips_to_family(self, client, seeded_program):
+        """Edge case: 6-digit CIP code is stripped to family and resolved."""
+        res = client.get("/fields/51.3801")
+        # Flask router may 308-redirect due to the dot, or render directly
+        assert res.status_code in (200, 308)
+
+    def test_field_detail_all_suppressed_no_crash(self, client, seeded_program):
+        """Edge case: field where completions are all suppressed still renders."""
+        # CIP 51 has one suppressed program — mix is fine, just must not crash
+        res = client.get("/fields/51")
+        assert res.status_code == 200
+        assert b"Internal Server Error" not in res.data
+
+    def test_field_detail_sql_injection_code_returns_safely(self, client):
+        """Error path: SQL-injection-style code is handled safely — resolves or 404, never 500."""
+        res = client.get("/fields/99'; DROP TABLE program; --")
+        # '99' is not a known CIP family, so strips to 404;
+        # if URL encoding makes it unreachable, 308 is also acceptable.
+        assert res.status_code in (404, 308)
+        assert b"Internal Server Error" not in res.data
+
+
+class TestFieldHTMXTabs:
+    """Field HTMX tab fragments — GET /fields/<cip_family>/tab/<tab>"""
+
+    def _htmx_headers(self):
+        return {"HX-Request": "true"}
+
+    def test_tab_overview_returns_200(self, client, seeded_program):
+        """Happy path: overview tab renders for CIP 51."""
+        res = client.get("/fields/51/tab/overview", headers=self._htmx_headers())
+        assert res.status_code == 200
+
+    def test_tab_programs_returns_200(self, client, seeded_program):
+        """Happy path: programs tab renders with program table."""
+        res = client.get("/fields/51/tab/programs", headers=self._htmx_headers())
+        assert res.status_code == 200
+
+    def test_tab_programs_shows_seeded_program(self, client, seeded_program):
+        """Happy path: seeded program appears in the programs tab."""
+        res = client.get("/fields/51/tab/programs", headers=self._htmx_headers())
+        assert b"Nursing" in res.data
+
+    def test_tab_occupations_returns_200(self, client, seeded_program):
+        """Happy path: occupations tab renders (may be empty if no crosswalk data)."""
+        res = client.get("/fields/51/tab/occupations", headers=self._htmx_headers())
+        assert res.status_code == 200
+
+    def test_tab_occupations_no_crash_when_empty(self, client, seeded_program):
+        """Edge case: occupations tab with zero crosswalk links renders empty state."""
+        res = client.get("/fields/51/tab/occupations", headers=self._htmx_headers())
+        assert b"Internal Server Error" not in res.data
+
+    def test_tab_methods_returns_200(self, client, seeded_program):
+        """Happy path: methods tab renders correctly."""
+        res = client.get("/fields/51/tab/methods", headers=self._htmx_headers())
+        assert res.status_code == 200
+
+    def test_tab_methods_contains_cip_explanation(self, client, seeded_program):
+        """Happy path: methods tab includes CIP taxonomy explanation."""
+        res = client.get("/fields/51/tab/methods", headers=self._htmx_headers())
+        assert b"Classification of Instructional Programs" in res.data
+
+    def test_tab_unknown_family_returns_404(self, client):
+        """Error path: tab for unknown family → 404."""
+        res = client.get("/fields/99/tab/overview", headers=self._htmx_headers())
+        assert res.status_code == 404

@@ -1,0 +1,68 @@
+{# Programs tab — HTMX fragment: full paginated program list for this CIP family #}
+
+<div class="tab-section">
+  <h3 class="section-title">
+    All Programs
+    <span class="section-count">({{ '{:,}'.format(total_count) }})</span>
+  </h3>
+
+  {% if programs %}
+  <div class="table-wrapper">
+    <table class="data-table program-table">
+      <thead>
+        <tr>
+          <th>Program</th>
+          <th>Institution</th>
+          <th class="num-col">Completions ↓</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in programs %}
+        {% set prog_url = url_for('root.program_detail', program_id=row.program.program_id) %}
+        <tr class="program-row" data-href="{{ prog_url }}">
+          <td>
+            <a href="{{ prog_url }}" class="provider-name-link">{{ row.cip_title }}</a>
+            <span class="cred-badge">{{ row.program.credential_type }}</span>
+          </td>
+          <td>
+            <a href="{{ url_for('root.provider_detail', org_id=row.org_id) }}" class="org-link"
+               onclick="event.stopPropagation()">{{ row.org_name }}</a>
+          </td>
+          <td class="num-col">
+            {% if row.program.completions is not none %}
+              {{ '{:,}'.format(row.program.completions) }}
+            {% else %}
+              <span class="suppressed-label" title="Data suppressed by IPEDS">&mdash;</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ── Pagination ──────────────────────────────────────────────────────────── #}
+  {% if total_pages > 1 %}
+  <div class="pagination">
+    {% if page > 1 %}
+    <a class="page-btn"
+       hx-get="{{ url_for('root.field_tab_programs', cip_family=cip_family, page=page-1) }}"
+       hx-target="#tab-content">&larr; Previous</a>
+    {% endif %}
+    <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a class="page-btn"
+       hx-get="{{ url_for('root.field_tab_programs', cip_family=cip_family, page=page+1) }}"
+       hx-target="#tab-content">Next &rarr;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📚</div>
+    <h3>No programs found</h3>
+    <p>No KC training providers currently offer programs in this field.</p>
+  </div>
+  {% endif %}
+</div>
