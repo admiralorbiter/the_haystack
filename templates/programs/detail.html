@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}{{ snapshot.cip_title }} — {{ org.name }} | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('root.index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('root.programs_directory') }}">Programs</a> &rsaquo;
+  {{ snapshot.cip_title }}
+</div>
+
+<header class="page-header">
+  <div class="title-row">
+    <h1 class="m-0">{{ snapshot.cip_title }}</h1>
+    {{ components.entity_badge('program', snapshot.credential_type) }}
+  </div>
+  <div style="color:var(--text-muted); margin-bottom:var(--spacing-sm);">
+    <a href="{{ url_for('root.provider_detail', org_id=org.org_id) }}" style="color:var(--accent);">{{ org.name }}</a>
+    {% if org.city %}&bull; {{ org.city }}{% if org.state %}, {{ org.state }}{% endif %}{% endif %}
+    &bull;
+    {{ components.data_freshness_badge(snapshot.data_as_of, snapshot.data_source) }}
+  </div>
+  <div class="quick-actions">
+    <button class="btn btn-secondary" disabled title="Compare coming in Epic 6">Add to Compare</button>
+    <a href="{{ url_for('root.provider_detail', org_id=org.org_id) }}" class="btn btn-secondary">
+      View Provider &rarr;
+    </a>
+  </div>
+</header>
+
+{# ── Snapshot strip (6 metrics) ──────────────────────────────────────────── #}
+<div class="snapshot-strip">
+  {{ components.stat_card('Field', snapshot.cip_family_label) }}
+
+  <div class="stat-card">
+    <div class="stat-label">CIP Code</div>
+    <div class="stat-value" style="font-family:monospace; font-size:1.1rem;">{{ prog.cip }}</div>
+  </div>
+
+  {% if snapshot.completions is not none %}
+    {{ components.stat_card('Annual Completions', '{:,}'.format(snapshot.completions)) }}
+  {% else %}
+    {{ components.stat_card('Annual Completions', '—', caveat='Data suppressed') }}
+  {% endif %}
+
+  {{ components.stat_card('Credential', snapshot.credential_type) }}
+  {{ components.stat_card('Linked Occupations', snapshot.linked_occupations) }}
+</div>
+<p class="methods-note" style="margin-top: calc(-1 * var(--spacing-md)); margin-bottom: var(--spacing-xl);">
+  📊 Scorecard outcomes (earnings, completion rate) coming in Phase 2.
+</p>
+
+{# ── HTMX Tabs ───────────────────────────────────────────────────────────── #}
+<div class="tabs" id="program-tabs">
+  <button class="tab active" id="tab-btn-overview"
+    hx-get="{{ url_for('root.program_detail', program_id=prog.program_id) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Overview</button>
+
+  <button class="tab" id="tab-btn-occupations"
+    hx-get="{{ url_for('root.program_tab_occupations', program_id=prog.program_id) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Occupation Links</button>
+
+  <button class="tab" id="tab-btn-outcomes"
+    hx-get="{{ url_for('root.program_tab_outcomes', program_id=prog.program_id) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Outcomes</button>
+
+  <button class="tab" id="tab-btn-geography"
+    hx-get="{{ url_for('root.program_tab_geography', program_id=prog.program_id) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Geography</button>
+
+  <button class="tab" id="tab-btn-methods"
+    hx-get="{{ url_for('root.program_tab_methods', program_id=prog.program_id) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Methods</button>
+</div>
+
+{# ── Tab content — Overview server-side; others HTMX-deferred ─────────────── #}
+<section id="tab-content" class="tab-content">
+  {% include "programs/partials/tab_overview.html" %}
+</section>
+
+<script>
+function setActiveTab(btn) {
+  document.querySelectorAll('#program-tabs .tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+document.body.addEventListener('htmx:beforeRequest', function(e) {
+  if (e.target.closest('#program-tabs')) {
+    document.getElementById('tab-content').classList.add('tab-loading');
+  }
+});
+document.body.addEventListener('htmx:afterSettle', function() {
+  document.getElementById('tab-content').classList.remove('tab-loading');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{# Occupations tab — HTMX fragment #}
+{% import "partials/components.html" as components %}
+
+<div class="tab-section">
+  <h3 class="section-title">Linked Occupations
+    <span style="font-weight:normal; font-size:0.85rem; color:var(--text-muted);">
+      via NCES CIP 2020 → SOC 2018 crosswalk
+    </span>
+  </h3>
+
+  {% if occ_links %}
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Occupation</th>
+          <th style="font-family:monospace; font-size:0.85rem;">SOC Code</th>
+          <th class="num-col" title="Structural mapping confidence from the CIP→SOC crosswalk">Confidence</th>
+          <th class="num-col" title="Median annual wage — coming in Phase 2">Median Wage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for occ, confidence in occ_links %}
+        <tr>
+          <td>{{ occ.title }}</td>
+          <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);">{{ occ.soc }}</td>
+          <td class="num-col">
+            {% if confidence is not none %}
+              <span class="confidence-pill {% if confidence >= 0.9 %}conf-high{% elif confidence >= 0.5 %}conf-med{% else %}conf-low{% endif %}">
+                {{ '%.0f%%'|format(confidence * 100) }}
+              </span>
+            {% else %}
+              &mdash;
+            {% endif %}
+          </td>
+          <td class="num-col" style="color:var(--text-muted); font-size:0.85rem;">
+            <span title="Wage data coming in Phase 2">—</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="methods-note" style="margin-top:var(--spacing-md);">
+    These links are structural mappings from instructional program (CIP) to occupational category (SOC).
+    They reflect typical career paths, not guaranteed employment outcomes.
+    Wage and demand data will be added in Phase 2.
+  </p>
+
+  {% else %}
+  {{ components.empty_state(
+      'No occupation links found for CIP ' ~ prog.cip ~ '.',
+      'The CIP→SOC crosswalk does not include a mapping for this specific program code.'
+  ) }}
+  {% endif %}
+</div>

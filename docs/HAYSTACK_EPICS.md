@@ -249,7 +249,24 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 
 **Effort estimate:** 1–1.5 weeks (template and query patterns already established)
 
-### Tasks
+**Status: ✅ COMPLETE** — Shipped 2026-03-26
+
+**What shipped:**
+- Program directory (`/programs`) with FTS5 search (porter tokenizer + org_name denormalization), credential type / CIP family / completions band / provider filters, sortable results table, compare checkbox stub, pagination (50/page).
+- Program detail page (`/programs/<id>`) with HTMX-powered deferred tab loading identical to Provider pattern.
+- Snapshot strip: Field, CIP Code (monospace), Annual Completions, Credential, Linked Occupations.
+- Tab: Overview — program details, provider card with Visit Institution link, top 5 occupation links preview, "Similar Programs in KC" table (same CIP family, different providers, sorted by completions).
+- Tab: Occupation Links — all linked SOC occupations with confidence pills (green/amber/red) and wage placeholder for Phase 2.
+- Tab: Outcomes — completions value or suppression notice block; Scorecard Phase 2 placeholder.
+- Tab: Geography — provider location + map pin placeholder (Epic 7).
+- Tab: Methods — CIP taxonomy, CIP↔SOC crosswalk explanation, suppression definition, data currency.
+- FTS5 Alembic migration (`a3f7e8b2c1d5`) with INSERT/UPDATE/DELETE sync triggers and org_name denormalization.
+- Compare checkbox stub on every program row (disabled, ready for Epic 6).
+- Programs nav link wired in base.html.
+- data-href row navigation pattern (no onclick Jinja/JS conflicts).
+- 30+ new tests (directory: happy path, empty DB, 5 filters, 3 sorts, pagination; detail: happy path, 404s, suppressed, SQL injection; 8 HTMX tab fragment tests).
+- Fixed pre-existing `load_cip_titles()` bug: explicit path miss no longer falls back to crosswalk silently.
+- 98 tests, all passing.
 
 #### Program FTS5 Architecture
 - [ ] Create Alembic migration for `program_fts` virtual table using SQLite FTS5.
@@ -418,7 +435,7 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 | 2 — IPEDS pipeline | 2–3 weeks | Week 6 | ✅ Done |
 | 3 — Provider pages | 1.5–2 weeks | Week 8 | ✅ Done |
 | **2.5 — Admin UI + Data Explorer** | **1.5–2.5 days** | **Week 8.5** | **✅ Done** |
-| 4 — Program pages | 1–1.5 weeks | Week 10 | 🔲 Planned |
+| 4 — Program pages | 1–1.5 weeks | Week 10 | ✅ Done |
 | 5 — Field pages | 1 week | Week 11 | 🔲 Planned |
 | 6 — Compare | 1 week | Week 12 | 🔲 Planned |
 | 7 — Map | 1–1.5 weeks | Week 13.5 | 🔲 Planned |

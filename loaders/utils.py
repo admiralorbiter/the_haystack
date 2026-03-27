@@ -176,8 +176,13 @@ def load_cip_titles(path=None) -> dict[str, str]:
     # --- Try dedicated titles file first (optional) ---
     if path is not None:
         path = Path(path)
-        if path.exists():
-            return _load_cip_titles_from_file(path)
+        if not path.exists():
+            print(
+                f"[warn] CIP titles file not found: {path}. Program names will use CIP codes.",
+                file=sys.stderr,
+            )
+            return {}
+        return _load_cip_titles_from_file(path)
 
     # --- Primary: extract titles from the crosswalk file (CIP-SOC sheet) ---
     crosswalk_path = CROSSWALK_DIR / "cip2020_soc2018_crosswalk.xlsx"

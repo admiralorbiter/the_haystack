@@ -1,0 +1,48 @@
+{# Outcomes tab — HTMX fragment #}
+{% import "partials/components.html" as components %}
+
+<div class="tab-section">
+  <h3 class="section-title">Program Completions</h3>
+
+  {% if prog.completions is not none %}
+  <div class="snapshot-strip" style="justify-content:flex-start; gap:var(--spacing-lg);">
+    <div class="stat-card">
+      <div class="stat-label">Awards Conferred</div>
+      <div class="stat-value">{{ '{:,}'.format(prog.completions) }}</div>
+      <div class="stat-unit">IPEDS 2023–24</div>
+    </div>
+  </div>
+  <p class="methods-note" style="margin-top:var(--spacing-md);">
+    Completions are awards actually conferred during the academic year — not enrollment or graduation rates.
+    A student can earn multiple awards in a single year.
+  </p>
+  {% else %}
+  <div class="suppression-notice">
+    <div class="suppression-icon">🔒</div>
+    <h4>Data Suppressed by NCES</h4>
+    <p>
+      IPEDS suppresses completion values when fewer than 3 students completed a program
+      in a given year to protect student privacy. A suppressed value means data
+      <em>exists</em> — it does <strong>not</strong> mean zero completions.
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="tab-section">
+  <h3 class="section-title">College Scorecard Outcomes
+    <span style="font-weight:normal; font-size:0.85rem; color:var(--text-muted);">(Phase 2)</span>
+  </h3>
+  <div class="coming-soon-block">
+    <div class="coming-soon-icon">📊</div>
+    <h4>Earnings &amp; Completion Rate Coming in Phase 2</h4>
+    <p>
+      The College Scorecard dataset includes median earnings 1, 5, and 10 years after program completion,
+      plus institution-level completion rates by credential type. This layer will be added in Phase 2
+      once the Scorecard data pipeline is built.
+    </p>
+    <p style="font-size:0.85rem; color:var(--text-muted); margin-top:var(--spacing-sm);">
+      Source: U.S. Department of Education College Scorecard (FieldOfStudy API).
+    </p>
+  </div>
+</div>

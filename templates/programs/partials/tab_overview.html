@@ -1,0 +1,126 @@
+{# Overview tab — HTMX fragment (also rendered server-side on first page load) #}
+{% import "partials/components.html" as components %}
+
+<div class="tab-section">
+  <h3 class="section-title">About This Program</h3>
+  <dl class="detail-list">
+    <dt>Field of Study</dt>
+    <dd>{{ cip_family_label }}</dd>
+
+    <dt>CIP Code</dt>
+    <dd style="font-family:monospace;">{{ prog.cip }}</dd>
+
+    <dt>Credential Level</dt>
+    <dd>{{ prog.credential_type }}</dd>
+
+    {% if prog.completions is not none %}
+    <dt>Annual Completions</dt>
+    <dd>{{ '{:,}'.format(prog.completions) }} awards conferred</dd>
+    {% else %}
+    <dt>Annual Completions</dt>
+    <dd>
+      <span class="suppressed-label">&mdash;</span>
+      <span class="caveat-text">Suppressed by NCES (fewer than 3 completions)</span>
+    </dd>
+    {% endif %}
+
+    {% if prog.modality %}
+    <dt>Modality</dt>
+    <dd>{{ prog.modality }}</dd>
+    {% endif %}
+
+    {% if prog.duration_weeks %}
+    <dt>Duration</dt>
+    <dd>{{ prog.duration_weeks }} weeks</dd>
+    {% endif %}
+  </dl>
+</div>
+
+{# Provider card #}
+<div class="tab-section">
+  <h3 class="section-title">Offered By</h3>
+  <div class="provider-card-inline">
+    <div class="provider-card-name">
+      <a href="{{ url_for('root.provider_detail', org_id=org.org_id) }}">{{ org.name }}</a>
+    </div>
+    {% if org.city %}
+    <div class="provider-card-location" style="color:var(--text-muted); font-size:0.9rem;">
+      {{ org.city }}{% if org.state %}, {{ org.state }}{% endif %}
+    </div>
+    {% endif %}
+    {% if org.website %}
+    <div style="margin-top:var(--spacing-xs);">
+      <a href="{{ org.website }}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">
+        Visit Institution &rarr;
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{# Top occupation links (preview — full list on Occupations tab) #}
+{% if top_occupations %}
+<div class="tab-section">
+  <h3 class="section-title">Top Linked Occupations
+    <span style="font-weight:normal; font-size:0.85rem; color:var(--text-muted);">(via CIP→SOC crosswalk)</span>
+  </h3>
+  <ul class="occ-list">
+    {% for occ, confidence in top_occupations %}
+    <li class="occ-item">
+      <span class="occ-title">{{ occ.title }}</span>
+      <span class="occ-soc" style="font-family:monospace; font-size:0.8rem; color:var(--text-muted);">{{ occ.soc }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  <p style="font-size:0.85rem; color:var(--text-muted); margin-top:var(--spacing-sm);">
+    <a href="#" onclick="document.getElementById('tab-btn-occupations').click(); return false;">
+      View all linked occupations &rarr;
+    </a>
+  </p>
+</div>
+{% else %}
+<div class="tab-section">
+  {{ components.empty_state('No occupation links found for this program\'s CIP code.', 'The CIP→SOC crosswalk may not have a mapping for CIP ' ~ prog.cip ~ '.') }}
+</div>
+{% endif %}
+
+{# Similar programs in the same CIP family #}
+{% if similar_programs %}
+<div class="tab-section">
+  <h3 class="section-title">Similar Programs in KC
+    <span style="font-weight:normal; font-size:0.85rem; color:var(--text-muted);">(same field of study, different providers)</span>
+  </h3>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Program</th>
+          <th>Institution</th>
+          <th class="num-col">Completions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in similar_programs %}
+        {% set detail_url = url_for('root.program_detail', program_id=row.program.program_id) %}
+        <tr class="program-row" data-href="{{ detail_url }}" style="cursor:pointer;">
+          <td>
+            <a href="{{ detail_url }}">
+              {{ row.cip_title }}
+            </a>
+            <span class="cred-badge">{{ row.program.credential_type }}</span>
+          </td>
+          <td style="color:var(--text-muted); font-size:0.9rem;">{{ row.org_name }}</td>
+          <td class="num-col">
+            {% if row.program.completions is not none %}
+              {{ '{:,}'.format(row.program.completions) }}
+            {% else %}
+              <span class="suppressed-label">&mdash;</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}

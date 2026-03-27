@@ -419,3 +419,267 @@
     padding-bottom: 0;
   }
 }
+
+/* ============================================================
+   programs.css — Program directory and detail styles
+   Added: Epic 4 (appended to providers.css — shared global load)
+   ============================================================ */
+
+/* ── Search bar ────────────────────────────────────────────── */
+.search-bar-form {
+  margin-bottom: var(--spacing-md);
+}
+
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 40px 10px 42px;
+  border: 1px solid var(--color-surface);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  background: white;
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.search-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(106, 13, 63, 0.1);
+}
+
+.search-clear {
+  position: absolute;
+  right: 12px;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  line-height: 1;
+}
+
+.search-clear:hover {
+  color: var(--text-main);
+  text-decoration: none;
+}
+
+/* ── Credential badge ──────────────────────────────────────── */
+.cred-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  background: var(--color-surface);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+
+/* ── Org link in program table ─────────────────────────────── */
+.org-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.org-link:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/* ── Compare checkbox stub ─────────────────────────────────── */
+.compare-col {
+  text-align: center;
+  width: 40px;
+}
+
+.compare-check-btn {
+  background: none;
+  border: none;
+  cursor: not-allowed;
+  font-size: 1rem;
+  opacity: 0.35;
+  padding: 2px 4px;
+}
+
+/* ── Confidence pills ──────────────────────────────────────── */
+.confidence-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.conf-high {
+  background: #d4edda;
+  color: #155724;
+}
+
+.conf-med {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.conf-low {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* ── Suppression notice block ──────────────────────────────── */
+.suppression-notice {
+  background: var(--color-surface);
+  border-left: 4px solid var(--text-muted);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+}
+
+.suppression-icon {
+  font-size: 1.5rem;
+  margin-bottom: var(--spacing-xs);
+}
+
+.suppression-notice h4 {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.suppression-notice p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* ── Coming soon block ─────────────────────────────────────── */
+.coming-soon-block {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  border: 1px dashed var(--text-muted);
+}
+
+.coming-soon-icon {
+  font-size: 1.5rem;
+  margin-bottom: var(--spacing-xs);
+}
+
+.coming-soon-block h4 {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.coming-soon-block p {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* ── Provider card inline (overview tab) ───────────────────── */
+.provider-card-inline {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: inline-block;
+  min-width: 280px;
+}
+
+.provider-card-name {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.provider-card-name a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.provider-card-name a:hover {
+  text-decoration: underline;
+}
+
+/* ── Occupation list (overview tab preview) ────────────────── */
+.occ-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.occ-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+.occ-title {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+/* ── Caveat text (inline suppression note) ─────────────────── */
+.caveat-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-left: var(--spacing-xs);
+  font-style: italic;
+}
+
+/* ── data-href row navigation (no onclick) ─────────────────── */
+tr[data-href] {
+  cursor: pointer;
+}
+
+tr[data-href]:hover {
+  background: var(--color-bg);
+}
+
+/* ── Badge (FTS indicator, small) ──────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+
+.badge-sm {
+  font-size: 0.65rem;
+  padding: 1px 5px;
+}
+
+/* ── Program table row click areas ────────────────────────────*/
+.program-table .program-row {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.program-table .program-row:hover {
+  background: var(--color-bg);
+}

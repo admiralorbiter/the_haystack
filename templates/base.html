@@ -23,7 +23,7 @@
         </div>
         <nav class="nav-links">
             <a href="{{ url_for('root.providers_directory') }}">Providers</a>
-            <a href="#">Programs</a>
+            <a href="{{ url_for('root.programs_directory') }}">Programs</a>
             <a href="#">Fields</a>
             <a href="{{ url_for('root.map_view') }}">Map</a>
             <a href="{{ url_for('root.compare_providers') }}">Compare</a>
@@ -38,5 +38,14 @@
     <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
         <p>The Haystack &copy; 2026 &mdash; Data sourced from IPEDS (NCES). Built for the Kansas City region.</p>
     </footer>
+    <script>
+    // Enable data-href row navigation for clickable table rows
+    document.addEventListener('click', function(e) {
+      var row = e.target.closest('tr[data-href]');
+      if (row && !e.target.closest('a') && !e.target.closest('button')) {
+        window.location = row.dataset.href;
+      }
+    });
+    </script>
 </body>
 </html>
