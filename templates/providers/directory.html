@@ -51,6 +51,7 @@
     {{ total_count }} provider{{ 's' if total_count != 1 else '' }}
     {% if county_filter or cred_filter %}
     <span style="font-weight:normal; color:var(--text-muted); font-size:0.9rem;"> &mdash; filtered</span>
+    <a href="{{ url_for('root.providers_directory') }}" class="clear-filters-link" title="Clear all filters">✕ Clear filters</a>
     {% endif %}
   </span>
   <div class="sort-row">
@@ -58,7 +59,7 @@
     {% set sort_options = [('completions', 'Completions'), ('programs', 'Programs'), ('name', 'Name')] %}
     {% for key, label in sort_options %}
     <a href="{{ url_for('root.providers_directory', county=county_filter, cred=cred_filter, cip=cip_filter, sort=key) }}"
-       class="sort-link {% if sort == key %}sort-active{% endif %}">{{ label }}</a>
+       class="sort-link {% if sort == key %}sort-active{% endif %}">{{ label }}{% if sort == key %} ↓{% endif %}</a>
     {% endfor %}
   </div>
 </div>
@@ -82,8 +83,8 @@
       <tr>
         <th>Institution</th>
         <th>Location</th>
-        <th class="num-col">Programs</th>
-        <th class="num-col" title="Awards conferred (IPEDS 2023–24). — means data is suppressed to protect student privacy.">Completions ↓</th>
+        <th class="num-col {% if sort == 'programs' %}sort-col-active{% endif %}">Programs{% if sort == 'programs' %} ↓{% endif %}</th>
+        <th class="num-col {% if sort == 'completions' %}sort-col-active{% endif %}" title="Awards conferred (IPEDS 2023–24). — means data is suppressed to protect student privacy.">Completions{% if sort == 'completions' %} ↓{% endif %}</th>
         <th class="num-col">Occupations</th>
         <th class="compare-col"></th>
       </tr>

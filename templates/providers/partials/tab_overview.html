@@ -55,8 +55,8 @@
       {{ stat_card("Avg Net Price", "$" ~ "{:,}".format(ipeds.net_price)) }}
     {% endif %}
 
-    {# Acceptance rate #}
-    {% if ipeds.acceptance_rate is not none %}
+    {# Acceptance rate — only show if positive, open-admission schools have no rate #}
+    {% if ipeds.acceptance_rate is defined and ipeds.acceptance_rate is not none and ipeds.acceptance_rate > 0 %}
       {{ stat_card("Acceptance Rate", ipeds.acceptance_rate ~ "%") }}
     {% endif %}
 
@@ -77,8 +77,75 @@
       {{ stat_card("SAT Math 75th %ile", ipeds.sat_math_75) }}
     {% endif %}
 
+    {# Faculty count #}
+    {% if ipeds.faculty_count is not none %}
+      {{ stat_card("Instructional Faculty", "{:,}".format(ipeds.faculty_count) ~ " staff") }}
+    {% endif %}
+
+    {# Part-time enrollment flag #}
+    {% if ipeds.pt_undergrad %}
+      {{ stat_card("Part-Time Students", "Accepted") }}
+    {% endif %}
+
   </div>
-  <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.5rem;">Source: IPEDS 2024 (IC, Cost, Admissions, EF, EFFY)</p>
+  <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.5rem;">Source: IPEDS 2024 (IC, Cost, Admissions, EF, EFFY, EAP)</p>
+</div>
+{% endif %}
+
+{# ── Cost of Attendance Comparison ────────────────────────────────────────── #}
+{% if ipeds and (ipeds.instate_tuition is not none or ipeds.outstate_tuition is not none) %}
+<div class="tab-section">
+  <h3 class="section-title">Cost of Attendance <span style="font-size:0.78rem;font-weight:normal;color:var(--text-muted);">per academic year</span></h3>
+  {% set rb = ipeds.room_board or 0 %}
+  {% set in_total  = (ipeds.instate_tuition  or 0) + rb %}
+  {% set out_total = (ipeds.outstate_tuition or 0) + rb %}
+  {% set max_cost  = [in_total, out_total] | max %}
+
+  {% if in_total > 0 %}
+  <div style="margin-bottom:0.75rem;">
+    <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;">
+      <span style="font-weight:600;">In-State</span>
+      <span style="color:var(--text-muted);">${{ "{:,}".format(in_total) }}/yr</span>
+    </div>
+    <div style="background:var(--color-surface);border-radius:6px;height:14px;overflow:hidden;">
+      <div style="width:{{ (in_total / max_cost * 100) | round(1) }}%;background:var(--color-primary);height:100%;border-radius:6px;transition:width 0.4s;">
+      </div>
+    </div>
+    {% if ipeds.instate_tuition is not none %}
+    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px;">
+      Tuition ${{ "{:,}".format(ipeds.instate_tuition) }}
+      {% if rb > 0 %} + Room &amp; Board ${{ "{:,}".format(rb) }}{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if out_total > 0 and out_total != in_total %}
+  <div style="margin-bottom:0.75rem;">
+    <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;">
+      <span style="font-weight:600;">Out-of-State</span>
+      <span style="color:var(--text-muted);">${{ "{:,}".format(out_total) }}/yr</span>
+    </div>
+    <div style="background:var(--color-surface);border-radius:6px;height:14px;overflow:hidden;">
+      <div style="width:{{ (out_total / max_cost * 100) | round(1) }}%;background:var(--color-secondary);height:100%;border-radius:6px;transition:width 0.4s;">
+      </div>
+    </div>
+    {% if ipeds.outstate_tuition is not none %}
+    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px;">
+      Tuition ${{ "{:,}".format(ipeds.outstate_tuition) }}
+      {% if rb > 0 %} + Room &amp; Board ${{ "{:,}".format(rb) }}{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if ipeds.net_price is not none %}
+  <p style="font-size:0.82rem;margin-top:0.5rem;">
+    <strong>Avg Net Price (with aid):</strong> ${{ "{:,}".format(ipeds.net_price) }}/yr
+    <span style="font-size:0.72rem;color:var(--text-muted);"> — for Title IV recipients</span>
+  </p>
+  {% endif %}
+  <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.4rem;">Source: IPEDS Cost 2024. Room &amp; Board included where reported.</p>
 </div>
 {% endif %}
 

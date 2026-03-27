@@ -93,4 +93,29 @@
     </div>
 </section>
 
+{# Recently Viewed strip (written by base.js, read here) #}
+<section id="recently-viewed-section" style="display:none; padding: var(--spacing-lg) 0; border-top: 1px solid var(--color-surface);">
+  <h3 style="margin:0 0 var(--spacing-sm) 0; font-size:1rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.06em;">Recently Viewed</h3>
+  <div id="recently-viewed-list" style="display:flex; flex-wrap:wrap; gap:0.5rem;"></div>
+</section>
+<script>
+(function() {
+  try {
+    var list = JSON.parse(localStorage.getItem('haystack_recent') || '[]');
+    if (!list.length) return;
+    var section = document.getElementById('recently-viewed-section');
+    var container = document.getElementById('recently-viewed-list');
+    var icons = { provider: '🏫', program: '📌', field: '📚' };
+    list.forEach(function(item) {
+      var a = document.createElement('a');
+      a.href = item.url;
+      a.className = 'chip chip-recent';
+      a.textContent = (icons[item.type] || '🔗') + ' ' + item.name;
+      container.appendChild(a);
+    });
+    section.style.display = 'block';
+  } catch(err) {}
+})();
+</script>
+
 {% endblock %}

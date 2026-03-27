@@ -126,7 +126,7 @@ _OPENADMP = {"1": "Open Admission", "2": "Selective Admission"}
 
 def _get_ipeds_enrichment(unitid: str) -> dict:
     """Fetch IC, cost, admissions, enrollment, retention, graduation, financial aid,
-    and 200% graduation rate data from IPEDS SQLite tables using a monolithic LEFT JOIN."""
+    200% graduation rate, faculty/staff counts, and expenditure data from IPEDS tables."""
     if not unitid:
         return {}
     
@@ -144,7 +144,11 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
         sfa.NPIST2,
         sfa24.UAGRNTP as sfa24_any_grant_pct, sfa24.UAGRNTA as sfa24_any_grant_avg,
         sfa24.UPGRNTP as sfa24_pell_pct,    sfa24.UPGRNTA as sfa24_pell_avg,
-        sfa24.UFLOANP as sfa24_loan_pct,    sfa24.UFLOANA as sfa24_loan_avg
+        sfa24.UFLOANP as sfa24_loan_pct,    sfa24.UFLOANA as sfa24_loan_avg,
+        eap.EAPTOT as faculty_total,
+        fin.F1B01 as exp_instruction,
+        fin.F1B04 as exp_academic_support,
+        fin.F1B05 as exp_student_services
     FROM ipeds_ic2024 ic
     LEFT JOIN ipeds_cost1_2024 cost ON ic.UNITID = cost.UNITID
     LEFT JOIN ipeds_adm2024 adm ON ic.UNITID = adm.UNITID
@@ -157,6 +161,13 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
     LEFT JOIN ipeds_ef2024d ef4d ON ic.UNITID = ef4d.UNITID
     LEFT JOIN ipeds_sfa2223 sfa ON ic.UNITID = sfa.UNITID
     LEFT JOIN ipeds_sfa2324 sfa24 ON ic.UNITID = sfa24.UNITID
+    LEFT JOIN (
+        SELECT UNITID, SUM(EAPTOT) as EAPTOT
+        FROM ipeds_eap2024
+        WHERE EAPCAT = '1' AND OCCUPCAT IN ('2100', '2200')
+        GROUP BY UNITID
+    ) eap ON ic.UNITID = eap.UNITID
+    LEFT JOIN ipeds_f2223_f1a fin ON ic.UNITID = fin.UNITID
     WHERE ic.UNITID = ?
     '''
     
@@ -245,7 +256,23 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
     result["aid_loan_pct"]       = _int(row, "sfa24_loan_pct")
     result["aid_loan_avg"]       = _int(row, "sfa24_loan_avg")
 
+    # Faculty & Staff — instructional head count (eap2024, OCCUPCAT 2100+2200)
+    result["faculty_count"]      = _int(row, "faculty_total")
+
+    # Institutional Expenditures — F2223 (most recent available)
+    # F1A table stores raw dollars; we convert to thousands ($000s) for display
+    _exp_instruction      = _int(row, "exp_instruction")
+    _exp_academic_support = _int(row, "exp_academic_support")
+    _exp_student_services = _int(row, "exp_student_services")
+    result["exp_instruction"]      = round(_exp_instruction / 1000)      if _exp_instruction      else None
+    result["exp_academic_support"] = round(_exp_academic_support / 1000) if _exp_academic_support else None
+    result["exp_student_services"] = round(_exp_student_services / 1000) if _exp_student_services else None
+    # Total for percentage calculations
+    _exp_vals = [result["exp_instruction"], result["exp_academic_support"], result["exp_student_services"]]
+    result["exp_total"] = sum(v for v in _exp_vals if v) or None
+
     return result
+
 
 
 def _ipeds_outcome_measures(unitid: str) -> list[dict]:

@@ -389,7 +389,7 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 
 ---
 
-## Epic 9 — Methods, freshness, and quality pass
+## Epic 9 — Methods, freshness, and quality pass 🟢 COMPLETE
 **Goal:** Every page has data freshness, methods text, and clear caveats. This is the difference between a prototype and something you can show people.
 
 **Exit criteria:** Every entity page passes the ship checklist from `HAYSTACK_DATASET_ONBOARDING_TEMPLATE.md`.
@@ -397,13 +397,13 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 **Effort estimate:** 3–5 days
 
 ### Tasks
-- [ ] Methods text written for: IPEDS completions, CIP definition, CIP→SOC crosswalk, suppression handling
-- [ ] Data freshness badge populates from `dataset_source` table on every page
-- [ ] Empty states reviewed for: zero programs, zero completions, zero occupation links, zero compare items
-- [ ] Mobile layout pass on all 4 primary screens (directory, detail, compare, map)
-- [ ] Performance check: no query over 500ms on local SQLite
-- [ ] No page with more than 6 snapshot metrics
-- [ ] No page with a custom layout not in the shared shell
+- [x] Methods text written for: IPEDS completions, CIP definition, CIP→SOC crosswalk, suppression handling
+- [x] Data freshness badge populates from `dataset_source` table on every page
+- [x] Empty states reviewed for: zero programs, zero completions, zero occupation links, zero compare items
+- [x] Mobile layout pass on all 4 primary screens (directory, detail, compare, map)
+- [x] Performance check: no query over 500ms on local SQLite (max observed: 3.7ms)
+- [x] No page with more than 6 snapshot metrics
+- [x] No page with a custom layout not in the shared shell
 
 ---
 

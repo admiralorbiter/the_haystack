@@ -47,9 +47,13 @@
               </h4>
               <span style="font-size:1.25rem; color:var(--text-muted);">→</span>
             </div>
-            <p style="margin:0; color:var(--text-muted); font-size:0.9rem;">
+            <p style="margin:0 0 0.4rem; color:var(--text-muted); font-size:0.9rem;">
               {% if o.city %}{{ o.city }}{% else %}KC Region{% endif %}
             </p>
+            <div style="display:flex; gap:0.75rem; font-size:0.78rem; color:var(--text-muted);">
+              {% if o.total_programs %}<span>📋 {{ o.total_programs }} programs</span>{% endif %}
+              {% if o.total_completions %}<span>🎓 {{ '{:,}'.format(o.total_completions) }} completions/yr</span>{% endif %}
+            </div>
           </div>
           {% endfor %}
         </div>
@@ -80,6 +84,7 @@
             <p style="margin:0 0 0.5rem 0; color:var(--text-muted); font-size:0.9rem;">{{ p.org_name }}</p>
             <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items: center;">
               <span class="chip" style="margin:0;">{{ p.program.credential_type }}</span>
+              {% if p.program.completions %}<span style="font-size:0.78rem; color:var(--text-muted);">🎓 {{ p.program.completions }} completions/yr</span>{% endif %}
             </div>
           </div>
           {% endfor %}

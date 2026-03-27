@@ -30,3 +30,86 @@ h1, h2, h3, h4 {
   margin: 0 auto;
   padding: var(--spacing-md);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Mobile responsive — Epic 9
+   Note: Collab Guide calls for a bottom tab bar on mobile.
+   That is Phase 2. This pass ships horizontal-scroll tabs as P1.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Navigation: stack logo + search + links vertically */
+  .top-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .search-box input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .nav-links {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    font-size: 0.9rem;
+  }
+
+  /* Snapshot strip: single-column stack */
+  .snapshot-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Tabs: prevent wrapping, allow horizontal scroll */
+  .tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Card grids: single column */
+  .card-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Credential mix rows: stack on small screens */
+  .cred-mix-row {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  /* Quick actions: stack vertically */
+  .quick-actions {
+    flex-direction: column;
+  }
+
+  /* Tables: allow horizontal scroll on small viewports */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small: fully single-column snapshot */
+  .snapshot-strip {
+    grid-template-columns: 1fr;
+  }
+}
+

@@ -47,6 +47,34 @@
         window.location = row.dataset.href;
       }
     });
+
+    // ── Keyboard shortcut: '/' or Ctrl+K focuses search ─────────────────────
+    document.addEventListener('keydown', function(e) {
+      var tag = document.activeElement.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key === '/' || (e.ctrlKey && e.key === 'k') || (e.metaKey && e.key === 'k')) {
+        e.preventDefault();
+        var searchInput = document.querySelector('.search-box input');
+        if (searchInput) { searchInput.focus(); searchInput.select(); }
+      }
+    });
+
+    // ── Recently Viewed — write current page visit to localStorage ───────────
+    (function() {
+      var entity = document.body.dataset.entityType;
+      var entityId = document.body.dataset.entityId;
+      var entityName = document.body.dataset.entityName;
+      var entityUrl = window.location.pathname;
+      if (!entity || !entityId || !entityName) return;
+      try {
+        var key = 'haystack_recent';
+        var list = JSON.parse(localStorage.getItem(key) || '[]');
+        list = list.filter(function(i) { return i.id !== entityId; });
+        list.unshift({ type: entity, id: entityId, name: entityName, url: entityUrl });
+        list = list.slice(0, 5);
+        localStorage.setItem(key, JSON.stringify(list));
+      } catch(err) {}
+    })();
     </script>
     {% block scripts %}{% endblock %}
 </body>

@@ -90,6 +90,76 @@
   color: var(--text-main);
 }
 
+/* ── Institution type badge (4-year / 2-year / Certificate) ──────────────── */
+.inst-type-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Clear filters link ───────────────────────────────────────────────────── */
+.clear-filters-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 0.5rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.clear-filters-link:hover {
+  background: var(--color-primary);
+  color: var(--text-light);
+  text-decoration: none;
+}
+
+/* ── Sort active column header ────────────────────────────────────────────── */
+.sort-col-active {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* ── Recently-viewed chip ─────────────────────────────────────────────────── */
+.chip-recent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--text-color);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.chip-recent:hover {
+  background: var(--color-primary);
+  color: var(--text-light);
+  border-color: var(--color-primary);
+  text-decoration: none;
+}
+
+/* ── Search box focus ring ────────────────────────────────────────────────── */
+.search-box input:focus {
+  outline: 2px solid rgba(255,255,255,0.7);
+  outline-offset: 1px;
+}
+
+
 /* ── Field directory — CIP family code chip ────────────────────────────── */
 .cip-family-code {
   display: inline-block;
@@ -195,13 +265,19 @@
   color: var(--text-muted);
 }
 
-/* Tabs */
+/* ── Sticky tab bar ─────────────────────────────────────────────────────── */
 .tabs {
   display: flex;
-  gap: 0;
+  gap: var(--spacing-xs);
   border-bottom: 2px solid var(--color-surface);
-  margin-bottom: var(--spacing-xl);
-  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  position: sticky;
+  top: 0;
+  background: var(--color-bg);
+  z-index: 100;
+  padding: var(--spacing-sm) 0 0;
+  /* shadow when stuck */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
 .tab {
@@ -313,3 +389,76 @@
   margin: 0;
   font-size: 0.95rem;
 }
+
+/* ── Tab section & methods styling ──────────────────────────────────────── */
+.tab-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 2px solid var(--color-surface);
+}
+
+.methods-block {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.methods-block h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.methods-block p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.methods-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Confidence pills (occupation tab) ───────────────────────────────────── */
+.confidence-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.conf-high { background: #d4edda; color: #155724; }
+.conf-med  { background: #fff3cd; color: #856404; }
+.conf-low  { background: #f8d7da; color: #721c24; }
+
+/* ── Suppression label ───────────────────────────────────────────────────── */
+.suppressed-label {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Numeric column alignment ─────────────────────────────────────────────── */
+.num-col {
+  text-align: right;
+}
+
+/* ── Credential mix bar chart ─────────────────────────────────────────────── */
+.cred-mix-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.cred-mix-row  { display: grid; grid-template-columns: 180px 1fr 60px; align-items: center; gap: 0.75rem; }
+.cred-mix-label { font-size: 0.85rem; color: var(--text-main); }
+.cred-mix-bar-wrap { background: var(--color-surface); border-radius: 6px; height: 10px; overflow: hidden; }
+.cred-mix-bar  { height: 100%; background: var(--color-primary); border-radius: 6px; transition: width 0.3s ease; }
+.cred-mix-count { font-size: 0.85rem; font-weight: 600; text-align: right; }
+

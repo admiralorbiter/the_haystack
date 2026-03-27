@@ -1,41 +1,72 @@
 {# Outcomes tab — HTMX fragment #}
 
+{# ── Jump-to TOC ──────────────────────────────────────────────────────────── #}
+<nav style="display:flex;gap:0.5rem;flex-wrap:wrap;font-size:0.8rem;margin-bottom:1rem;">
+  <span style="color:var(--text-muted);font-weight:600;">Jump to:</span>
+  {% if ipeds and (ipeds.grad_rate_150 is not none or ipeds.grad_rate_200 is not none) %}
+  <a href="#section-grad" style="color:var(--color-primary);">Grad Rates</a> ·
+  {% endif %}
+  {% if ipeds and ipeds.aid_any_grant_pct is not none %}
+  <a href="#section-aid" style="color:var(--color-primary);">Financial Aid</a> ·
+  {% endif %}
+  <a href="#section-completions" style="color:var(--color-primary);">Completions</a> ·
+  <a href="#section-demographics" style="color:var(--color-primary);">Demographics</a>
+  {% if ipeds and ipeds.exp_total %}
+  · <a href="#section-investment" style="color:var(--color-primary);">Investment</a>
+  {% endif %}
+</nav>
+
 {# ── Graduation Rates (150%) ──────────────────────────────────────────────── #}
 {% if ipeds and (ipeds.grad_rate_150 is not none or ipeds.grad_rate_pell is not none or ipeds.grad_rate_200 is not none) %}
-<div class="tab-section">
+<div class="tab-section" id="section-grad">
   <h3 class="section-title">Graduation Rates <span style="font-size:0.78rem;font-weight:normal;color:var(--text-muted);">IPEDS 2024</span></h3>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.6rem;margin-bottom:0.75rem;">
+  <div style="display:flex;flex-direction:column;gap:0.75rem;max-width:480px;">
 
     {% if ipeds.grad_rate_150 is not none %}
-    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
-      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">All Students — 150%</div>
-      <div style="font-size:1.4rem;font-weight:700;color:var(--color-primary);margin-top:3px;">{{ ipeds.grad_rate_150 }}%</div>
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
+        <span style="font-weight:600;">All Students — 150%</span>
+        <span style="font-size:1.1rem;font-weight:700;color:var(--color-primary);">{{ ipeds.grad_rate_150 }}%</span>
+      </div>
+      <div style="background:var(--color-surface);border-radius:6px;height:10px;overflow:hidden;">
+        <div style="width:{{ ipeds.grad_rate_150 }}%;background:var(--color-primary);height:100%;border-radius:6px;transition:width 0.5s;"></div>
+      </div>
       {% if ipeds.grad_rate_150_cohort %}
-      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">cohort: {{ "{:,}".format(ipeds.grad_rate_150_cohort) }}</div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">cohort: {{ "{:,}".format(ipeds.grad_rate_150_cohort) }} students</div>
       {% endif %}
     </div>
     {% endif %}
 
     {% if ipeds.grad_rate_pell is not none %}
-    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
-      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Pell / SSL Recipients — 150%</div>
-      <div style="font-size:1.4rem;font-weight:700;color:var(--color-primary);margin-top:3px;">{{ ipeds.grad_rate_pell }}%</div>
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
+        <span style="font-weight:600;">Pell / SSL Recipients — 150%</span>
+        <span style="font-size:1.1rem;font-weight:700;color:var(--color-primary);">{{ ipeds.grad_rate_pell }}%</span>
+      </div>
+      <div style="background:var(--color-surface);border-radius:6px;height:10px;overflow:hidden;">
+        <div style="width:{{ ipeds.grad_rate_pell }}%;background:var(--color-secondary);height:100%;border-radius:6px;transition:width 0.5s;"></div>
+      </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">grant/loan recipients</div>
     </div>
     {% endif %}
 
     {% if ipeds.grad_rate_200 is not none %}
-    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
-      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">All Students — 200%</div>
-      <div style="font-size:1.4rem;font-weight:700;color:var(--color-secondary, #2a6496);margin-top:3px;">{{ ipeds.grad_rate_200 }}%</div>
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
+        <span style="font-weight:600;">All Students — 200%</span>
+        <span style="font-size:1.1rem;font-weight:700;color:#4a7c59;">{{ ipeds.grad_rate_200 }}%</span>
+      </div>
+      <div style="background:var(--color-surface);border-radius:6px;height:10px;overflow:hidden;">
+        <div style="width:{{ ipeds.grad_rate_200 }}%;background:#4a7c59;height:100%;border-radius:6px;transition:width 0.5s;"></div>
+      </div>
       {% if ipeds.grad_rate_200_cohort %}
-      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">cohort: {{ "{:,}".format(ipeds.grad_rate_200_cohort) }}</div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">cohort: {{ "{:,}".format(ipeds.grad_rate_200_cohort) }} students</div>
       {% endif %}
     </div>
     {% endif %}
 
   </div>
-  <p style="font-size:0.7rem;color:var(--text-muted);">
+  <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.6rem;">
     150% = completed within 1.5× normal program time. 200% = within twice normal time (captures part-time students better).
     Source: IPEDS GR 2024 and GR200 2024 surveys.
   </p>
@@ -215,6 +246,41 @@
     <p>Earnings and employment outcomes from the College Scorecard will be available in Phase 2.</p>
   </div>
 </div>
+
+{# ── Institutional Expenditures (f2223_f1a) ───────────────────────────────── #}
+{% if ipeds and ipeds.exp_total %}
+<div class="tab-section">
+  <h3 class="section-title">How This Institution Invests
+    <span class="section-hint">(FY 2022–23, in $000s)</span>
+  </h3>
+  {% set exp_cats = [
+    ('Instruction',      ipeds.exp_instruction,      'var(--color-primary)'),
+    ('Academic Support', ipeds.exp_academic_support, 'var(--color-secondary)'),
+    ('Student Services', ipeds.exp_student_services, '#4a7c59'),
+  ] %}
+  <div style="display:flex;flex-direction:column;gap:0.6rem;max-width:520px;">
+    {% for label, amount, color in exp_cats %}
+    {% if amount %}
+    {% set pct = (amount / ipeds.exp_total * 100) | round(1) %}
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:3px;">
+        <span>{{ label }}</span>
+        <span style="color:var(--text-muted);">${{ "{:,}".format(amount) }}k &nbsp;({{ pct }}%)</span>
+      </div>
+      <div style="background:var(--color-surface);border-radius:5px;height:12px;overflow:hidden;">
+        <div style="width:{{ pct }}%;background:{{ color }};height:100%;border-radius:5px;transition:width 0.4s;"></div>
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+  <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.6rem;">
+    Source: IPEDS Finance (F2223, F1A). Instruction, academic support, and student services only.
+    Plant, research, and administrative costs excluded.
+  </p>
+</div>
+{% endif %}
+
 
 <p class="methods-note" style="margin-top: var(--spacing-lg);">
   Completions are awards conferred, not enrollments.
