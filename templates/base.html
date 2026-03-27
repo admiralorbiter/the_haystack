@@ -20,9 +20,9 @@
         <div class="logo">
             <a href="{{ url_for('root.index') }}" style="color: var(--color-bg); font-weight: bold; font-size: 1.25rem;">The Haystack</a>
         </div>
-        <div class="search-box">
-            <input type="text" placeholder="Search... (stub)">
-        </div>
+        <form class="search-box" action="{{ url_for('root.search_view') }}" method="get" style="display: flex;">
+            <input type="text" name="q" placeholder="Search providers, programs, fields..." value="{{ q | default('') }}">
+        </form>
         <nav class="nav-links">
             <a href="{{ url_for('root.providers_directory') }}">Providers</a>
             <a href="{{ url_for('root.programs_directory') }}">Programs</a>

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}Search Results | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('root.index') }}">Home</a> &rsaquo; Search</div>
+
+<header class="page-header">
+  <div class="title-row">
+    <h1 class="m-0">Search Results</h1>
+  </div>
+  {% if q %}
+  <p style="color:var(--text-muted); margin:0;">
+    Showing top matches for "<strong>{{ q }}</strong>"
+  </p>
+  {% else %}
+  <p style="color:var(--text-muted); margin:0;">
+    Enter a query to search.
+  </p>
+  {% endif %}
+</header>
+
+{% if q %}
+  {% if not orgs and not progs and not fields %}
+    <div class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <h3>No results for "{{ q }}"</h3>
+      <p>Try checking your spelling or <a href="{{ url_for('root.providers_directory') }}">browsing all providers</a> and <a href="{{ url_for('root.programs_directory') }}">programs</a>.</p>
+    </div>
+  {% else %}
+    <div style="display: flex; flex-direction: column; gap: 3rem;">
+      
+      {# -- Providers -- #}
+      {% if orgs %}
+      <section>
+        <div class="title-row" style="margin-bottom: 1rem;">
+          <h2 style="margin:0; font-size: 1.5rem;">Providers</h2>
+          {{ components.entity_badge('provider', orgs|length ~ ' top matches') }}
+        </div>
+        <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+          {% for o in orgs %}
+          <div class="card provider-roster-card" style="padding: 1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <h4 style="margin:0 0 0.25rem 0;">
+                <a href="{{ url_for('root.provider_detail', org_id=o.org_id) }}" style="color: var(--text-color); text-decoration: none;">{{ o.name }}</a>
+              </h4>
+              <span style="font-size:1.25rem; color:var(--text-muted);">→</span>
+            </div>
+            <p style="margin:0; color:var(--text-muted); font-size:0.9rem;">
+              {% if o.city %}{{ o.city }}{% else %}KC Region{% endif %}
+            </p>
+          </div>
+          {% endfor %}
+        </div>
+        {% if orgs|length == 5 %}
+        <div style="margin-top: 1rem;">
+          <a href="{{ url_for('root.providers_directory', q=q) }}" class="nav-links" style="font-weight: 500;">Show all matching providers &rarr;</a>
+        </div>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {# -- Programs -- #}
+      {% if progs %}
+      <section>
+        <div class="title-row" style="margin-bottom: 1rem;">
+          <h2 style="margin:0; font-size: 1.5rem;">Programs</h2>
+          {{ components.entity_badge('program', progs|length ~ ' top matches') }}
+        </div>
+        <div class="card-grid" style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));">
+          {% for p in progs %}
+          <div class="card provider-roster-card" style="padding: 1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <h4 style="margin:0 0 0.5rem 0; padding-right:1rem; line-height: 1.3;">
+                <a href="{{ url_for('root.program_detail', program_id=p.program.program_id) }}" style="color: var(--text-color); text-decoration: none;">{{ p.cip_title }}</a>
+              </h4>
+              <span style="font-size:1.25rem; color:var(--text-muted);">→</span>
+            </div>
+            <p style="margin:0 0 0.5rem 0; color:var(--text-muted); font-size:0.9rem;">{{ p.org_name }}</p>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items: center;">
+              <span class="chip" style="margin:0;">{{ p.program.credential_type }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% if progs|length == 5 %}
+        <div style="margin-top: 1rem;">
+          <a href="{{ url_for('root.programs_directory', q=q) }}" class="nav-links" style="font-weight: 500;">Show all matching programs &rarr;</a>
+        </div>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {# -- Fields -- #}
+      {% if fields %}
+      <section>
+        <div class="title-row" style="margin-bottom: 1rem;">
+          <h2 style="margin:0; font-size: 1.5rem;">Fields of Study</h2>
+          {{ components.entity_badge('field', fields|length ~ ' top matches') }}
+        </div>
+        <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+          {% for f in fields %}
+          <div class="card provider-roster-card" style="padding: 1.25rem; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h4 style="margin:0 0 0.25rem 0;">
+                <a href="{{ url_for('root.field_detail', cip_family=f.code) }}" style="color: var(--text-color); text-decoration: none;">{{ f.name }}</a>
+              </h4>
+              <span class="chip cip-family-code" style="font-family:monospace; font-size:0.8rem; margin:0;">{{ f.code }}</span>
+            </div>
+            <span style="font-size:1.25rem; color:var(--text-muted);">→</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% if fields|length == 5 %}
+        <div style="margin-top: 1rem;">
+          <a href="{{ url_for('root.fields_directory') }}" class="nav-links" style="font-weight: 500;">Browse all fields &rarr;</a>
+        </div>
+        {% endif %}
+      </section>
+      {% endif %}
+
+    </div>
+  {% endif %}
+{% endif %}
+
+{% endblock %}

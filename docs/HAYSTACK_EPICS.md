@@ -372,7 +372,7 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 
 ---
 
-## Epic 8 — Search
+## Epic 8 — Search 🟢 COMPLETE
 **Goal:** Global grouped search across providers, programs, and fields. Returns entity-typed results, not raw rows.
 
 **Exit criteria:** Typing a query in the nav search box returns grouped results (Providers, Programs, Fields) with type badges.
@@ -380,12 +380,12 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 **Effort estimate:** 1 week
 
 ### Tasks
-- [ ] `/search?q=<query>` route
-- [ ] SQLite FTS5 virtual tables for organization.name and program.name (or fallback LIKE)
-- [ ] Results grouped by entity type
-- [ ] Each result card: title, type badge, 1–2 metrics, link to detail page
-- [ ] Max 5 results per group in quick search; "Show all" links to filtered directory
-- [ ] Empty state: "No results for X — try browsing providers or programs"
+- [x] `/search?q=<query>` route
+- [x] SQLite FTS5 virtual tables for organization.name and program.name (or fallback LIKE)
+- [x] Results grouped by entity type
+- [x] Each result card: title, type badge, 1–2 metrics, link to detail page
+- [x] Max 5 results per group in quick search; "Show all" links to filtered directory
+- [x] Empty state: "No results for X — try browsing providers or programs"
 
 ---
 
