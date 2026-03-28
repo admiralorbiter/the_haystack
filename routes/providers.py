@@ -115,6 +115,10 @@ def _provider_snapshot(org_id: str) -> dict:
         .first()
     )
 
+    # Scorecard coverage — look up unitid from org record, then query summary
+    _unitid = db.session.query(Organization.unitid).filter_by(org_id=org_id).scalar()
+    sc_summary = _scorecard_summary(_unitid)
+
     return {
         "total_programs": total_programs,
         "total_completions": total_completions,
@@ -125,6 +129,8 @@ def _provider_snapshot(org_id: str) -> dict:
         "linked_occupations": occ_count,
         "data_source": ds.name if ds else "IPEDS",
         "data_as_of": ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown",
+        "sc_earn_median_6yr": sc_summary.get("earn_median_6yr"),
+        "scorecard_coverage": sc_summary.get("has_data", False),
     }
 
 
@@ -407,6 +413,151 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
     result["exp_total"] = sum(v for v in _exp_vals if v) or None
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Scorecard helpers
+# ---------------------------------------------------------------------------
+
+_SC_SUPPRESS = {"", "PrivacySuppressed", "PS", "NULL"}
+
+
+@lru_cache(maxsize=256)
+def _get_scorecard_institution(unitid: str) -> dict | None:
+    """
+    Fetch institution-level Scorecard metrics from scorecard_institution.
+    Returns a dict of raw column values (all TEXT — caller must cast),
+    or None if no row exists or the table is missing.
+    """
+    if not _valid_unitid(unitid):
+        return None
+    try:
+        with db.engine.connect() as conn:
+            row = conn.execute(
+                text("SELECT * FROM scorecard_institution WHERE UNITID = :uid LIMIT 1"),
+                {"uid": str(unitid)},
+            ).mappings().first()
+        if not row:
+            return None
+        # Return dict, converting suppressed values to None
+        return {
+            k: (None if str(v) in _SC_SUPPRESS else v)
+            for k, v in dict(row).items()
+        }
+    except Exception as e:
+        import sys
+        print(f"Scorecard institution DB error for {unitid}: {e}", file=sys.stderr)
+        return None
+
+
+@lru_cache(maxsize=256)
+def _get_scorecard_fos(unitid: str) -> list[dict]:
+    """
+    Fetch field-of-study Scorecard data for a provider.
+    Returns a list of dicts keyed by (CIPCODE_NORM, CREDLEV, CREDDESC).
+    Suppressed earnings values are set to None.
+    """
+    if not _valid_unitid(unitid):
+        return []
+    try:
+        with db.engine.connect() as conn:
+            rows = conn.execute(
+                text("""
+                    SELECT CIPCODE_NORM, CIPCODE, CIPDESC, CREDLEV, CREDDESC,
+                           EARN_MDN_HI_1YR, EARN_MDN_HI_2YR, EARN_COUNT_WNE_HI_2YR,
+                           EARN_MDN_4YR_NAT, EARN_COUNT_WNE_4YR_NAT,
+                           DEBT_ALL_STGP_EVAL_MDN, DEBT_ALL_PP_EVAL_MDN,
+                           IPEDSCOUNT1, IPEDSCOUNT2
+                    FROM scorecard_field_of_study
+                    WHERE UNITID = :uid
+                    ORDER BY CIPCODE_NORM, CREDLEV
+                """),
+                {"uid": str(unitid)},
+            ).fetchall()
+
+        def _sc_int(v):
+            if v is None or str(v) in _SC_SUPPRESS:
+                return None
+            try:
+                return int(float(str(v)))
+            except (ValueError, TypeError):
+                return None
+
+        result = []
+        for r in rows:
+            result.append({
+                "cip_norm":       r[0],
+                "cip_raw":        r[1],
+                "cip_desc":       r[2],
+                "credlev":        r[3],
+                "creddesc":       r[4],
+                "earn_1yr":       _sc_int(r[5]),
+                "earn_2yr":       _sc_int(r[6]),
+                "earn_count_2yr": _sc_int(r[7]),
+                "earn_nat_4yr":   _sc_int(r[8]),
+                "earn_nat_count": _sc_int(r[9]),
+                "debt_stgp_mdn":  _sc_int(r[10]),
+                "debt_pp_mdn":    _sc_int(r[11]),
+                "ipeds_count1":   _sc_int(r[12]),
+                "ipeds_count2":   _sc_int(r[13]),
+            })
+        return result
+    except Exception as e:
+        import sys
+        print(f"Scorecard FoS DB error for {unitid}: {e}", file=sys.stderr)
+        return []
+
+
+def _scorecard_summary(unitid: str | None) -> dict:
+    """
+    Return a compact summary dict with the most important institution-level metrics.
+    Safe to call even if Scorecard table is missing.
+    """
+    if not unitid:
+        return {"has_data": False}
+    sc = _get_scorecard_institution(unitid)
+    if not sc:
+        return {"has_data": False}
+
+    def _pct(v):
+        """Convert Scorecard proportion (0..1) to rounded percentage."""
+        if v is None:
+            return None
+        try:
+            f = float(v)
+            return round(f * 100, 1) if 0 <= f <= 1 else None
+        except (ValueError, TypeError):
+            return None
+
+    def _int(v):
+        if v is None:
+            return None
+        try:
+            i = int(float(str(v)))
+            return i if i > 0 else None
+        except (ValueError, TypeError):
+            return None
+
+    return {
+        "has_data":            True,
+        # Earnings
+        "earn_median_6yr":     _int(sc.get("MD_EARN_WNE_P6")),
+        "earn_median_10yr":    _int(sc.get("MD_EARN_WNE_P10")),
+        # Completion
+        "completion_rate_4yr": _pct(sc.get("C150_4")),
+        "completion_rate_2yr": _pct(sc.get("C150_L4")),
+        # Debt
+        "grad_debt_median":    _int(sc.get("GRAD_DEBT_MDN")),
+        "wdraw_debt_median":   _int(sc.get("WDRAW_DEBT_MDN")),
+        # Aid access
+        "pct_pell":            _pct(sc.get("PCTPELL")),
+        "pct_federal_loan":    _pct(sc.get("PCTFLOAN")),
+        # Repayment
+        "repay_rate_3yr":      _pct(sc.get("RPY_3YR_RT")),
+        "repay_completers_3yr":_pct(sc.get("COMPL_RPY_3YR_RT")),
+        # Cost
+        "avg_cost":            _int(sc.get("COSTT4_A")) or _int(sc.get("COSTT4_P")),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -817,6 +968,16 @@ def provider_tab_outcomes(org_id: str):
         ipeds=_get_ipeds_enrichment(org.unitid),
         outcome_measures=_ipeds_outcome_measures(org.unitid),
         enrollment_demo=_ipeds_enrollment_demographics(org.unitid),
+    )
+
+@root_bp.route("/providers/<org_id>/tab/scorecard")
+def provider_tab_scorecard(org_id: str):
+    org = _get_provider_or_404(org_id)
+    return render_template(
+        "providers/partials/tab_scorecard.html",
+        org=org,
+        scorecard=_scorecard_summary(org.unitid),
+        scorecard_fos=_get_scorecard_fos(org.unitid),
     )
 
 

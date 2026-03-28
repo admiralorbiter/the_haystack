@@ -47,10 +47,21 @@
 
   {{ components.stat_card('Credential', snapshot.credential_type) }}
   {{ components.stat_card('Linked Occupations', snapshot.linked_occupations) }}
+
+  {% if snapshot.sc_earn_2yr %}
+    {{ components.stat_card('Earnings (2yr)', '$' + '{:,}'.format(snapshot.sc_earn_2yr), caveat='Scorecard · post-grad') }}
+  {% endif %}
 </div>
+{% if snapshot.sc_earn_2yr %}
 <p class="methods-note" style="margin-top: calc(-1 * var(--spacing-md)); margin-bottom: var(--spacing-xl);">
-  📊 Scorecard outcomes (earnings, completion rate) coming in Phase 2.
+  💡 Earnings = Scorecard median for working graduates 2 years after completing this field &amp; credential.
 </p>
+{% else %}
+<p class="methods-note" style="margin-top: calc(-1 * var(--spacing-md)); margin-bottom: var(--spacing-xl);">
+  Scorecard earnings not available for this specific program — check the <a href="{{ url_for('root.provider_tab_outcomes', org_id=org.org_id) }}" style="color:var(--color-primary);">provider Outcomes tab</a> for institution-wide figures.
+</p>
+{% endif %}
+
 
 {# ── HTMX Tabs ───────────────────────────────────────────────────────────── #}
 <div class="tabs" id="program-tabs">
@@ -71,6 +82,12 @@
     hx-target="#tab-content"
     hx-push-url="false"
     onclick="setActiveTab(this)">Outcomes</button>
+
+  <button class="tab" id="tab-btn-scorecard"
+    hx-get="{{ url_for('root.program_tab_scorecard', program_id=prog.program_id) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Scorecard</button>
 
   <button class="tab" id="tab-btn-geography"
     hx-get="{{ url_for('root.program_tab_geography', program_id=prog.program_id) }}"

@@ -191,6 +191,23 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 
 ---
 
+## Epic 2.6 — College Scorecard Integration
+
+**Status: ✅ COMPLETE** — Shipped 2026-03-27
+
+**Goal:** Integrate the Department of Education’s College Scorecard dataset to provide real financial outcomes (earnings, debt, and repayment rates) across the platform. This transitions the platform from descriptive (enrollments) to prescriptive (ROI).
+
+**What shipped:**
+- SQLite data pipeline (`scripts/loaders/load_scorecard.py`) ingesting both Institution-level and Field-of-Study-level Scorecard datasets.
+- Schema extensions: `scorecard_institution` and `scorecard_field_of_study`.
+- Dedicated "Scorecard" tabs on Provider and Program detail pages to distinctly separate financial outcomes from IPEDS completions/enrollment data.
+- **Provider View:** 6yr/10yr median earnings, average annual cost, 3-yr loan repayment rates, completer vs. withdrawer debt comparison, and full earnings-by-field table. Snapshot strip shows 6yr earnings.
+- **Program View:** Program-specific median earnings (1yr/2yr post-grad), national comparator earnings with delta (+/- $X), median student loan debt. Snapshot strip shows 2yr earnings.
+- Empty states explaining suppression rules (small cohorts, Sub-1-year certificates) and directing users to provider-level figures when program data is unavailable.
+
+
+---
+
 ## Epic 3 — Provider directory and detail
 **Goal:** Real, working provider pages backed by IPEDS data. The first thing a user can actually use.
 
@@ -203,7 +220,7 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 **What shipped:**
 - Provider directory (`/providers`) with county and credential type filters, text search, and sorts.
 - Provider detail page (`/providers/<id>`) with HTMX-powered deferred tab loading for performance.
-- Snapshot strip featuring real data metrics (Programs, Award Completions, Top Credential, Top CIP Family, Linked Occupations) and a stub for Scorecard metrics.
+- Snapshot strip featuring real data metrics (Programs, Award Completions, Top Credential, Top CIP Family, Linked Occupations) and Scorecard 6yr median earnings.
 - Connections Tab: Advanced SQL self-joins to find similar providers by CIP overlap, and Occupation Links resolving CIP to SOC codes in real-time.
 - CSS foundation for the "Premium Civic-Tech" aesthetic: glassmorphism, responsive tables, pill-shaped filters, and clean tab navigation.
 - Data Provenance tracking via `dataset_source`.
@@ -228,7 +245,8 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 - [x] Tab: Overview — provider summary, top 5 programs by completions, CIP family breakdown
 - [x] Tab: Connections — linked occupations via CIP→SOC (ranked by program count), similar providers by CIP overlap
 - [x] Tab: Geography — static map pin (lat/lon), county label, nearby context (placeholder for Phase 4)
-- [x] Tab: Outcomes — completions table by CIP; Scorecard placeholder ("Scorecard data coming in Phase 2")
+- [x] Tab: Outcomes — completions table by CIP; Grad rates, Financial aid, Enrollment demographics, Expenditures, Faculty salaries.
+- [x] Tab: Scorecard — 6yr/10yr earnings, debt comparison, loan repayment, and full earnings-by-field table.
 - [x] Tab: Evidence — unitid, data source name, loaded_at date
 - [x] Tab: Methods — completions definition, CIP/SOC caveat text, suppression note
 - [x] Data freshness badge visible in header
@@ -257,7 +275,8 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 - Snapshot strip: Field, CIP Code (monospace), Annual Completions, Credential, Linked Occupations.
 - Tab: Overview — program details, provider card with Visit Institution link, top 5 occupation links preview, "Similar Programs in KC" table (same CIP family, different providers, sorted by completions).
 - Tab: Occupation Links — all linked SOC occupations with confidence pills (green/amber/red) and wage placeholder for Phase 2.
-- Tab: Outcomes — completions value or suppression notice block; Scorecard Phase 2 placeholder.
+- Tab: Outcomes — completions value or suppression notice block, equity by gender.
+- Tab: Scorecard — specific median earnings (1yr/2yr), national comparator, median student loan debt.
 - Tab: Geography — provider location + map pin placeholder (Epic 7).
 - Tab: Methods — CIP taxonomy, CIP↔SOC crosswalk explanation, suppression definition, data currency.
 - FTS5 Alembic migration (`a3f7e8b2c1d5`) with INSERT/UPDATE/DELETE sync triggers and org_name denormalization.
@@ -411,7 +430,7 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 
 | Feature | Phase |
 |---|---|
-| College Scorecard outcomes | 2 |
+| **College Scorecard outcomes** | Epic 2.6 — **Done** |
 | Occupation detail pages | 2 |
 | Provider→sector connections | 2 |
 | IRS 990 / org enrichment | 3 |

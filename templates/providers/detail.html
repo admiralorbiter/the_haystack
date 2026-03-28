@@ -45,11 +45,23 @@
 
   {{ components.stat_card('Top Credential', snapshot.top_credential) }}
   {{ components.stat_card('Top CIP Family', snapshot.top_cip_label) }}
-  {{ components.stat_card('Linked Occupations', snapshot.linked_occupations) }}
+
+  {% if snapshot.sc_earn_median_6yr %}
+    {{ components.stat_card('Median Earnings (6yr)', '$' + '{:,}'.format(snapshot.sc_earn_median_6yr), caveat='Scorecard 2024–25') }}
+  {% else %}
+    {{ components.stat_card('Linked Occupations', snapshot.linked_occupations) }}
+  {% endif %}
 </div>
+{% if snapshot.sc_earn_median_6yr %}
 <p class="methods-note" style="margin-top: calc(-1 * var(--spacing-md)); margin-bottom: var(--spacing-xl);">
-  📊 Scorecard metrics (median earnings, completion rate) coming in Phase 2.
+  💡 Earnings = Scorecard median for working graduates 6 years after entry ·
+  <a href="#" onclick="document.getElementById('tab-btn-outcomes').click(); return false;" style="color:var(--color-primary);">See full Outcomes →</a>
 </p>
+{% else %}
+<p class="methods-note" style="margin-top: calc(-1 * var(--spacing-md)); margin-bottom: var(--spacing-xl);">
+  Scorecard earnings data not available for this institution.
+</p>
+{% endif %}
 
 {# ── HTMX Tabs ───────────────────────────────────────────────────────────── #}
 <div class="tabs" id="provider-tabs">
@@ -76,6 +88,12 @@
     hx-target="#tab-content"
     hx-push-url="false"
     onclick="setActiveTab(this)">Outcomes</button>
+
+  <button class="tab" id="tab-btn-scorecard"
+    hx-get="{{ url_for('root.provider_tab_scorecard', org_id=org.org_id) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Scorecard</button>
 
   <button class="tab" id="tab-btn-evidence"
     hx-get="{{ url_for('root.provider_tab_evidence', org_id=org.org_id) }}"

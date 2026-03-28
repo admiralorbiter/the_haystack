@@ -28,6 +28,112 @@ from . import root_bp
 
 _DB_PATH = Path(__file__).resolve().parent.parent / "db" / "haystack.db"
 
+# Scorecard suppression markers (same set as providers.py)
+_SC_SUPPRESS = {"", "PrivacySuppressed", "PS", "NULL"}
+
+# Map Scorecard CREDLEV codes → fragments of our credential_type strings
+_CREDLEV_MAP: dict[str, list[str]] = {
+    "1":  ["certificate", "<", "1", "sub"],   # sub-baccalaureate < 1yr
+    "2":  ["certificate", "1", "2", "sub"],   # sub-baccalaureate 1-2yr
+    "3":  ["associate"],
+    "4":  ["bachelor"],
+    "5":  ["master"],
+    "6":  ["doctor"],
+    "7":  ["professional"],
+    "8":  ["graduate", "certificate"],
+}
+
+
+def _cip_to_4digit(cip: str) -> str:
+    """Convert 6-digit CIP (51.3801) to 4-digit Scorecard format (5138)."""
+    if not cip:
+        return ""
+    clean = cip.replace(".", "")  # "513801"
+    return clean[:4]  # "5138"
+
+
+def _credlev_for_credential_type(credential_type: str) -> list[str]:
+    """Return list of CREDLEV codes that plausibly match a credential_type string."""
+    ct = (credential_type or "").lower()
+    matches = []
+    if "associate" in ct:
+        matches.append("3")
+    if "bachelor" in ct:
+        matches.append("4")
+    if "master" in ct:
+        matches.append("5")
+    if "doctor" in ct or "doctoral" in ct:
+        matches.append("6")
+    if "professional" in ct and "graduate" not in ct:
+        matches.append("7")
+    if "graduate" in ct and "certificate" in ct:
+        matches.append("8")
+    if "certificate" in ct and not matches:
+        matches.extend(["1", "2"])  # try both cert levels
+    if not matches:
+        matches = ["1", "2", "3", "4", "5", "6", "7", "8"]  # fallback: all
+    return matches
+
+
+def _scorecard_fos_for_program(unitid: str | None, cip: str | None, credential_type: str | None) -> dict | None:
+    """
+    Look up the Scorecard Field-of-Study row for a specific program.
+    Joins on: UNITID + 4-digit CIP prefix + CREDLEV code(s).
+    Returns the best-matching row as a dict, or None.
+    """
+    if not unitid or not cip:
+        return None
+    cip4 = _cip_to_4digit(cip)
+    credlevs = _credlev_for_credential_type(credential_type or "")
+    credlev_placeholders = ",".join("?" * len(credlevs))
+    try:
+        conn = sqlite3.connect(_DB_PATH)
+        row = conn.execute(
+            f"""
+            SELECT CIPCODE_NORM, CIPDESC, CREDLEV, CREDDESC,
+                   EARN_MDN_HI_1YR, EARN_MDN_HI_2YR, EARN_COUNT_WNE_HI_2YR,
+                   EARN_MDN_4YR_NAT, EARN_COUNT_WNE_4YR_NAT,
+                   DEBT_ALL_STGP_EVAL_MDN, DEBT_ALL_PP_EVAL_MDN,
+                   IPEDSCOUNT1, IPEDSCOUNT2
+            FROM scorecard_field_of_study
+            WHERE UNITID = ?
+              AND CIPCODE_NORM LIKE ?
+              AND CREDLEV IN ({credlev_placeholders})
+            LIMIT 1
+            """,
+            [str(unitid), f"{cip4[:2]}.{cip4[2:]}%"] + credlevs,
+        ).fetchone()
+        conn.close()
+        if not row:
+            return None
+
+        def _sc_int(v):
+            if v is None or str(v) in _SC_SUPPRESS:
+                return None
+            try:
+                return int(float(str(v)))
+            except (ValueError, TypeError):
+                return None
+
+        return {
+            "cip_norm":       row[0],
+            "cip_desc":       row[1],
+            "credlev":        row[2],
+            "creddesc":       row[3],
+            "earn_1yr":       _sc_int(row[4]),
+            "earn_2yr":       _sc_int(row[5]),
+            "earn_count_2yr": _sc_int(row[6]),
+            "earn_nat_4yr":   _sc_int(row[7]),
+            "earn_nat_count": _sc_int(row[8]),
+            "debt_stgp_mdn":  _sc_int(row[9]),
+            "debt_pp_mdn":    _sc_int(row[10]),
+            "ipeds_count1":   _sc_int(row[11]),
+            "ipeds_count2":   _sc_int(row[12]),
+        }
+    except sqlite3.OperationalError:
+        return None  # table not yet created (test DB)
+
+
 
 def _get_program_or_404(program_id: str) -> Program:
     """Fetch a program by program_id. Aborts 404 if not found."""
@@ -50,6 +156,7 @@ def _program_snapshot(prog: Program, org: Organization) -> dict:
         .order_by(DatasetSource.loaded_at.desc())
         .first()
     )
+    sc_fos = _scorecard_fos_for_program(org.unitid, prog.cip, prog.credential_type)
     return {
         "org": org,
         "cip_title": cip_title(prog.name),
@@ -57,6 +164,7 @@ def _program_snapshot(prog: Program, org: Organization) -> dict:
         "credential_type": prog.credential_type,
         "completions": prog.completions,
         "linked_occupations": occ_count,
+        "sc_earn_2yr": sc_fos.get("earn_2yr") if sc_fos else None,
         "data_source": ds.name if ds else "IPEDS",
         "data_as_of": ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown",
     }
@@ -499,6 +607,24 @@ def program_tab_outcomes(program_id: str):
         org=org,
         enrollment=enrollment,
         completions_equity=completions_equity,
+    )
+
+@root_bp.route("/programs/<program_id>/tab/scorecard")
+def program_tab_scorecard(program_id: str):
+    prog = _get_program_or_404(program_id)
+    org = db.session.query(Organization).filter_by(org_id=prog.org_id).first()
+    unitid = org.unitid if org else None
+
+    # Scorecard Field-of-Study earnings for this specific program
+    sc_fos = _scorecard_fos_for_program(
+        unitid, prog.cip, prog.credential_type
+    ) if unitid else None
+
+    return render_template(
+        "programs/partials/tab_scorecard.html",
+        prog=prog,
+        org=org,
+        sc_fos=sc_fos,
     )
 
 

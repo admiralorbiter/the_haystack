@@ -1,0 +1,188 @@
+{# Scorecard tab — HTMX fragment #}
+<div id="section-scorecard">
+{% if scorecard and scorecard.has_data %}
+
+{# ── Earnings & Employment Section ───────────────────────────────────── #}
+<div class="tab-section">
+  <h3 class="section-title">
+    Earnings &amp; Employment Outcomes
+    <span class="section-hint">(College Scorecard 2024–25 · working, not enrolled graduates)</span>
+  </h3>
+
+  {# Earnings cards — 6yr and 10yr post-entry #}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.65rem;margin-bottom:1rem;">
+
+    {% if scorecard.earn_median_6yr %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;padding:0.85rem 1rem;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:var(--color-primary);border-radius:10px 0 0 10px;"></div>
+      <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Median Earnings · 6 yrs after entry</div>
+      <div style="font-size:1.7rem;font-weight:800;color:var(--color-primary);">${{ "{:,}".format(scorecard.earn_median_6yr) }}</div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">working graduates</div>
+    </div>
+    {% endif %}
+
+    {% if scorecard.earn_median_10yr %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;padding:0.85rem 1rem;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#4a7c59;border-radius:10px 0 0 10px;"></div>
+      <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Median Earnings · 10 yrs after entry</div>
+      <div style="font-size:1.7rem;font-weight:800;color:#4a7c59;">${{ "{:,}".format(scorecard.earn_median_10yr) }}</div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">working graduates</div>
+    </div>
+    {% endif %}
+
+    {% if scorecard.avg_cost %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;padding:0.85rem 1rem;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:var(--color-secondary);border-radius:10px 0 0 10px;"></div>
+      <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Average Annual Cost</div>
+      <div style="font-size:1.7rem;font-weight:800;color:var(--color-secondary);">${{ "{:,}".format(scorecard.avg_cost) }}</div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">tuition, fees &amp; living expenses</div>
+    </div>
+    {% endif %}
+
+    {% if scorecard.repay_rate_3yr %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;padding:0.85rem 1rem;">
+      <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">3-yr Loan Repayment Rate</div>
+      <div style="font-size:1.7rem;font-weight:800;color:var(--color-primary);">{{ scorecard.repay_rate_3yr }}%</div>
+      {% if scorecard.repay_completers_3yr %}
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">completers: {{ scorecard.repay_completers_3yr }}%</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+
+  {# Debt comparison — completers vs withdrawers #}
+  {% if scorecard.grad_debt_median or scorecard.wdraw_debt_median %}
+  <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.75rem;">
+    <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:0.6rem;">Median Student Loan Debt</div>
+    <div style="display:flex;gap:2rem;flex-wrap:wrap;">
+      {% if scorecard.grad_debt_median %}
+      <div>
+        <div style="font-size:1.2rem;font-weight:700;color:#4a7c59;">${{ "{:,}".format(scorecard.grad_debt_median) }}</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);">Completers</div>
+      </div>
+      {% endif %}
+      {% if scorecard.wdraw_debt_median %}
+      <div>
+        <div style="font-size:1.2rem;font-weight:700;color:#c05c2e;">${{ "{:,}".format(scorecard.wdraw_debt_median) }}</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);">Non-completers</div>
+      </div>
+      {% endif %}
+      {% if scorecard.grad_debt_median and scorecard.wdraw_debt_median %}
+      <div style="display:flex;align-items:center;gap:0.3rem;font-size:0.75rem;color:var(--text-muted);border-left:1px solid var(--color-border);padding-left:1.5rem;">
+        {% set diff = scorecard.wdraw_debt_median - scorecard.grad_debt_median %}
+        {% if diff > 0 %}
+        <span style="color:#c05c2e;font-weight:600;">Non-completers carry ${{ "{:,}".format(diff) }} more debt</span>
+        {% elif diff < 0 %}
+        <span style="color:#4a7c59;font-weight:600;">Completers carry ${{ "{:,}".format(diff|abs) }} more debt</span>
+        {% else %}
+        <span>Equal debt levels</span>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# Scorecard Completion Rates — supplement IPEDS grad rates #}
+  {% if scorecard.completion_rate_4yr or scorecard.completion_rate_2yr %}
+  <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.75rem;">
+    <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:0.5rem;">Scorecard Completion Rates (150% of time)</div>
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+      {% if scorecard.completion_rate_4yr %}
+      <div><span style="font-size:1.2rem;font-weight:700;color:var(--color-primary);">{{ scorecard.completion_rate_4yr }}%</span> <span style="font-size:0.72rem;color:var(--text-muted);">4-yr institutions</span></div>
+      {% endif %}
+      {% if scorecard.completion_rate_2yr %}
+      <div><span style="font-size:1.2rem;font-weight:700;color:var(--color-primary);">{{ scorecard.completion_rate_2yr }}%</span> <span style="font-size:0.72rem;color:var(--text-muted);">2-yr institutions</span></div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <p style="font-size:0.68rem;color:var(--text-muted);">
+    Source: College Scorecard 2024–25 (U.S. Department of Education).
+    Earnings = working graduates not enrolled in further education, in the year shown after initial enrollment.
+    Debt = federal loan debt at graduation. Repayment rate = borrowers reducing principal within 3 years.
+    Completion rates reflect federal definition (C150) not IPEDS 150% rate and may differ slightly.
+  </p>
+</div>
+
+{# ── Program-Level Earnings (Field of Study) ────────────────────────── #}
+{% if scorecard_fos %}
+{% set fos_with_earnings = scorecard_fos | selectattr("earn_2yr") | list %}
+{% if fos_with_earnings %}
+<div class="tab-section">
+  <h3 class="section-title">
+    Earnings by Field of Study
+    <span class="section-hint">(Scorecard 2024–25 · 2 yrs after graduation · program-level)</span>
+  </h3>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Field</th>
+        <th>Credential</th>
+        <th class="num-col">Median Earnings<br><span style="font-size:0.65rem;font-weight:400;">2 yrs post-grad</span></th>
+        <th class="num-col">vs. National<br><span style="font-size:0.65rem;font-weight:400;">same field+level</span></th>
+        <th class="num-col">Median Debt</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in fos_with_earnings | sort(attribute='earn_2yr', reverse=True) %}
+      <tr>
+        <td style="font-size:0.85rem;max-width:220px;white-space:normal;">{{ row.cip_desc or row.cip_norm }}</td>
+        <td style="font-size:0.78rem;color:var(--text-muted);">{{ row.creddesc }}</td>
+        <td class="num-col" style="font-weight:700;color:var(--color-primary);">${{ "{:,}".format(row.earn_2yr) }}</td>
+        <td class="num-col">
+          {% if row.earn_nat_4yr %}
+            {% set diff = row.earn_2yr - row.earn_nat_4yr %}
+            {% if diff > 0 %}
+            <span style="color:#4a7c59;font-size:0.8rem;">+${{ "{:,}".format(diff) }}</span>
+            {% elif diff < 0 %}
+            <span style="color:#c05c2e;font-size:0.8rem;">−${{ "{:,}".format(diff|abs) }}</span>
+            {% else %}
+            <span style="color:var(--text-muted);font-size:0.8rem;">at median</span>
+            {% endif %}
+          {% else %}
+          <span style="color:var(--text-muted);">—</span>
+          {% endif %}
+        </td>
+        <td class="num-col" style="font-size:0.82rem;color:var(--text-muted);">
+          {% if row.debt_stgp_mdn %}
+          ${{ "{:,}".format(row.debt_stgp_mdn) }}
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% set suppressed_fos = scorecard_fos | rejectattr("earn_2yr") | list | length %}
+  {% if suppressed_fos > 0 %}
+  <p style="font-size:0.68rem;color:var(--text-muted);margin-top:0.4rem;">
+    {{ suppressed_fos }} field{{ 's' if suppressed_fos != 1 }} with suppressed earnings (small cohort — not shown).
+  </p>
+  {% endif %}
+  <p style="font-size:0.68rem;color:var(--text-muted);">
+    National comparator = median earnings for the same CIP family and credential level across all U.S. institutions.
+    Source: Scorecard Field-of-Study data. Debt = federal student loan balance at graduation.
+  </p>
+</div>
+{% endif %}
+{% endif %}
+
+{% else %}
+{# No Scorecard data for this provider #}
+<div class="tab-section">
+  <h3 class="section-title">Earnings &amp; Employment Outcomes</h3>
+  <div class="empty-state-inline" style="padding:1.5rem;">
+    <div style="font-size:1.5rem;margin-bottom:0.5rem;">📊</div>
+    <div style="font-weight:600;margin-bottom:0.3rem;">No Scorecard data for this institution</div>
+    <div style="font-size:0.8rem;color:var(--text-muted);">
+      The College Scorecard may not have earnings data for this institution due to size, type,
+      or reporting thresholds. Many certificate-only programs are excluded from federal earnings tracking.
+    </div>
+  </div>
+</div>
+{% endif %}
+</div>

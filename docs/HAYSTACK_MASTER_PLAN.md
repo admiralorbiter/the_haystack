@@ -341,6 +341,7 @@ Deliver:
 - occupation connection section
 - map of providers
 - compare providers/programs
+- College Scorecard earnings & debt outcomes
 - methods page for IPEDS + Scorecard
 
 ### Why IPEDS first
@@ -353,7 +354,7 @@ It is ideal for proving the Haystack pattern.
 **Goal:** turn IPEDS into pathways intelligence.
 
 Add:
-- College Scorecard earnings
+- OEWS wage data by SOC
 - SOC/CIP crosswalk surfaces
 - occupation detail links to programs
 - provider-to-sector and provider-to-occupation views

@@ -124,7 +124,6 @@ region               — named regions with constituent FIPS codes (multi-region
 - Admissions, tuition, finance deep dives
 - Full demographics explorer
 - Custom report builder
-- Scorecard outcomes (Phase 2)
 - Any civic signal data (Phase 4)
 - User accounts, saved searches, collections
 
@@ -148,8 +147,8 @@ region               — named regions with constituent FIPS codes (multi-region
 - Card shows: name, city, program count, total completions, top field
 
 ### 7.3 Provider detail (`/providers/<id>`)
-- Snapshot strip: program count, completions, top credential, top CIP, linked occupations, Scorecard coverage (yes/no)
-- Tabs: Overview, Connections, Geography, Outcomes, Evidence, Methods
+- Snapshot strip: program count, completions, top credential, top CIP, linked occupations, Scorecard 6yr earnings
+- Tabs: Overview, Connections, Geography, Outcomes, Scorecard, Evidence, Methods
 - Map: provider location pin
 - Connections tab: linked occupations via CIP→SOC, similar providers
 - Evidence tab: source dataset, loaded date, IPEDS unitid
@@ -162,8 +161,8 @@ region               — named regions with constituent FIPS codes (multi-region
 - Card shows: name, provider, credential type, CIP, completions, linked occupations count
 
 ### 7.5 Program detail (`/programs/<id>`)
-- Snapshot strip: provider, credential type, CIP, completions, linked occupations, Scorecard data available
-- Tabs: Overview, Occupation links, Outcomes, Geography, Methods
+- Snapshot strip: provider, credential type, CIP, completions, linked occupations, Scorecard 2yr earnings
+- Tabs: Overview, Occupation links, Outcomes, Scorecard, Geography, Methods
 
 ### 7.6 Field of Study page (`/fields/<cip>`)
 - Shows all providers and programs in a CIP family or specific CIP
@@ -239,7 +238,7 @@ region               — named regions with constituent FIPS codes (multi-region
 | JS framework | htmx (decided) |
 | Hosting target | Local dev first; Railway / Render / Fly all viable |
 | Census tract enrichment | Phase 4 |
-| Scorecard integration | Phase 2 — after IPEDS is stable |
+| Scorecard integration | Shipped 2026-03-27 |
 
 ---
 

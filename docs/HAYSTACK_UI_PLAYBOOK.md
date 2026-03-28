@@ -345,7 +345,7 @@ not in the whole page layout.
 
 [Programs: 34] [Award completions: 1,280] [Top field: Health] [Linked occupations: 61]
 
-Overview | Connections | Geography | Outcomes | Evidence | Methods
+Overview | Connections | Geography | Outcomes | Scorecard | Evidence | Methods
 
 Overview
 - About this provider
@@ -362,8 +362,14 @@ Geography
 - map + nearby tracts + travel rings
 
 Outcomes
-- completions trend
-- scorecard earnings where available
+- completions trend by program
+- grad rates and financial aid metrics
+
+Scorecard
+- 6-year median earnings
+- median student loan debt
+- repayment rates
+- earnings by field of study
 ```
 
 ## 14.2 Neighborhood page

@@ -56,11 +56,11 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| College Scorecard median earnings | 🔲 Not started | Key Phase 2 data source |
+| College Scorecard median earnings | ✅ Done 2026-03-27 | Integration complete: 6yr/10yr and FoS tabs live |
 | BLS OEWS wage data by SOC | 🔲 Not started | Links programs → wage outcomes |
 | Guided Search (workforce need → provider) | 🔲 Stub only | Major Epic 9 feature |
-| Compare tool (side-by-side providers) | 🔲 Stub only | Route exists, no content |
-| Program-level Scorecard linkage | 🔲 Not started | Linkage plan in HAYSTACK_EPICS |
+| Compare tool (side-by-side providers) | ✅ Done | Compare tool shipped in Epic 6 |
+| Program-level Scorecard linkage | ✅ Done 2026-03-27 | `_scorecard_fos_for_program` logic active |
 | Regional labor market briefings | 🔲 Not started | Epic 6 feature |
 | PostgreSQL migration | 🔲 Not started | See I-1 above |
 | Flask-Caching setup | 🔲 Not started | See I-2 above |

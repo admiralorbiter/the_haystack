@@ -1,0 +1,100 @@
+{# Scorecard tab — HTMX fragment #}
+<div id="section-scorecard">
+{# ── College Scorecard — Field-of-Study Earnings ──────────────────────── #}
+<div class="tab-section">
+  <h3 class="section-title">Earnings &amp; Outcomes
+    <span class="section-hint">(College Scorecard 2024–25 · this field of study at this institution)</span>
+  </h3>
+
+  {% if sc_fos and (sc_fos.earn_1yr or sc_fos.earn_2yr) %}
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:0.65rem;margin-bottom:0.85rem;">
+
+    {% if sc_fos.earn_1yr %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;padding:0.85rem 1rem;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:var(--color-primary);border-radius:10px 0 0 10px;"></div>
+      <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Median Earnings · 1 yr post-grad</div>
+      <div style="font-size:1.6rem;font-weight:800;color:var(--color-primary);">${{ "{:,}".format(sc_fos.earn_1yr) }}</div>
+      <div style="font-size:0.67rem;color:var(--text-muted);margin-top:2px;">working, not enrolled</div>
+    </div>
+    {% endif %}
+
+    {% if sc_fos.earn_2yr %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;padding:0.85rem 1rem;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#4a7c59;border-radius:10px 0 0 10px;"></div>
+      <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Median Earnings · 2 yrs post-grad</div>
+      <div style="font-size:1.6rem;font-weight:800;color:#4a7c59;">${{ "{:,}".format(sc_fos.earn_2yr) }}</div>
+      {% if sc_fos.earn_count_2yr %}
+      <div style="font-size:0.67rem;color:var(--text-muted);margin-top:2px;">n={{ "{:,}".format(sc_fos.earn_count_2yr) }} graduates</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if sc_fos.earn_nat_4yr %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;padding:0.85rem 1rem;">
+      <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">National Median · same field+level</div>
+      <div style="font-size:1.6rem;font-weight:800;color:var(--text-muted);">${{ "{:,}".format(sc_fos.earn_nat_4yr) }}</div>
+      {% if sc_fos.earn_2yr %}
+      {% set diff = sc_fos.earn_2yr - sc_fos.earn_nat_4yr %}
+      <div style="font-size:0.72rem;margin-top:3px;font-weight:600;
+        color:{% if diff > 0 %}#4a7c59{% elif diff < 0 %}#c05c2e{% else %}var(--text-muted){% endif %};">
+        {% if diff > 0 %}+${{ "{:,}".format(diff) }} above national
+        {% elif diff < 0 %}−${{ "{:,}".format(diff|abs) }} below national
+        {% else %}at national median{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if sc_fos.debt_stgp_mdn %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:10px;padding:0.85rem 1rem;">
+      <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Median Student Loan Debt</div>
+      <div style="font-size:1.6rem;font-weight:800;color:var(--color-secondary);">${{ "{:,}".format(sc_fos.debt_stgp_mdn) }}</div>
+      <div style="font-size:0.67rem;color:var(--text-muted);margin-top:2px;">federal loans at graduation</div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  {% if sc_fos.cip_desc %}
+  <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.5rem;">
+    Scorecard field match: <strong>{{ sc_fos.cip_desc }}</strong> · {{ sc_fos.creddesc }}
+    <span style="color:var(--color-border);margin:0 0.4rem;">|</span>
+    CIP {{ sc_fos.cip_norm }}
+  </div>
+  {% endif %}
+
+  <p style="font-size:0.68rem;color:var(--text-muted);">
+    Source: College Scorecard Field-of-Study 2024–25.
+    Earnings = graduates working and not enrolled in further education at 1 and 2 years post-graduation.
+    National comparator uses the same CIP family and credential level across all U.S. institutions.
+    Debt = federal student loan balance at program completion.
+  </p>
+
+  {% elif sc_fos %}
+  {# Row exists but earnings are suppressed #}
+  <div class="empty-state-inline">
+    <div style="font-size:0.9rem;font-weight:600;margin-bottom:0.25rem;">Earnings suppressed for this program</div>
+    <div style="font-size:0.78rem;color:var(--text-muted);">
+      The Scorecard has a record for this field at this institution, but the cohort is too small
+      to report earnings without risking student identification.
+    </div>
+  </div>
+
+  {% else %}
+  {# No FoS row at all #}
+  <div class="empty-state-inline">
+    <div style="font-size:0.9rem;font-weight:600;margin-bottom:0.25rem;">No Scorecard earnings for this program</div>
+    <div style="font-size:0.78rem;color:var(--text-muted);">
+      This program or credential level isn't tracked in the Scorecard Field-of-Study data —
+      common for very small programs, non-Title IV schools, or sub-1-year certificates.
+      Check the provider-level earnings on the
+      <a href="{{ url_for('root.provider_tab_outcomes', org_id=org.org_id) if org else '#' }}" style="color:var(--color-primary);">Outcomes tab</a>
+      <a href="#" onclick="document.body.querySelector('a[href=\'/providers/{{ org.org_id if org else '' }}\']').click(); return false;" style="color:var(--color-primary);">provider's Scorecard tab</a>
+      for institution-wide figures.
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</div>
