@@ -156,12 +156,16 @@ def _empty_ipeds() -> dict:
         "sat_reading_75":      None,
         "sat_math_75":         None,
         "act_composite_75":    None,
-        # Graduation rates
+        # Graduation rates (4yr / standard)
         "grad_rate_150":       None,
         "grad_rate_150_cohort":None,
         "grad_rate_pell":      None,
         "grad_rate_200":       None,
         "grad_rate_200_cohort":None,
+        # Graduation rates (2yr / less-than-4yr institutions)
+        "grad_rate_150_l2":    None,
+        "grad_rate_l2_cohort": None,
+        "grad_rate_pell_l2":   None,
         # Enrollment
         "enrollment_total":    None,
         "enrollment_male":     None,
@@ -179,13 +183,18 @@ def _empty_ipeds() -> dict:
         "aid_pell_avg":        None,
         "aid_loan_pct":        None,
         "aid_loan_avg":        None,
+        # Veterans / GI Bill
+        "vet_gi_bill_n":       None,
+        "vet_gi_bill_avg":     None,
         # Faculty
         "faculty_count":       None,
+        "faculty_avg_salary":  None,
         # Expenditures
         "exp_instruction":     None,
         "exp_academic_support":None,
         "exp_student_services":None,
         "exp_total":           None,
+        "exp_finance_type":    None,  # 'public' | 'private_nonprofit' | 'forprofit'
     }
 
 
@@ -198,13 +207,15 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
         return _empty_ipeds()
     
     query = '''
-    SELECT 
+    SELECT
         ic.CALSYS, ic.OPENADMP, ic.FT_UG, ic.PT_UG,
         cost.CHG1AT0, cost.CHG2AT0, cost.CHG4AY0, cost.CHG5AY0, cost.CHG5AY1, cost.CHG7AY0, cost.TUITVARY,
         adm.APPLCN, adm.ADMSSN, adm.SATVR75, adm.SATMT75, adm.ACTCM75,
         grn.GRTOTLT as gr_150, grd.GRTOTLT as gr_150_cohort,
         grp.PGCMTOT as gr_pell_comp, grp.PGADJCT as gr_pell_adj,
         gr200.BAREVCT as gr200_cohort, gr200.BAGR200 as gr200_comp,
+        grl2.LINE_10 as grl2_cohort, grl2.LINE_50 as grl2_comp,
+        grl2.PGLIN10 as grl2_pell_cohort, grl2.PGLIN50 as grl2_pell_comp,
         effy.EFYTOTLT, effy.EFYTOTLM, effy.EFYTOTLW,
         dist.EFYDEEXC,
         ef4d.RET_PCF, ef4d.RET_NMP, ef4d.STUFACR,
@@ -212,10 +223,13 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
         sfa24.UAGRNTP as sfa24_any_grant_pct, sfa24.UAGRNTA as sfa24_any_grant_avg,
         sfa24.UPGRNTP as sfa24_pell_pct,    sfa24.UPGRNTA as sfa24_pell_avg,
         sfa24.UFLOANP as sfa24_loan_pct,    sfa24.UFLOANA as sfa24_loan_avg,
+        sfav.UGPO9_N as vet_gi_n, sfav.UGPO9_A as vet_gi_avg,
         eap.EAPTOT as faculty_total,
-        fin.F1B01 as exp_instruction,
-        fin.F1B04 as exp_academic_support,
-        fin.F1B05 as exp_student_services
+        sal.SA09MAT as faculty_avg_salary,
+        fin.exp_i as exp_instruction,
+        fin.exp_a as exp_academic_support,
+        fin.exp_s as exp_student_services,
+        fin.finance_type as exp_finance_type
     FROM ipeds_ic2024 ic
     LEFT JOIN ipeds_cost1_2024 cost ON ic.UNITID = cost.UNITID
     LEFT JOIN ipeds_adm2024 adm ON ic.UNITID = adm.UNITID
@@ -223,18 +237,42 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
     LEFT JOIN ipeds_gr2024 grn ON ic.UNITID = grn.UNITID AND grn.GRTYPE IN (3, 30) AND grn.GRTOTLT != '-1'
     LEFT JOIN ipeds_gr2024_pell_ssl grp ON ic.UNITID = grp.UNITID AND grp.PSGRTYPE IN ('2','4') AND grp.PGCMTOT != '-1'
     LEFT JOIN ipeds_gr200_24 gr200 ON ic.UNITID = gr200.UNITID
+    LEFT JOIN ipeds_gr2024_l2 grl2 ON ic.UNITID = grl2.UNITID
     LEFT JOIN ipeds_effy2024 effy ON ic.UNITID = effy.UNITID AND effy.EFFYLEV = '1'
     LEFT JOIN ipeds_effy2024_dist dist ON ic.UNITID = dist.UNITID AND dist.EFFYDLEV = '1'
     LEFT JOIN ipeds_ef2024d ef4d ON ic.UNITID = ef4d.UNITID
     LEFT JOIN ipeds_sfa2223 sfa ON ic.UNITID = sfa.UNITID
     LEFT JOIN ipeds_sfa2324 sfa24 ON ic.UNITID = sfa24.UNITID
+    LEFT JOIN ipeds_sfav2223 sfav ON ic.UNITID = sfav.UNITID
     LEFT JOIN (
         SELECT UNITID, SUM(EAPTOT) as EAPTOT
         FROM ipeds_eap2024
         WHERE EAPCAT = '1' AND OCCUPCAT IN ('2100', '2200')
         GROUP BY UNITID
     ) eap ON ic.UNITID = eap.UNITID
-    LEFT JOIN ipeds_f2223_f1a fin ON ic.UNITID = fin.UNITID
+    LEFT JOIN (
+        SELECT UNITID, SA09MAT
+        FROM ipeds_sal2023_is
+        WHERE ARANK = '7'
+    ) sal ON ic.UNITID = sal.UNITID
+    LEFT JOIN (
+        -- COALESCE across public (F1A), private non-profit (F2), for-profit (F3)
+        -- Only one table should match per UNITID. Finance type label for display.
+        SELECT UNITID,
+               F1B01 as exp_i, F1B04 as exp_a, F1B05 as exp_s,
+               'public' as finance_type
+        FROM ipeds_f2223_f1a
+        UNION ALL
+        SELECT UNITID,
+               F2B01, F2B04, F2B05,
+               'private_nonprofit'
+        FROM ipeds_f2223_f2
+        UNION ALL
+        SELECT UNITID,
+               F3B01, F3B04, F3B05,
+               'forprofit'
+        FROM ipeds_f2223_f3
+    ) fin ON ic.UNITID = fin.UNITID
     WHERE ic.UNITID = :unitid
     '''
     
@@ -316,6 +354,18 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
         result["grad_rate_200"]        = round(gr200_comp / gr200_co * 100)
         result["grad_rate_200_cohort"] = gr200_co
 
+    # 2-year institution graduation rates (gr2024_l2)
+    # LINE_10 = cohort, LINE_50 = completers within 150% of time
+    grl2_co   = _int(row, "grl2_cohort")
+    grl2_comp = _int(row, "grl2_comp")
+    if grl2_co and grl2_comp is not None and grl2_co > 0:
+        result["grad_rate_150_l2"]  = round(grl2_comp / grl2_co * 100)
+        result["grad_rate_l2_cohort"] = grl2_co
+    grl2_pell_co   = _int(row, "grl2_pell_cohort")
+    grl2_pell_comp = _int(row, "grl2_pell_comp")
+    if grl2_pell_co and grl2_pell_comp is not None and grl2_pell_co > 0:
+        result["grad_rate_pell_l2"] = round(grl2_pell_comp / grl2_pell_co * 100)
+
     # Financial aid — 2023-24 (sfa2324)
     result["aid_any_grant_pct"]  = _int(row, "sfa24_any_grant_pct")
     result["aid_any_grant_avg"]  = _int(row, "sfa24_any_grant_avg")
@@ -324,17 +374,34 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
     result["aid_loan_pct"]       = _int(row, "sfa24_loan_pct")
     result["aid_loan_avg"]       = _int(row, "sfa24_loan_avg")
 
+    # Veterans / GI Bill (sfav2223)
+    vet_n   = _int(row, "vet_gi_n")
+    vet_avg = _int(row, "vet_gi_avg")
+    if vet_n and vet_n > 0:
+        result["vet_gi_bill_n"]   = vet_n
+        result["vet_gi_bill_avg"] = vet_avg
+
     # Faculty & Staff — instructional head count (eap2024, OCCUPCAT 2100+2200)
     result["faculty_count"]      = _int(row, "faculty_total")
 
-    # Institutional Expenditures — F2223 (most recent available)
-    # F1A table stores raw dollars; we convert to thousands ($000s) for display
-    _exp_instruction      = _int(row, "exp_instruction")
-    _exp_academic_support = _int(row, "exp_academic_support")
-    _exp_student_services = _int(row, "exp_student_services")
+    # Faculty average 9-month salary (sal2023_is, ARANK=7 = all ranks)
+    _sal = _int(row, "faculty_avg_salary")
+    result["faculty_avg_salary"] = _sal if _sal and _sal > 0 else None
+
+    # Institutional Expenditures — FY2022-23, covers public/private-nonprofit/for-profit
+    # All three finance tables use the same Bxx column pattern; values are raw dollars.
+    # We guard against negative values (IPEDS suppression artifact in F2/F3).
+    def _pos_int(r, key):
+        v = _int(r, key)
+        return v if v and v > 0 else None
+
+    _exp_instruction      = _pos_int(row, "exp_instruction")
+    _exp_academic_support = _pos_int(row, "exp_academic_support")
+    _exp_student_services = _pos_int(row, "exp_student_services")
     result["exp_instruction"]      = round(_exp_instruction / 1000)      if _exp_instruction      else None
     result["exp_academic_support"] = round(_exp_academic_support / 1000) if _exp_academic_support else None
     result["exp_student_services"] = round(_exp_student_services / 1000) if _exp_student_services else None
+    result["exp_finance_type"]     = str(row.get("exp_finance_type") or "") or None
     # Total for percentage calculations
     _exp_vals = [result["exp_instruction"], result["exp_academic_support"], result["exp_student_services"]]
     result["exp_total"] = sum(v for v in _exp_vals if v) or None

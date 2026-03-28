@@ -37,6 +37,22 @@
     </div>
     {% endif %}
 
+    {# 2-year institutions report in gr_l2 rather than the standard gr2024 table #}
+    {% if ipeds.grad_rate_150_l2 %}
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
+        <span style="font-weight:600;">All Students — 150% <span style="font-size:0.72rem;font-weight:normal;color:var(--text-muted);">(2-yr track)</span></span>
+        <span style="font-size:1.1rem;font-weight:700;color:var(--color-primary);">{{ ipeds.grad_rate_150_l2 }}%</span>
+      </div>
+      <div style="background:var(--color-surface);border-radius:6px;height:10px;overflow:hidden;">
+        <div style="width:{{ ipeds.grad_rate_150_l2 }}%;background:var(--color-primary);height:100%;border-radius:6px;transition:width 0.5s;"></div>
+      </div>
+      {% if ipeds.grad_rate_l2_cohort %}
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">cohort: {{ "{:,}".format(ipeds.grad_rate_l2_cohort) }} students</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
     {% if ipeds.grad_rate_pell %}
     <div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
@@ -47,6 +63,19 @@
         <div style="width:{{ ipeds.grad_rate_pell }}%;background:var(--color-secondary);height:100%;border-radius:6px;transition:width 0.5s;"></div>
       </div>
       <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">grant/loan recipients</div>
+    </div>
+    {% endif %}
+
+    {% if ipeds.grad_rate_pell_l2 %}
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
+        <span style="font-weight:600;">Pell / SSL Recipients — 150% <span style="font-size:0.72rem;font-weight:normal;color:var(--text-muted);">(2-yr track)</span></span>
+        <span style="font-size:1.1rem;font-weight:700;color:var(--color-secondary);">{{ ipeds.grad_rate_pell_l2 }}%</span>
+      </div>
+      <div style="background:var(--color-surface);border-radius:6px;height:10px;overflow:hidden;">
+        <div style="width:{{ ipeds.grad_rate_pell_l2 }}%;background:var(--color-secondary);height:100%;border-radius:6px;transition:width 0.5s;"></div>
+      </div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">grant/loan recipients (2-yr)</div>
     </div>
     {% endif %}
 
@@ -142,8 +171,18 @@
       <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">per year, Title IV recipients</div>
     </div>
     {% endif %}
+    {% if ipeds.vet_gi_bill_n %}
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.65rem 0.85rem;">
+      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">🎖️ GI Bill / Veterans</div>
+      <div style="font-size:1.4rem;font-weight:700;color:var(--color-primary);margin-top:3px;">{{ "{:,}".format(ipeds.vet_gi_bill_n) }}</div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">
+        students receiving Post-9/11 GI Bill
+        {% if ipeds.vet_gi_bill_avg %}· avg ${{ "{:,}".format(ipeds.vet_gi_bill_avg) }}/yr{% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
-  <p style="font-size:0.7rem;color:var(--text-muted);">Source: IPEDS Student Financial Aid 2023–24 (sfa2324). Undergraduate students only.</p>
+  <p style="font-size:0.7rem;color:var(--text-muted);">Source: IPEDS Student Financial Aid 2023–24 (sfa2324) &amp; Veterans Benefits (sfav2223). Undergraduate students only.</p>
 </div>
 {% endif %}
 
@@ -255,7 +294,9 @@
 {% if ipeds and ipeds.exp_total %}
 <div class="tab-section">
   <h3 class="section-title">Selected Expenditure Categories
-    <span class="section-hint">(IPEDS Finance, FY 2022–23, in $000s — 3 of 8 categories)</span>
+    <span class="section-hint">(IPEDS Finance, FY 2022–23, in $000s — 3 of 8 categories
+      {% if ipeds.exp_finance_type == 'private_nonprofit' %} · private non-profit{% elif ipeds.exp_finance_type == 'forprofit' %} · for-profit{% else %} · public{% endif %})
+    </span>
   </h3>
   {% set exp_cats = [
     ('Instruction',      ipeds.exp_instruction,      'var(--color-primary)'),
@@ -278,9 +319,18 @@
     {% endif %}
     {% endfor %}
   </div>
+  {% if ipeds.faculty_avg_salary %}
+  <div style="margin-top:0.75rem;display:inline-flex;align-items:center;gap:0.5rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:8px;padding:0.45rem 0.85rem;">
+    <span style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Avg Faculty Salary (9-mo)</span>
+    <span style="font-size:1.1rem;font-weight:700;color:var(--color-primary);">${{ "{:,}".format(ipeds.faculty_avg_salary) }}</span>
+    <span style="font-size:0.7rem;color:var(--text-muted);">all ranks · FY2022-23</span>
+  </div>
+  {% endif %}
   <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.6rem;">
-    Source: IPEDS Finance (F2223, F1A). Instruction, academic support, and student services only.
+    Source: IPEDS Finance FY2022–23 (F1A public / F2 private non-profit / F3 for-profit).
+    Instruction, academic support, and student services only.
     Plant, research, and administrative costs excluded.
+    Salary: IPEDS sal2023_is, all instructional ranks combined.
   </p>
 </div>
 {% endif %}
