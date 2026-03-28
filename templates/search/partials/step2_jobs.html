@@ -1,0 +1,52 @@
+<div class="step-header" style="animation: fadeIn 0.4s ease-out;">
+  <h2 style="font-size:1.8rem; margin-bottom:0.5rem; color:var(--text-main);">Which program?</h2>
+  <p style="color:var(--text-muted); font-size:1rem; margin-bottom:1.5rem;">Start typing to search for a specific program in the region.</p>
+</div>
+
+<div class="typeahead-wrapper" style="max-width:500px; margin:0 auto; padding: 2rem; background:white; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.05); border:1px solid var(--color-border);">
+  
+  <input type="hidden" name="program_id" id="selected-program" value="">
+  
+  <div style="position:relative;">
+    <div style="position:absolute; left:1rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:1.2rem;">🔍</div>
+    <input type="text" class="typeahead-input" id="prog-search" name="q"
+           placeholder="e.g., Welding, Nursing, Business..." autocomplete="off"
+           style="padding-left: 2.8rem; outline:none;"
+           hx-get="{{ url_for('root.api_search_programs') }}"
+           hx-trigger="keyup changed delay:300ms, search"
+           hx-target="#prog-results"
+           onkeydown="if(event.key==='Enter') event.preventDefault(); document.getElementById('btn-step3-prog').disabled = true;">
+           
+    <div class="typeahead-dropdown" id="prog-results" style="box-shadow:0 10px 30px rgba(0,0,0,0.15);">
+      <!-- Results injected here -->
+    </div>
+  </div>
+  
+  <div style="text-align:center; margin-top: 2rem;">
+    <button type="submit" class="tab" style="background:var(--color-primary); color:white; padding:0.8rem 2rem; font-size:1.1rem; border-radius:30px; width:100%; justify-content:center; opacity:0.5; cursor:not-allowed;"
+            id="btn-step3-prog" disabled>See Connected Jobs →</button>
+  </div>
+  
+</div>
+
+<script>
+function selectProgram(progId, name, orgName) {
+    document.getElementById('selected-program').value = progId;
+    document.getElementById('prog-search').value = name + " (" + orgName + ")";
+    document.getElementById('prog-results').innerHTML = '';
+    
+    // Enable submit button
+    const btn = document.getElementById('btn-step3-prog');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+}
+
+// Close dropdown if clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.typeahead-wrapper')) {
+        const results = document.getElementById('prog-results');
+        if(results) results.innerHTML = '';
+    }
+});
+</script>

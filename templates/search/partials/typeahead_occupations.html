@@ -1,0 +1,12 @@
+{% if occupations %}
+  {% for occ in occupations %}
+  <div class="typeahead-option" onclick="selectOccupation(this.dataset.soc, this.dataset.title)" data-soc="{{ occ.soc }}" data-title="{{ occ.title }}">
+    <div style="font-weight:600; color:var(--text-main);">{{ occ.title }}</div>
+    <div style="font-size:0.85rem; color:var(--text-muted); margin-top:2px;">SOC {{ occ.soc }}</div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="typeahead-option" style="color:var(--text-muted); padding:1rem; text-align:center;">
+    No occupations found matching your exact search.
+  </div>
+{% endif %}

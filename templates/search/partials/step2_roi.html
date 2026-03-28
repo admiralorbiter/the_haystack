@@ -1,0 +1,28 @@
+<div class="step-header">
+  <h2 style="font-size:1.8rem; margin-bottom:0.5rem; color:var(--text-main);">What type of credential?</h2>
+  <p style="color:var(--text-muted); font-size:1rem; margin-bottom:1.5rem;">Select the duration or degree type to compare similar programs</p>
+</div>
+
+<div style="max-width:500px; margin:0 auto; padding: 2rem; background:white; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.05); border:1px solid var(--color-border);">
+  
+  <div style="position:relative; margin-bottom:2rem;">
+    <select name="cred_filter" class="filter-select" id="roi-select"
+            style="width:100%; padding:1rem 1.2rem; font-size:1.1rem; border:2px solid var(--color-border); border-radius:8px; cursor:pointer; background:var(--color-surface); appearance:none;"
+            onchange="document.getElementById('btn-step3-roi').disabled = !this.value; document.getElementById('btn-step3-roi').style.opacity = this.value ? '1' : '0.5';">
+      <!-- These are standard IPEDS derived credential types. 
+           We use the exact string that the /programs route expects -->
+      <option value="" disabled selected>-- Select a level --</option>
+      <option value="Certificate (<1 year)">Short-term Certificate (< 1 year)</option>
+      <option value="Certificate (1-2 years)">Certificate (1–2 years)</option>
+      <option value="Associate's degree">Associate's Degree</option>
+      <option value="Bachelor's degree">Bachelor's Degree</option>
+    </select>
+    <div style="position:absolute; right:1.2rem; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--color-primary);">▼</div>
+  </div>
+  
+  <div style="text-align:center;">
+    <button type="submit" class="tab" style="background:var(--color-primary); color:white; padding:0.8rem 2rem; font-size:1.1rem; border-radius:30px; width:100%; justify-content:center; opacity:0.5; transition:opacity 0.2s;"
+            id="btn-step3-roi" disabled>Show Highest Earning Programs →</button>
+  </div>
+  
+</div>

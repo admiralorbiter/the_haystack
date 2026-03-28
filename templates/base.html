@@ -22,10 +22,12 @@
         <div class="logo">
             <a href="{{ url_for('root.index') }}" style="color: var(--color-bg); font-weight: bold; font-size: 1.25rem;">The Haystack</a>
         </div>
-        <form class="search-box" action="{{ url_for('root.search_view') }}" method="get" style="display: flex;">
-            <input type="text" name="q" placeholder="Search providers, programs, fields..." value="{{ q | default('') }}">
+        <form class="search-box" action="{{ url_for('root.search_view') }}" method="get" style="display: flex; position:relative;">
+            <input type="text" name="q" placeholder="Search providers, programs, fields..." value="{{ q | default('') }}" style="padding-right: 60px;">
+            <a href="{{ url_for('root.guided_search') }}" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); text-decoration:none; font-size:0.85rem; color:var(--text-muted); font-weight:600; transition:color 0.2s;" onmouseover="this.style.color='var(--color-primary)'" onmouseout="this.style.color='var(--text-muted)'" title="Advanced Guided Search">Adv.</a>
         </form>
         <nav class="nav-links">
+            <a href="{{ url_for('root.guided_search') }}">Explore</a>
             <a href="{{ url_for('root.providers_directory') }}">Providers</a>
             <a href="{{ url_for('root.programs_directory') }}">Programs</a>
             <a href="{{ url_for('root.fields_directory') }}">Fields</a>

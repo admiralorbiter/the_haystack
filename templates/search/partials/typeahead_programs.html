@@ -1,0 +1,14 @@
+{% if programs %}
+  {% for p in programs %}
+  <div class="typeahead-option" onclick="selectProgram(this.dataset.pid, this.dataset.title, this.dataset.org)" data-pid="{{ p.program_id }}" data-title="{{ p.name }}" data-org="{{ p.organization.name }}">
+    <div style="font-weight:600; color:var(--text-main);">{{ p.name }}</div>
+    <div style="font-size:0.85rem; color:var(--text-muted); margin-top:2px;">
+      {{ p.organization.name }} <span style="margin:0 4px;">•</span> {{ p.credential_type }}
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="typeahead-option" style="color:var(--text-muted); padding:1rem; text-align:center;">
+    No programs found matching "{{ request.args.get('q') }}".
+  </div>
+{% endif %}

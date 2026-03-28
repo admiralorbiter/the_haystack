@@ -478,6 +478,7 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 ---
 
 ## Epic 10 — Inverse Search (Guided Query Builder)
+**Status:** Done (Implemented via HTMX multi-step wizard)
 **Goal:** Let users start from a need and have Haystack trace backward to providers and programs. The inverse of browsing.
 
 **Design principle:** Most tools assume you know what you're looking for. Inverse Search assumes you know the *outcome* you need ("train 20 welders", "find a cert program near ZIP 64111") and helps you find the path.

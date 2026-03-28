@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% block title %}Inverse Search | The Haystack{% endblock %}
+
+{% block extra_css %}
+<style>
+  .guided-wrapper {
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 0 1rem;
+  }
+  
+  .guided-wrapper h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  
+  .outcome-card {
+    display: block;
+    cursor: pointer;
+    position: relative;
+  }
+  
+  /* Hide the actual radio button but keep it focusable for accessibility */
+  .outcome-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+  }
+  
+  .outcome-card .card-content {
+    padding: 1.5rem;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    height: 100%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+  
+  .outcome-card:hover .card-content {
+    border-color: var(--color-secondary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  
+  /* Active state when a radio is checked */
+  .outcome-card input[type="radio"]:checked + .card-content {
+    border-color: var(--color-primary);
+    background: rgba(135, 0, 88, 0.03); /* slight primary tint */
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+  
+  .card-icon {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    display: inline-block;
+  }
+  
+  .card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin: 0 0 0.5rem 0;
+  }
+  
+  .card-desc {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+  
+  /* Typeahead styling for step 2 */
+  .typeahead-wrapper {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .typeahead-input {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    font-size: 1.1rem;
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  
+  .typeahead-input:focus {
+    border-color: var(--color-primary);
+  }
+  
+  .typeahead-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    z-index: 100;
+    max-height: 350px;
+    overflow-y: auto;
+    display: none; /* toggled via htmx */
+  }
+  
+  .typeahead-dropdown:not(:empty) {
+    display: block;
+  }
+  
+  .typeahead-option {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--color-border);
+    transition: background 0.15s;
+  }
+  
+  .typeahead-option:last-child {
+    border-bottom: none;
+  }
+  
+  .typeahead-option:hover {
+    background: var(--color-surface);
+  }
+  
+  .step-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    animation: fadeIn 0.4s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="guided-wrapper">
+  
+  <div class="step-header" id="step1-header">
+    <h1>What outcome do you need?</h1>
+    <p style="color:var(--text-muted); font-size:1.1rem; max-width:600px; margin:0 auto;">Tell us what you're trying to accomplish, and we'll trace the data backward to find the right providers and programs.</p>
+  </div>
+  
+  <form id="guided-search-form" action="{{ url_for('root.guided_search_resolve') }}" method="GET">
+    
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.2rem; margin-bottom: 2rem;" id="step1-grid"
+         hx-target="#guided-step-2" 
+         hx-swap="innerHTML show:top">
+      
+      <!-- Option 1: Find Training for a Job -->
+      <label class="outcome-card">
+        <input type="radio" name="outcome" value="training" 
+               hx-get="{{ url_for('root.guided_search_step2', outcome='training') }}">
+        <div class="card-content">
+          <div class="card-icon">🎯</div>
+          <h3 class="card-title">Find training for a specific job</h3>
+          <p class="card-desc">If you know the career you want (e.g., Welder, RN), we'll find all local programs mapping to that occupation.</p>
+        </div>
+      </label>
+      
+      <!-- Option 2: Explore Field of Study -->
+      <label class="outcome-card">
+        <input type="radio" name="outcome" value="field"
+               hx-get="{{ url_for('root.guided_search_step2', outcome='field') }}">
+        <div class="card-content">
+          <div class="card-icon">📚</div>
+          <h3 class="card-title">Explore a broad field of study</h3>
+          <p class="card-desc">Select a family like "Health Professions" or "IT" to see all related certificates and degrees across KC.</p>
+        </div>
+      </label>
+      
+      <!-- Option 3: Job connections -->
+      <label class="outcome-card">
+        <input type="radio" name="outcome" value="jobs"
+               hx-get="{{ url_for('root.guided_search_step2', outcome='jobs') }}">
+        <div class="card-content">
+          <div class="card-icon">💼</div>
+          <h3 class="card-title">See what jobs a program connects to</h3>
+          <p class="card-desc">Type in a program name to discover exactly which SOC occupations it feeds into.</p>
+        </div>
+      </label>
+      
+      <!-- Option 4: ROI / Scorecard -->
+      <label class="outcome-card">
+        <input type="radio" name="outcome" value="roi"
+               hx-get="{{ url_for('root.guided_search_step2', outcome='roi') }}">
+        <div class="card-content">
+          <div class="card-icon">📈</div>
+          <h3 class="card-title">Find programs with the highest ROI</h3>
+          <p class="card-desc">Filter programs by credential level and rank them by median earnings using College Scorecard data.</p>
+        </div>
+      </label>
+      
+    </div>
+    
+    <!-- Step 2 Container -->
+    <div id="guided-step-2" style="margin-top:3rem;">
+      <!-- HTMX injects step 2 form fields here -->
+    </div>
+    
+  </form>
+</div>
+
+<script>
+// Optional: If we want to automatically scroll down slightly when Step 2 loads
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if(evt.detail.target.id === 'guided-step-2') {
+        const step2 = document.getElementById('guided-step-2');
+        if(step2.innerHTML.trim() !== '') {
+            // Scroll it into view nicely
+            step2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+});
+</script>
+{% endblock %}

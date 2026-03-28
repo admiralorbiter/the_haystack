@@ -316,6 +316,7 @@ def programs_directory():
     cred_filter = request.args.get("cred", "").strip()
     cip_filter = request.args.get("cip", "").strip()
     org_filter = request.args.get("org", "").strip()
+    soc_filter = request.args.get("soc", "").strip()
     comp_filter = request.args.get("comp", "").strip()
     search_q = request.args.get("q", "").strip()
     sort = request.args.get("sort", "completions")
@@ -367,6 +368,9 @@ def programs_directory():
 
     if org_filter:
         q = q.filter(Program.org_id == org_filter)
+
+    if soc_filter:
+        q = q.filter(ProgramOccupation.soc == soc_filter)
 
     if comp_filter == "suppressed":
         q = q.filter(Program.completions.is_(None))
@@ -437,6 +441,7 @@ def programs_directory():
         cred_filter=cred_filter,
         cip_filter=cip_filter,
         org_filter=org_filter,
+        soc_filter=soc_filter,
         comp_filter=comp_filter,
         search_q=search_q,
         sort=sort,
