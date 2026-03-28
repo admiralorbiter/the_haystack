@@ -124,9 +124,24 @@
       {% set org = row.org %}
       <tr class="provider-row" onclick="window.location='{{ url_for('root.provider_detail', org_id=org.org_id) }}'">
         <td data-sort-val="{{ org.name | lower }}">
-          <a href="{{ url_for('root.provider_detail', org_id=org.org_id) }}" class="provider-name-link">
-            {{ org.name }}
-          </a>
+          <div style="display: flex; flex-flow: row wrap; align-items: center; gap: 8px;">
+            <a href="{{ url_for('root.provider_detail', org_id=org.org_id) }}" class="provider-name-link">
+              {{ org.name }}
+            </a>
+            {% if org.unitid %}
+              <span class="badge badge-college badge-sm">College</span>
+            {% else %}
+              <span class="badge badge-wioa badge-sm">Training Provider</span>
+            {% endif %}
+          </div>
+          {% if row.parent_name %}
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+            <span style="opacity: 0.7;">↳ Part of</span>
+            <a href="{{ url_for('root.provider_detail', org_id=row.parent_org_id) }}" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">
+              {{ row.parent_name }}
+            </a>
+          </div>
+          {% endif %}
         </td>
         <td style="color:var(--text-muted); font-size:0.9rem;" data-sort-val="{{ ((org.city or '') ~ ', ' ~ (org.state or '')) | lower }}">
           {{ org.city }}{% if org.city and org.state %}, {% endif %}{{ org.state }}

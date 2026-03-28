@@ -146,6 +146,44 @@ else:
 **Log all merges.** If verbose=True, print `[Merge] ExternalName -> ExistingName`.
 Always cache the current run's new orgs in a `{(name_lower, city_lower): org_id}` dict to avoid creating duplicate orgs for the same provider offering multiple programs.
 
+### The satellite linking pattern (for parent-child relationships)
+When an external source (like WIOA) contains divisions or branches of institutions that already exist in the database (like IPEDS parent colleges), link them using the `Relationship` table rather than merging them.
+
+```python
+# loaders/link_org_parents.py
+from thefuzz import fuzz
+
+# Manual override hatch to safely fix edge case linkages without writing code
+MANUAL_OVERRIDES = {
+    'wioa_dd3': 'beedcde0',   # Force link: fixes false negative (abbreviations)
+    'wioa_1d3': None,         # Force skip: suppresses false positive auto-link
+}
+
+def find_parent(satellite, colleges):
+    best_score = 0.0
+    best_match = None
+    
+    for college in colleges:
+        # Use partial_ratio to check if college name is contained in the satellite name
+        # (e.g., 'Park University' contained in 'Park University-Parkville')
+        partial = fuzz.partial_ratio(satellite.name.lower(), college.name.lower())
+        
+        if partial >= 92 and partial > best_score:
+            best_score = partial
+            best_match = college
+            
+    return best_match
+    
+# Create generic relationship row
+session.add(Relationship(
+    from_entity_id=satellite.org_id,
+    to_entity_id=parent.org_id,
+    rel_type="parent_org",
+    source="auto_fuzzy" # distinct from 'manual' 
+))
+```
+**Important:** Keep identity reconciliation/linking as separate, idempotent maintenance scripts (e.g., `link_org_parents.py`) so they can be run, tuned, and overridden independently from the raw data ingestion pipeline.
+
 ---
 
 ## Part 4 — Schema Changes (Migrations)

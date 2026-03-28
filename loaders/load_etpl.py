@@ -1,6 +1,6 @@
 """
 Load WIOA Eligible Training Provider List (ETPL) into the Haystack database.
-Source: TrainingProviderResults.gov Search Results.csv.
+Source: DownloadPrograms.xlsx (from TrainingProviderResults.gov full data download).
 """
 import argparse
 import sys
@@ -43,6 +43,24 @@ def _str(val, default: str = "") -> str | None:
     return s if s and s.lower() != 'nan' else None
 
 
+def normalize_credential(raw_val: str | None) -> str:
+    """Map messy WIOA string credentials to standard IPEDS buckets."""
+    if not raw_val:
+        return "Certificate"
+    
+    val = raw_val.lower()
+    if "associate" in val or "aas" in val or "aa-" in val:
+        return "Associate's degree"
+    if "bachelor" in val or "ba-" in val or "bs-" in val:
+        return "Bachelor's degree"
+    if "master" in val:
+        return "Master's degree"
+    if "doctor" in val:
+        return "Doctoral degree"
+    
+    return "Certificate"
+
+
 def _get_kc_zips(session) -> set[str]:
     """Fetch the KC MSA FIPS codes and map them to ZIP codes via the Census ZCTA crosswalk."""
     kc_fips = get_kc_county_fips(session, "kansas-city")
@@ -69,15 +87,17 @@ def _get_kc_zips(session) -> set[str]:
 
 
 def load_etpl(session, dry_run=False, verbose=False) -> dict:
-    csv_path = RAW_DIR / "wioa" / "TrainingProviderResults.gov Search Results.csv"
-    if not csv_path.exists():
-        print(f"[error] Missing file: {csv_path}", file=sys.stderr)
+    file_path = RAW_DIR / "wioa" / "DownloadPrograms.xlsx"
+    if not file_path.exists():
+        print(f"[error] Missing file: {file_path}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"  Reading WIOA ETPL from {csv_path.name}...")
-    # 'field_zip' might contain spaces or bad formatting
-    df = pd.read_csv(csv_path, dtype=str, low_memory=False)
-    df["zip_clean"] = df["field_zip"].fillna("").astype(str).str.replace(r"\D", "", regex=True).str[:5]
+    print(f"  Reading WIOA ETPL from {file_path.name}...")
+    # Using openpyxl to read the xlsx data download
+    df = pd.read_excel(file_path, dtype=str)
+    
+    # Clean Zip
+    df["zip_clean"] = df["zip"].fillna("").astype(str).str.replace(r"\D", "", regex=True).str[:5]
 
     # Filter by MSA Zips
     kc_zips = _get_kc_zips(session)
@@ -99,11 +119,11 @@ def load_etpl(session, dry_run=False, verbose=False) -> dict:
     new_orgs_cache = {}
 
     for _, row in kc_df.iterrows():
-        provider_name = _str(row.get("field_etp", "")) or ""
-        program_name = _str(row.get("field_program_name", "")) or ""
-        address = _str(row.get("field_address", ""))
-        city = _str(row.get("field_city", ""))
-        state = _str(row.get("field_state", ""))
+        provider_name = _str(row.get("d101_eligible_training_provider", "")) or ""
+        program_name = _str(row.get("d105_program_name", "")) or ""
+        address = _str(row.get("address", ""))
+        city = _str(row.get("city", ""))
+        state = _str(row.get("state", ""))
         zip_code = row["zip_clean"]
         
         if not provider_name or not program_name:
@@ -147,7 +167,7 @@ def load_etpl(session, dry_run=False, verbose=False) -> dict:
                     org_type="training",
                     city=city,
                     state=state,
-                    website=_str(row.get("field_program_url", ""))
+                    website=_str(row.get("d107_program_url", ""))
                 )
                 if not dry_run:
                     session.add(new_org)
@@ -157,21 +177,21 @@ def load_etpl(session, dry_run=False, verbose=False) -> dict:
                     print(f"    [New Org] {provider_name} in {city}, {state}")
 
         # 3. Create Program
-        entity_type = str(row.get("field_entity_type", ""))
+        entity_type = _str(row.get("d104_entity_type", "")) or ""
         is_apprenticeship = "Apprenticeship" in entity_type
         
         # Duration fallback
         try:
-            weeks = int(float(row.get("field_program_length_weeks", 0)))
-        except ValueError:
+            weeks = int(float(row.get("d114_program_length_weeks", 0)))
+        except (ValueError, TypeError):
             weeks = None
 
         new_prog = Program(
             org_id=org_id,
             name=program_name,
-            credential_type=_str(row.get("field_associated_credential", "")) or "Certificate",
-            cip=normalize_cip(_str(row.get("field_cip_code", ""))) or "99.9999",
-            modality="In-Person" if "in-person" in (_str(row.get("field_program_format", "")) or "").lower() else "Hybrid",
+            credential_type=normalize_credential(_str(row.get("d109_associated_credential", ""))),
+            cip=normalize_cip(_str(row.get("d110_cip_code", ""))) or "99.9999",
+            modality="In-Person" if "in-person" in (_str(row.get("d116_program_format", "")) or "").lower() else "Hybrid",
             duration_weeks=weeks,
             is_wioa_eligible=True,
             is_apprenticeship=is_apprenticeship
@@ -181,17 +201,28 @@ def load_etpl(session, dry_run=False, verbose=False) -> dict:
             session.flush()
             
             # Map SOCs
+            seen_socs = set()
             for i in [1, 2, 3]:
-                soc = str(row.get(f"field_program_soc_occ_{i}", "")).strip()
+                soc = str(row.get(f"d11{6+i}_program_soc_occupation_{i}", "")).strip()
                 if soc and len(soc) > 5:
-                    if len(soc) == 9 and soc[2] == "-":
+                    if len(soc) > 7 and "-" in soc:
                         soc = soc[:7] # e.g. "29-203100" -> "29-2031"
-                    po = ProgramOccupation(
-                        program_id=new_prog.program_id,
-                        soc=soc,
-                        source="wioa_etpl"
-                    )
-                    session.add(po)
+                    if " " in soc:
+                        soc = soc.split(" ")[0] # in case of messy formatting
+                        
+                    if soc in seen_socs:
+                        continue
+                    seen_socs.add(soc)
+                        
+                    try:
+                        po = ProgramOccupation(
+                            program_id=new_prog.program_id,
+                            soc=soc,
+                            source="wioa_etpl"
+                        )
+                        session.add(po)
+                    except Exception:
+                        pass # avoid failing if format is completely messed up
 
         loaded_progs += 1
 
@@ -202,7 +233,7 @@ def load_etpl(session, dry_run=False, verbose=False) -> dict:
             source_id=SOURCE_ID,
             name=SOURCE_NAME,
             version="2024",
-            url=csv_path.name,
+            url=file_path.name,
             record_count=loaded_progs,
             notes=f"KC MSA match: {loaded_orgs} new orgs, {loaded_progs} programs."
         )

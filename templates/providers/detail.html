@@ -15,11 +15,14 @@
 <header class="page-header">
   <div class="title-row">
     <h1 class="m-0">{{ org.name }}</h1>
-    {{ components.entity_badge('provider', 'Training Provider') }}
-    {% if org.org_id.startswith('wioa_') %}
-      <span class="badge badge-wioa">WIOA Provider</span>
+    {% if org.unitid %}
+      <span class="badge badge-college">College</span>
+    {% else %}
+      <span class="badge badge-wioa">Training Provider</span>
     {% endif %}
-    <span class="inst-type-badge">{{ inst_type }}</span>
+    {% if inst_type %}
+      <span class="inst-type-badge">{{ inst_type }}</span>
+    {% endif %}
   </div>
   <div style="color:var(--text-muted); margin-bottom:var(--spacing-sm);">
     {{ org.city }}{% if org.city and org.state %}, {% endif %}{{ org.state }}
@@ -35,6 +38,31 @@
     <button class="btn btn-secondary" id="copy-link-btn" onclick="copyPageLink(this)" title="Copy link to clipboard">🔗 Copy Link</button>
   </div>
 </header>
+
+{# ── Parent institution notice (for WIOA satellites) ──────────────────────── #}
+{% if parent_org %}
+<div class="org-relation-notice org-relation-parent">
+  <span class="org-relation-label">Part of</span>
+  <a href="{{ url_for('root.provider_detail', org_id=parent_org.org_id) }}" class="org-relation-link">
+    🎓 {{ parent_org.name }}
+  </a>
+  <span class="badge badge-college badge-sm">College</span>
+</div>
+{% endif %}
+
+{# ── Training divisions panel (for IPEDS colleges with satellite arms) ───── #}
+{% if child_orgs %}
+<div class="org-relation-notice org-relation-children">
+  <span class="org-relation-label">Associated Training Divisions</span>
+  <div class="org-relation-children-list">
+    {% for child in child_orgs %}
+    <a href="{{ url_for('root.provider_detail', org_id=child.org_id) }}" class="org-relation-child-link">
+      {{ child.name }}
+    </a>{% if not loop.last %}<span class="org-relation-sep">·</span>{% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 {# ── Snapshot strip (5-column forced grid) ────────────────────────────── #}
 <div class="snapshot-strip" style="grid-template-columns: repeat(5, 1fr);">

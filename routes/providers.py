@@ -18,10 +18,11 @@ from functools import lru_cache
 
 from flask import abort, current_app, render_template, request
 from sqlalchemy import func, text
+from sqlalchemy.orm import aliased
 
 from models import (
     DatasetSource, Occupation, OrgAlias, Organization,
-    Program, ProgramOccupation, RegionCounty, db,
+    Program, ProgramOccupation, RegionCounty, Relationship, db,
 )
 
 from . import root_bp
@@ -728,17 +729,23 @@ def providers_directory():
         else func.sum(Program.completions)
     )
 
+    ParentOrg = aliased(Organization)
+
     q = (
         db.session.query(
             Organization,
             func.count(Program.program_id).label("program_count"),
             _completions_sum.label("total_completions"),
             func.count(func.distinct(ProgramOccupation.soc)).label("occ_count"),
+            ParentOrg.name.label("parent_name"),
+            ParentOrg.org_id.label("parent_org_id"),
         )
         .outerjoin(Program, Program.org_id == Organization.org_id)
         .outerjoin(ProgramOccupation, ProgramOccupation.program_id == Program.program_id)
+        .outerjoin(Relationship, db.and_(Relationship.from_entity_id == Organization.org_id, Relationship.rel_type == "parent_org"))
+        .outerjoin(ParentOrg, ParentOrg.org_id == Relationship.to_entity_id)
         .filter(Organization.org_type == "training")
-        .group_by(Organization.org_id)
+        .group_by(Organization.org_id, ParentOrg.name, ParentOrg.org_id)
     )
 
     if county_filter:
@@ -801,6 +808,8 @@ def providers_directory():
             "program_count": row.program_count or 0,
             "total_completions": int(row.total_completions) if row.total_completions else None,
             "occ_count": row.occ_count or 0,
+            "parent_name": row.parent_name,
+            "parent_org_id": row.parent_org_id,
         }
         for row in rows
     ]
@@ -876,6 +885,31 @@ def provider_detail(org_id: str):
             inst_type=inst_type,
         )
 
+    # Parent org (if this is a WIOA satellite linked to an IPEDS college)
+    parent_rel = (
+        db.session.query(Relationship)
+        .filter_by(from_entity_id=org_id, rel_type="parent_org")
+        .first()
+    )
+    parent_org = (
+        db.session.query(Organization).filter_by(org_id=parent_rel.to_entity_id).first()
+        if parent_rel else None
+    )
+
+    # Child orgs (if this is an IPEDS college with linked WIOA satellites)
+    child_rels = (
+        db.session.query(Relationship)
+        .filter_by(to_entity_id=org_id, rel_type="parent_org")
+        .all()
+    )
+    child_orgs = (
+        db.session.query(Organization)
+        .filter(Organization.org_id.in_([r.from_entity_id for r in child_rels]))
+        .order_by(Organization.name)
+        .all()
+        if child_rels else []
+    )
+
     return render_template(
         "providers/detail.html",
         org=org,
@@ -885,6 +919,8 @@ def provider_detail(org_id: str):
         ipeds=ipeds_data,
         active_tab="overview",
         inst_type=inst_type,
+        parent_org=parent_org,
+        child_orgs=child_orgs,
     )
 
 
