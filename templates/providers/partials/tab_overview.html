@@ -1,6 +1,39 @@
 {# Overview tab — server-rendered on initial page load #}
 
-{# ── IPEDS Institutional Data ─────────────────────────────────────────────── #}
+{# ── Associated Contacts (Apprenticeship) ────────────────────────────────── #}
+{% if org.contacts %}
+<div class="tab-section" style="margin-bottom:1.5rem;">
+  <h3 class="section-title">Points of Contact</h3>
+  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:1rem;">
+    {% for contact in org.contacts %}
+      <div style="background:var(--bg-surface); border:1px solid var(--border-color); border-radius:8px; padding:1.2rem; box-shadow:0 2px 4px rgba(0,0,0,0.02)">
+        <div style="font-weight:600; font-size:1.1rem; color:var(--text-color);">
+          {{ contact.contact_name or "Department Contact" }}
+        </div>
+        <div style="color:var(--primary-color); font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.8rem; margin-top:2px;">
+          {{ contact.contact_role }}
+        </div>
+        
+        <div style="display:flex; flex-direction:column; gap:0.4rem; font-size:0.95rem;">
+          {% if contact.contact_email %}
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <span>✉️</span>
+            <a href="mailto:{{ contact.contact_email }}" style="color:var(--text-color); text-decoration:none;">{{ contact.contact_email }}</a>
+          </div>
+          {% endif %}
+          
+          {% if contact.contact_phone %}
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <span>📞</span>
+            <a href="tel:{{ contact.contact_phone }}" style="color:var(--text-color); text-decoration:none;">{{ contact.contact_phone }}</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}{# ── IPEDS Institutional Data ─────────────────────────────────────────────── #}
 {% if ipeds and not org.org_id.startswith('wioa_') %}
 <div class="tab-section" style="margin-bottom:1.25rem;">
   <h3 class="section-title">Institutional Data <span style="font-size:0.78rem;font-weight:normal;color:var(--text-muted);">IPEDS 2024</span></h3>

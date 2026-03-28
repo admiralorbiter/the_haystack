@@ -94,13 +94,21 @@ kc_fips = get_kc_county_fips(session, "kansas-city")
 # Then filter: df[df["FIPS"].isin(kc_fips)]
 ```
 
-### ZIP code filter (for WIOA-style address data)
+### ZIP code filter (for WIOA or Apprenticeship address data)
 ```python
-# Use the ZCTA crosswalk to expand county FIPS to ZIPs
-kc_fips = get_kc_county_fips(session, "kansas-city")
-crosswalk = pd.read_csv(CROSSWALK_DIR / "zcta_county_rel_10.txt", dtype=str)
-kc_zips = set(crosswalk[crosswalk["GEOID"].isin(kc_fips)]["ZCTA5"])
-# Then filter: df[df["zip"].isin(kc_zips)]
+# Load the static crosswalk (data/geography/zip2fips.json)
+import json
+zip2fips = json.load(open(PROJECT_ROOT / "data" / "geography" / "zip2fips.json"))
+
+# Get valid KC FIPS strings
+kc_counties = session.query(RegionCounty.county_fips).filter_by(region_id="kc-msa").all()
+kc_fips_set = {str(c.county_fips).zfill(5) for c in kc_counties}
+
+# Then extract ZIP and check:
+county_fips = zip2fips.get(zip_str)
+if isinstance(county_fips, list): county_fips = county_fips[0] # handle span zips
+if not county_fips or county_fips not in kc_fips_set:
+    continue # Skipped, not in KC MSA!
 ```
 
 Cache the crosswalk file to `data/raw/crosswalks/` — download once, reuse forever.
@@ -186,7 +194,34 @@ session.add(Relationship(
 
 ---
 
-## Part 4 — Schema Changes (Migrations)
+## Part 4 — Contact Data Pattern
+
+When a dataset provides contact persons, emails, or phone numbers for an Organization, **never** add flat columns (`contact_email`, `contact_name`) to the `Organization` table. 
+
+Instead, use the `OrgContact` relational model. This prevents schema bloat and supports organizations with multiple distinct roles (e.g. an "Apprenticeship Partner" contact vs. a "Pathful Virtual Session" contact).
+
+```python
+# Add contact if we have data and it doesn't already exist for this org role
+if contact_email or contact_phone:
+    existing_contact = session.query(OrgContact).filter_by(
+        org_id=match_id, 
+        contact_role="Apprenticeship Partner"
+    ).first()
+    
+    if not existing_contact:
+        new_contact = OrgContact(
+            org_id=match_id,
+            contact_name=contact_person,
+            contact_email=contact_email,
+            contact_phone=contact_phone,
+            contact_role="Apprenticeship Partner"
+        )
+        session.add(new_contact)
+```
+
+---
+
+## Part 5 — Schema Changes (Migrations)
 
 When a new dataset needs new columns:
 
@@ -209,7 +244,7 @@ The FTS5 virtual tables (`organization_fts`, `program_fts`) are maintained by DB
 
 ---
 
-## Part 5 — The UI Integration Pattern
+## Part 6 — The UI Integration Pattern
 
 Every new dataset that surfaces in the UI needs ALL of the following. Do not ship without completing this list.
 
@@ -249,7 +284,7 @@ If the new dataset does NOT have outcomes data (no IPEDS unitid, no Scorecard en
 
 ---
 
-## Part 6 — Data Quality Rules (Non-Negotiable)
+## Part 7 — Data Quality Rules (Non-Negotiable)
 
 These rules apply across every dataset. Check them in every loader.
 
@@ -264,7 +299,7 @@ These rules apply across every dataset. Check them in every loader.
 
 ---
 
-## Part 7 — Testing Requirements
+## Part 8 — Testing Requirements
 
 Every loader needs:
 
@@ -293,7 +328,7 @@ Use fixture CSVs in `tests/fixtures/<dataset>/` with exactly 5–10 rows.
 
 ---
 
-## Part 8 — Known Technical Debt & Future Improvements
+## Part 9 — Known Technical Debt & Future Improvements
 
 These are patterns we've accepted as "good enough for V1" that will need to be addressed as data volume grows:
 
@@ -307,7 +342,7 @@ These are patterns we've accepted as "good enough for V1" that will need to be a
 
 ---
 
-## Part 9 — Checklist for Every New Dataset
+## Part 10 — Checklist for Every New Dataset
 
 Copy-paste this into the Epic ticket when starting a new data integration.
 

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}Employers & Sponsors | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('root.index') }}">Home</a> &rsaquo; Employers & Sponsors</div>
+
+<header class="page-header">
+  <div class="title-row">
+    <h1 class="m-0">Employers & Sponsors</h1>
+    {{ components.entity_badge('organization', 'KC Region') }}
+  </div>
+  <p style="color:var(--text-muted); margin:0;">
+    Registered Apprenticeship employers, intermediaries, and program sponsors in the Kansas City MSA.
+  </p>
+</header>
+
+{# ── Filter bar ─────────────────────────────────────────────────────────── #}
+<div class="filter-bar" id="filter-form">
+  <div class="filter-group" style="width: 100%; max-width: 400px;">
+    <form method="get" action="{{ url_for('root.employers_directory') }}" id="search-filter-form" style="display: flex; gap: 8px;">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search employers..." class="search-input" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+      <button type="submit" class="nav-links" style="padding: 0.5rem 1rem; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-surface); color: var(--text-color); cursor: pointer; font-weight: 500;">Search</button>
+      {% if q %}
+      <a href="{{ url_for('root.employers_directory') }}" class="filter-clear-link" style="align-self: center; margin-left: 8px;" title="Clear search">✕ Clear</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{# ── Results count ───────────────────────────────────────────────────────── #}
+<div class="results-header">
+  <span class="results-count">
+    {{ total_count }} employer{{ 's' if total_count != 1 else '' }}
+    {% if q %}
+    <span style="font-weight:normal; color:var(--text-muted); font-size:0.9rem;"> &mdash; matching "{{ q }}"</span>
+    {% endif %}
+  </span>
+</div>
+
+{# ── Provider table ─────────────────────────────────────────────────────── #}
+{% if rows %}
+<div class="table-wrapper">
+  <table class="data-table provider-table">
+    <thead>
+      <tr>
+        <th class="text-col">Organization</th>
+        <th class="text-col">Location</th>
+        <th class="text-col">Role</th>
+        <th class="text-col">Website</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for org in rows %}
+      <tr class="provider-row">
+        <td>
+          <div style="display: flex; flex-flow: row wrap; align-items: center; gap: 8px;">
+            <a href="{{ url_for('root.employer_detail', org_id=org.org_id) }}" style="font-weight: 600; font-size: 1.1rem; color: var(--heading-color); text-decoration: none;">
+              {{ org.name }}
+            </a>
+            {% if org.org_type == 'employer' %}
+              <span class="badge badge-sm" style="background:var(--bg-accent); color:var(--text-color);">Employer</span>
+            {% elif org.org_type == 'intermediary' %}
+              <span class="badge badge-sm" style="background:var(--bg-accent); color:var(--text-color);">Apprenticeship Sponsor</span>
+            {% endif %}
+            {% if org.contacts %}
+              <span title="Contact Info Available">📇</span>
+            {% endif %}
+          </div>
+        </td>
+        <td style="color:var(--text-muted); font-size:0.9rem;">
+          {{ org.city }}{% if org.city and org.state %}, {% endif %}{{ org.state }}
+        </td>
+        <td style="color:var(--text-muted); font-size:0.9rem;">
+          {{ org.apprenticeship_role or 'Employer' }}
+        </td>
+        <td style="font-size:0.9rem;">
+          {% if org.website %}
+            <a href="{{ org.website }}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color);">Visit Site ↗</a>
+          {% else %}
+            <span style="color: var(--text-muted); opacity: 0.5;">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Pagination ──────────────────────────────────────────────────────────── #}
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if has_prev %}
+  <a class="page-btn" href="{{ url_for('root.employers_directory', q=q, page=page-1) }}">&larr; Previous</a>
+  {% endif %}
+  <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+  {% if has_next %}
+  <a class="page-btn" href="{{ url_for('root.employers_directory', q=q, page=page+1) }}">Next &rarr;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+{# ── Empty state ─────────────────────────────────────────────────────────── #}
+<div class="empty-state">
+  <div class="empty-icon">🏢</div>
+  <h3>No employers found</h3>
+  <p>Try clearing your search or <a href="{{ url_for('root.employers_directory') }}">viewing all employers</a>.</p>
+</div>
+{% endif %}
+
+<style>
+.search-input {
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+.search-input:focus {
+    outline: 2px solid var(--primary-color);
+    border-color: transparent;
+}
+</style>
+{% endblock %}

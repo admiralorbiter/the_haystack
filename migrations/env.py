@@ -31,6 +31,17 @@ target_metadata = db.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+def include_object(object, name, type_, reflected, compare_to):
+    """
+    Ignore FTS5 virtual tables and dynamic pd.to_sql tables (IPEDS/Scorecard)
+    from Alembic autogenerate to prevent them from being dropped.
+    (Tech Debt Item Fix)
+    """
+    if type_ == "table" and name:
+        if "_fts" in name or name.startswith("ipeds_") or name.startswith("scorecard_"):
+            return False
+    return True
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -52,6 +63,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         render_as_batch=True,  # Crucial for SQLite ALTER TABLE support
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -80,6 +92,7 @@ def run_migrations_online() -> None:
             connection=connection, 
             target_metadata=target_metadata,
             render_as_batch=True,  # Crucial for SQLite ALTER TABLE support
+            include_object=include_object,
         )
 
         with context.begin_transaction():

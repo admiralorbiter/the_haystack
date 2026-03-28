@@ -6,45 +6,103 @@
     <dt>Institution name</dt>
     <dd>{{ org.name }}</dd>
 
-    {% if alias %}
+    {% if org.unitid %}
+    <dt>Primary Type</dt>
+    <dd><span class="badge badge-college badge-sm" style="margin:0;">IPEDS College</span></dd>
+    {% elif ds_wioa %}
+    <dt>Primary Type</dt>
+    <dd><span class="badge badge-wioa badge-sm" style="margin:0;">WIOA Training Provider</span></dd>
+    {% endif %}
+
+    {% if alias and alias.source == 'ipeds' %}
     <dt>IPEDS UNITID</dt>
     <dd style="font-family:monospace;">{{ alias.source_id }}</dd>
     <dt>IPEDS name on record</dt>
     <dd>{{ alias.source_name or '—' }}</dd>
     {% endif %}
-
-    {% if org.unitid %}
-    <dt>Internal UNITID</dt>
+    
+    {% if not alias and org.unitid %}
+    <dt>IPEDS UNITID</dt>
     <dd style="font-family:monospace;">{{ org.unitid }}</dd>
     {% endif %}
 
     <dt>Haystack org_id</dt>
     <dd style="font-family:monospace; font-size:0.8rem; color:var(--text-muted);">{{ org.org_id }}</dd>
 
-    {% if ds_hd %}
-    <dt>Institutions file</dt>
+    {# IPEDS Sources #}
+    {% if ds_hd or ds_c %}
+    <dt style="margin-top: 1rem; color: var(--text-color);"><strong>Collegiate Data (IPEDS)</strong></dt>
+    <dd></dd>
+      {% if ds_hd %}
+      <dt>Institutions file</dt>
+      <dd>
+        {{ ds_hd.name }}
+        &mdash; <span style="color:var(--text-muted); font-size:0.85rem;">
+          {{ ds_hd.record_count | default('?') }} records, loaded {{ ds_hd.loaded_at.strftime('%Y-%m-%d') if ds_hd.loaded_at else '?' }}
+        </span>
+      </dd>
+      {% endif %}
+      {% if ds_c %}
+      <dt>Completions file</dt>
+      <dd>
+        {{ ds_c.name }}
+        &mdash; <span style="color:var(--text-muted); font-size:0.85rem;">
+          {{ ds_c.record_count | default('?') }} records, loaded {{ ds_c.loaded_at.strftime('%Y-%m-%d') if ds_c.loaded_at else '?' }}
+        </span>
+      </dd>
+      {% endif %}
+    {% endif %}
+
+    {# WIOA Sources #}
+    {% if ds_wioa %}
+    <dt style="margin-top: 1rem; color: var(--text-color);"><strong>Workforce Data (WIOA)</strong></dt>
+    <dd></dd>
+    <dt>ETPL file</dt>
     <dd>
-      {{ ds_hd.name }}
+      {{ ds_wioa.name }}
       &mdash; <span style="color:var(--text-muted); font-size:0.85rem;">
-        {{ ds_hd.record_count | default('?') }} records, loaded {{ ds_hd.loaded_at.strftime('%Y-%m-%d') if ds_hd.loaded_at else '?' }}
+        {{ ds_wioa.record_count | default('?') }} records, loaded {{ ds_wioa.loaded_at.strftime('%Y-%m-%d') if ds_wioa.loaded_at else '?' }}
       </span>
     </dd>
     {% endif %}
 
-    {% if ds_c %}
-    <dt>Completions file</dt>
+    {# Apprenticeship Sources #}
+    {% if ds_appr %}
+    <dt style="margin-top: 1rem; color: var(--text-color);"><strong>Apprenticeship Data (RAPIDS)</strong></dt>
+    <dd></dd>
+    <dt>Partner Finder file</dt>
     <dd>
-      {{ ds_c.name }}
+      {{ ds_appr.name }}
       &mdash; <span style="color:var(--text-muted); font-size:0.85rem;">
-        {{ ds_c.record_count | default('?') }} records, loaded {{ ds_c.loaded_at.strftime('%Y-%m-%d') if ds_c.loaded_at else '?' }}
+        {{ ds_appr.record_count | default('?') }} records, loaded {{ ds_appr.loaded_at.strftime('%Y-%m-%d') if ds_appr.loaded_at else '?' }}
       </span>
     </dd>
     {% endif %}
+
   </dl>
 </div>
 
-<p class="methods-note">
-  <a href="https://nces.ed.gov/ipeds/" target="_blank" rel="noopener">IPEDS</a>
-  is the Integrated Postsecondary Education Data System, maintained by the National Center for Education Statistics (NCES).
-  Data is collected annually and typically published 12–18 months after the survey year.
-</p>
+<div class="methods-note">
+  <ul style="margin: 0; padding-left: 1.2rem;">
+    {% if ds_hd or ds_c or not (ds_wioa or ds_appr) %}
+    <li style="margin-bottom: 0.5rem;">
+      <strong>IPEDS</strong> <a href="https://nces.ed.gov/ipeds/" target="_blank" rel="noopener">(Integrated Postsecondary Education Data System)</a>
+      is maintained by the National Center for Education Statistics (NCES). It provides baseline institution details, financials, and collegiate programs. Data is collected annually and typically published 12–18 months after the survey year.
+    </li>
+    {% endif %}
+    
+    {% if ds_wioa %}
+    <li style="margin-bottom: 0.5rem;">
+      <strong>WIOA ETPL</strong> <a href="https://www.trainingproviderresults.gov" target="_blank" rel="noopener">(Eligible Training Provider List)</a>
+      provides alternative training provider data verified by state workforce agencies.
+    </li>
+    {% endif %}
+
+    {% if ds_appr %}
+    <li>
+      <strong>RAPIDS</strong> <a href="https://www.apprenticeship.gov" target="_blank" rel="noopener">(Apprenticeship Partner Finder)</a>
+      provides registered apprenticeship status and program integration curated by the Department of Labor.
+    </li>
+    {% endif %}
+  </ul>
+</div>

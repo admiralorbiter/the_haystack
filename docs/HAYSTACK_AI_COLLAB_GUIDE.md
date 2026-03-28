@@ -26,6 +26,7 @@ A local KC data platform that lets users explore training providers, programs, o
 |---|---|---|
 | Geography | `geo_area` | ZIP 64111, Jackson County |
 | Organization | `organization` | Metropolitan Community College |
+| Provider Contact | `org_contact` | Apprenticeship Sponsor |
 | Program / Offering | `program` | Healthcare Tech Certificate |
 | Work / Opportunity | `occupation` | Registered Nurse (SOC 29-1141) |
 | Civic Signal | `civic_signal` | 311 request, crime incident |
@@ -317,7 +318,7 @@ Each entry is a hard-won lesson. Read before starting a new loader or route.
 - While individual PRs or epic routes might be flawlessly covered, the V1 global coverage threshold (70%) may fail on CI hooks. When developing solo routes, trust the module-level coverage metric rather than fighting the global average unnecessarily.
 
 ### Alternative Pathway Datasets (WIOA, Apprenticeships, Non-Title-IV)
-- Programs from WIOA ETPL have **no IPEDS unitid** and **no Scorecard enrollment data**. Their `completions` field will always be NULL. Do NOT display this as a suppressed-data `—` — use `{% if prog.is_wioa_eligible and prog.completions is none %}N/A (WIOA){% endif %}` to explicitly differentiate.
+- Programs from WIOA ETPL (Source: https://www.trainingproviderresults.gov/data/DownloadPrograms.xlsx) have **no IPEDS unitid** and **no Scorecard enrollment data**. Their `completions` field will always be NULL. Do NOT display this as a suppressed-data `—` — use `{% if prog.is_wioa_eligible and prog.completions is none %}N/A (WIOA){% endif %}` to explicitly differentiate.
 - WIOA programs use fuzzy org identity reconciliation (85% token_sort_ratio threshold against existing IPEDS orgs). New standalone WIOA providers use a `wioa_` prefixed org_id (not a standard UUID) so they are identifiable.
 - **Satellite Operations:** When an organization operates a separate satellite campus (e.g. "JCCC Continuing Ed" vs "Johnson County Community College"), link them upward using the `Relationship` table with `rel_type='parent_org'`. Do not merge them into a single record. Keep identity linking logic in separate idempotent mapping scripts (`link_org_parents.py`) rather than the core loader. Use a `MANUAL_OVERRIDES` dictionary to fix edge-case linkages rather than complex schema migrations.
 - When adding any future non-Title-IV dataset, ensure the Scorecard and Outcomes tabs have **targeted** empty state messages (not generic ones) explaining *why* data is unavailable for this program type.

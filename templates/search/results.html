@@ -35,15 +35,20 @@
       {% if orgs %}
       <section>
         <div class="title-row" style="margin-bottom: 1rem;">
-          <h2 style="margin:0; font-size: 1.5rem;">Providers</h2>
-          {{ components.entity_badge('provider', orgs|length ~ ' top matches') }}
+          <h2 style="margin:0; font-size: 1.5rem;">Organizations</h2>
+          {{ components.entity_badge('organization', orgs|length ~ ' top matches') }}
         </div>
         <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
           {% for o in orgs %}
           <div class="card provider-roster-card" style="padding: 1.25rem;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-              <h4 style="margin:0 0 0.25rem 0;">
+              <h4 style="margin:0 0 0.25rem 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                 <a href="{{ url_for('root.provider_detail', org_id=o.org_id) }}" style="color: var(--text-color); text-decoration: none;">{{ o.name }}</a>
+                {% if o.org_type == 'employer' %}
+                  <span class="badge badge-sm" style="background:var(--bg-accent); color:var(--text-color); margin:0;">Employer</span>
+                {% elif o.org_type == 'intermediary' %}
+                  <span class="badge badge-sm" style="background:var(--bg-accent); color:var(--text-color); margin:0;">Apprenticeship Sponsor</span>
+                {% endif %}
               </h4>
               <span style="font-size:1.25rem; color:var(--text-muted);">→</span>
             </div>
@@ -59,7 +64,7 @@
         </div>
         {% if orgs|length == 5 %}
         <div style="margin-top: 1rem;">
-          <a href="{{ url_for('root.providers_directory', q=q) }}" class="nav-links" style="font-weight: 500;">Show all matching providers &rarr;</a>
+          <a href="{{ url_for('root.providers_directory', q=q) }}" class="nav-links" style="font-weight: 500;">Search full Training Provider directory &rarr;</a>
         </div>
         {% endif %}
       </section>

@@ -33,4 +33,4 @@ def index():
 
 # These imports must be AFTER the blueprint definition — this is Flask's required pattern.
 # ruff: noqa: E402, F401
-from . import briefing, compare, fields, guided_search, map, programs, providers, search  # noqa: E402, F401
+from . import briefing, compare, employers, fields, guided_search, map, programs, providers, search  # noqa: E402, F401

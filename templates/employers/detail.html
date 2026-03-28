@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}{{ org.name }} | Employer Profile | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('root.index') }}">Home</a> &rsaquo; 
+  <a href="{{ url_for('root.employers_directory') }}">Employers & Sponsors</a> &rsaquo; 
+  {{ org.name }}
+</div>
+
+<header class="page-header" style="border-bottom: 2px solid var(--border-color); padding-bottom: 2rem; margin-bottom: 2rem;">
+  <div class="title-row" style="margin-bottom: 0.5rem;">
+    <h1 class="m-0" style="font-size: 2.25rem;">{{ org.name }}</h1>
+    
+    {% if org.is_apprenticeship_partner %}
+      {{ components.entity_badge('organization', 'Apprenticeship Partner') }}
+    {% endif %}
+  </div>
+
+  <div class="provider-meta" style="font-size: 1.1rem; color: var(--text-muted); display: flex; gap: 1.5rem; flex-wrap: wrap;">
+    <span class="meta-item">
+      📍 {{ org.city }}{% if org.city and org.state %}, {% endif %}{{ org.state }}
+    </span>
+    {% if org.apprenticeship_role %}
+    <span class="meta-item">
+      🏢 Role: <strong>{{ org.apprenticeship_role }}</strong>
+    </span>
+    {% endif %}
+    {% if org.website %}
+    <span class="meta-item">
+      🌐 <a href="{{ org.website }}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color);">Visit Website ↗</a>
+    </span>
+    {% endif %}
+  </div>
+</header>
+
+<div class="layout-grid">
+  <div class="main-content">
+    <section class="info-section">
+      <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Associated Contacts</h2>
+      
+      {% if org.contacts %}
+        <div class="contact-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+          {% for contact in org.contacts %}
+            <div class="card" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; background: var(--bg-surface); box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2sease;">
+              <div style="font-weight: 600; font-size: 1.25rem; margin-bottom: 0.25rem; color: var(--text-color);">
+                {{ contact.contact_name or "Department Contact" }}
+              </div>
+              <div style="color: var(--primary-color); font-weight: 500; font-size: 0.9rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                {{ contact.contact_role }}
+              </div>
+              
+              <div class="contact-details" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% if contact.contact_email %}
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="opacity: 0.7;">✉️</span>
+                  <a href="mailto:{{ contact.contact_email }}" style="color: var(--text-color); font-weight: 500; text-decoration: none;">{{ contact.contact_email }}</a>
+                </div>
+                {% endif %}
+                
+                {% if contact.contact_phone %}
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="opacity: 0.7;">📞</span>
+                  <a href="tel:{{ contact.contact_phone }}" style="color: var(--text-color); font-weight: 500; text-decoration: none;">{{ contact.contact_phone }}</a>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state" style="padding: 3rem; background: var(--bg-surface); border-radius: 8px; border: 1px dashed var(--border-color); text-align: center;">
+          <div style="font-size: 2rem; margin-bottom: 1rem;">📇</div>
+          <h3 style="margin-bottom: 0.5rem;">No contacts on file</h3>
+          <p style="color: var(--text-muted); margin: 0;">We don't currently have any registered apprenticeship coordinators or HR specialists on file for this organization.</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+
+<style>
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary-color);
+}
+</style>
+{% endblock %}

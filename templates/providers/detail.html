@@ -20,6 +20,9 @@
     {% else %}
       <span class="badge badge-wioa">Training Provider</span>
     {% endif %}
+    {% if org.is_apprenticeship_partner %}
+      <span class="badge" style="background:var(--bg-accent); color:var(--text-color);">Apprenticeship Partner</span>
+    {% endif %}
     {% if inst_type %}
       <span class="inst-type-badge">{{ inst_type }}</span>
     {% endif %}

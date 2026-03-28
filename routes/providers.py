@@ -112,26 +112,32 @@ def _provider_snapshot(org_id: str) -> dict:
             .scalar() or 0
         )
 
-    # Dataset source freshness — prefer WIOA source for WIOA-prefixed orgs
-    is_wioa_provider = org_id.startswith("wioa_")
-    if is_wioa_provider:
-        ds = (
-            db.session.query(DatasetSource)
-            .filter(DatasetSource.source_id.like("wioa_%"))
-            .order_by(DatasetSource.loaded_at.desc())
-            .first()
-        )
-    else:
-        ds = (
-            db.session.query(DatasetSource)
-            .filter(DatasetSource.source_id.like("ipeds_hd_%"))
-            .order_by(DatasetSource.loaded_at.desc())
-            .first()
-        )
+    # Dataset source parsing
+    org = db.session.query(Organization).get(org_id)
+    is_wioa = org_id.startswith("wioa_")
+    is_appr = org_id.startswith("appr_") or org.is_apprenticeship_partner
 
-    # Scorecard coverage — only valid for IPEDS unitid-linked providers
-    _unitid = None if is_wioa_provider else db.session.query(Organization.unitid).filter_by(org_id=org_id).scalar()
-    sc_summary = _scorecard_summary(_unitid)
+    # Fetch the most "core" dataset for the freshness date
+    if is_wioa:
+        ds = db.session.query(DatasetSource).filter(DatasetSource.source_id.like("wioa_%")).order_by(DatasetSource.loaded_at.desc()).first()
+    elif is_appr and not org.unitid:
+        ds = db.session.query(DatasetSource).filter(DatasetSource.source_id == "apprenticeship_partner_finder").order_by(DatasetSource.loaded_at.desc()).first()
+    else:
+        ds = db.session.query(DatasetSource).filter(DatasetSource.source_id.like("ipeds_hd_%")).order_by(DatasetSource.loaded_at.desc()).first()
+
+    # Build multi-source string (e.g., "IPEDS + Apprenticeships")
+    source_labels = []
+    if org.unitid:
+        source_labels.append("IPEDS")
+    elif is_wioa:
+        source_labels.append("WIOA ETPL")
+    elif org_id.startswith("appr_"):
+        source_labels.append("Apprenticeships")
+
+    if org.is_apprenticeship_partner and "Apprenticeships" not in source_labels:
+        source_labels.append("Apprenticeships")
+
+    sc_summary = _scorecard_summary(org.unitid)
 
     return {
         "total_programs": total_programs,
@@ -141,7 +147,7 @@ def _provider_snapshot(org_id: str) -> dict:
         "top_cip_family": top_cip_family,
         "top_cip_label": top_cip_label,
         "linked_occupations": occ_count,
-        "data_source": ds.name if ds else "IPEDS",
+        "data_source": " + ".join(source_labels) if source_labels else (ds.name if ds else "Unknown"),
         "data_as_of": ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown",
         "sc_earn_median_6yr": sc_summary.get("earn_median_6yr"),
         "scorecard_coverage": sc_summary.get("has_data", False),
@@ -1032,24 +1038,29 @@ def provider_tab_scorecard(org_id: str):
 def provider_tab_evidence(org_id: str):
     org = _get_provider_or_404(org_id)
     alias = db.session.query(OrgAlias).filter_by(org_id=org_id, source="ipeds").first()
-    ds_hd = (
-        db.session.query(DatasetSource)
-        .filter(DatasetSource.source_id.like("ipeds_hd_%"))
-        .order_by(DatasetSource.loaded_at.desc())
-        .first()
-    )
-    ds_c = (
-        db.session.query(DatasetSource)
-        .filter(DatasetSource.source_id.like("ipeds_c_%"))
-        .order_by(DatasetSource.loaded_at.desc())
-        .first()
-    )
+    
+    ds_hd = None
+    ds_c = None
+    if org.unitid:
+        ds_hd = db.session.query(DatasetSource).filter(DatasetSource.source_id.like("ipeds_hd_%")).order_by(DatasetSource.loaded_at.desc()).first()
+        ds_c = db.session.query(DatasetSource).filter(DatasetSource.source_id.like("ipeds_c_%")).order_by(DatasetSource.loaded_at.desc()).first()
+
+    ds_wioa = None
+    if org_id.startswith("wioa_") or db.session.query(OrgAlias).filter_by(org_id=org_id, source="wioa").first():
+        ds_wioa = db.session.query(DatasetSource).filter(DatasetSource.source_id.like("wioa_%")).order_by(DatasetSource.loaded_at.desc()).first()
+
+    ds_appr = None
+    if org.is_apprenticeship_partner:
+        ds_appr = db.session.query(DatasetSource).filter(DatasetSource.source_id == "apprenticeship_partner_finder").order_by(DatasetSource.loaded_at.desc()).first()
+
     return render_template(
         "providers/partials/tab_evidence.html",
         org=org,
         alias=alias,
         ds_hd=ds_hd,
         ds_c=ds_c,
+        ds_wioa=ds_wioa,
+        ds_appr=ds_appr,
     )
 
 

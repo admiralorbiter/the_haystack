@@ -25,6 +25,18 @@ This ladder describes **what to add and why**, in a sequence that maximizes valu
    - Primary entities: Occupation, Program, Provider
    - First UI surfaces: occupation links, sector links, compare context
 
+4. **WIOA ETPL (Workforce Innovation and Opportunity Act)**
+   - Why fourth: maps alternative training and non-Title-IV credential providers outside strictly collegiate pathways
+   - Provider URL: [https://www.trainingproviderresults.gov/data/DownloadPrograms.xlsx](https://www.trainingproviderresults.gov/data/DownloadPrograms.xlsx)
+   - Primary entities: Provider, Program, Relationship (linked to parent colleges)
+   - First UI surfaces: alternative provider badges, wioa-eligible filters, parent-child context
+
+5. **Apprenticeship Partner Finder (RAPIDS)**
+   - Why fifth: expands visibility into the corporate workforce ecosystem, recognizing active employer sponsors and tracking regional registered apprenticeships
+   - Provider URL: [https://www.apprenticeship.gov/partner-finder/listings](https://www.apprenticeship.gov/partner-finder/listings)
+   - Primary entities: Employer, Sponsor, Provider (fuzzy merged to existing)
+   - First UI surfaces: employers directory, partner badges, employer linkages
+
 ---
 
 ## Tier 2 — Strengthen the organization spine

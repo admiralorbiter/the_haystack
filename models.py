@@ -77,9 +77,12 @@ class Organization(db.Model):
     website: Mapped[str] = mapped_column(String(500), nullable=True)
     unitid: Mapped[str] = mapped_column(String(50), nullable=True)
     ein: Mapped[str] = mapped_column(String(50), nullable=True)
+    is_apprenticeship_partner: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="0")
+    apprenticeship_role: Mapped[str] = mapped_column(String(50), nullable=True)
 
     # Relationships
     programs = relationship("Program", back_populates="organization")
+    contacts = relationship("OrgContact", back_populates="organization", cascade="all, delete-orphan")
 
 Index("ix_organization_county_fips", Organization.county_fips)
 
@@ -91,6 +94,19 @@ class OrgAlias(db.Model):
     source: Mapped[str] = mapped_column(String(50), primary_key=True)
     source_id: Mapped[str] = mapped_column(String(100), primary_key=True)
     source_name: Mapped[str] = mapped_column(String(255), nullable=True)
+
+
+class OrgContact(db.Model):
+    __tablename__ = "org_contact"
+    
+    contact_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    org_id: Mapped[str] = mapped_column(ForeignKey("organization.org_id"), nullable=False, index=True)
+    contact_name: Mapped[str] = mapped_column(String(255), nullable=True)
+    contact_email: Mapped[str] = mapped_column(String(255), nullable=True)
+    contact_phone: Mapped[str] = mapped_column(String(50), nullable=True)
+    contact_role: Mapped[str] = mapped_column(String(100), nullable=True) # e.g. "Apprenticeship Sponsor"
+
+    organization = relationship("Organization", back_populates="contacts")
 
 
 class Program(db.Model):
