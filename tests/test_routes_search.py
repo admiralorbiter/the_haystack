@@ -57,3 +57,32 @@ def test_search_sql_injection_safe(mock_p, mock_o, client, seeded_program):
     assert resp.status_code == 200
     html = resp.data.decode()
     assert "500 Internal Server Error" not in html
+
+
+@patch("routes.search.sqlite3.connect")
+def test_search_fts_sqlite_operational_error(mock_connect, client):
+    """Test that sqlite3.OperationalError is caught inside FTS helpers."""
+    import sqlite3
+    mock_connect.side_effect = sqlite3.OperationalError("no such table: organization_fts")
+    
+    # We call the functions directly to ensure exception block is covered
+    from routes.search import _fts_org_ids, _fts_program_ids
+    assert _fts_org_ids("nursing") == []
+    assert _fts_program_ids("nursing") == []
+
+
+@patch("routes.search.sqlite3.connect")
+def test_search_fts_success(mock_connect, client):
+    """Test FTS helpers returning row data."""
+    mock_cursor = mock_connect.return_value.cursor.return_value
+    mock_cursor.execute.return_value.fetchall.return_value = [("uuid-123",), ("uuid-456",)]
+    
+    from routes.search import _fts_org_ids, _fts_program_ids
+    assert _fts_org_ids("nursing") == ["uuid-123", "uuid-456"]
+    assert _fts_program_ids("nursing") == ["uuid-123", "uuid-456"]
+
+def test_search_fts_empty_query():
+    from routes.search import _fts_org_ids, _fts_program_ids
+    assert _fts_org_ids("") == []
+    assert _fts_program_ids("   ") == []
+

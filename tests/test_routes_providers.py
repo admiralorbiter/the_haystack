@@ -264,3 +264,40 @@ class TestValidUnitid:
 
     def test_whitespace_only_rejected(self):
         assert self._fn("   ") is False
+
+
+# ---------------------------------------------------------------------------
+# HTMX Tabs — GET /providers/<org_id>/tab/*
+# ---------------------------------------------------------------------------
+
+class TestProviderHTMXTabs:
+    """Ensure all HTMX deferred loading tabs return 200 and render HTML."""
+
+    def test_tab_connections(self, client, seeded_program):
+        res = client.get(f"/providers/{seeded_program['org_id']}/tab/connections")
+        assert res.status_code == 200
+
+    def test_tab_geography(self, client, seeded_program):
+        res = client.get(f"/providers/{seeded_program['org_id']}/tab/geography")
+        assert res.status_code == 200
+
+    def test_tab_outcomes(self, client, seeded_program):
+        res = client.get(f"/providers/{seeded_program['org_id']}/tab/outcomes")
+        assert res.status_code == 200
+
+    def test_tab_scorecard(self, client, seeded_program):
+        res = client.get(f"/providers/{seeded_program['org_id']}/tab/scorecard")
+        assert res.status_code == 200
+
+    def test_tab_evidence(self, client, seeded_program):
+        res = client.get(f"/providers/{seeded_program['org_id']}/tab/evidence")
+        assert res.status_code == 200
+
+    def test_tab_methods(self, client, seeded_program):
+        res = client.get(f"/providers/{seeded_program['org_id']}/tab/methods")
+        assert res.status_code == 200
+
+    def test_tabs_404_on_invalid_id(self, client):
+        res = client.get("/providers/00000000-0000-0000-0000-000000000000/tab/connections")
+        assert res.status_code == 404
+

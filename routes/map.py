@@ -55,7 +55,6 @@ def map_providers_geojson():
             db.session.query(Program.org_id)
             .filter(Program.credential_type == cred_filter)
             .distinct()
-            .subquery()
         )
         q = q.filter(Organization.org_id.in_(cred_org_ids))
     
@@ -64,7 +63,6 @@ def map_providers_geojson():
             db.session.query(Program.org_id)
             .filter(Program.cip.like(f"{cip_filter}.%"))
             .distinct()
-            .subquery()
         )
         q = q.filter(Organization.org_id.in_(cip_org_ids))
 

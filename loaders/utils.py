@@ -8,7 +8,7 @@ called from tests with an in-memory session.
 
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -312,7 +312,7 @@ def record_dataset_source(
 
     existing = session.query(DatasetSource).filter_by(source_id=source_id).first()
     if existing:
-        existing.loaded_at = datetime.utcnow()
+        existing.loaded_at = datetime.now(timezone.utc)
         existing.record_count = record_count
         existing.notes = notes
     else:
@@ -322,7 +322,7 @@ def record_dataset_source(
                 name=name,
                 version=version,
                 url=url,
-                loaded_at=datetime.utcnow(),
+                loaded_at=datetime.now(timezone.utc),
                 record_count=record_count,
                 notes=notes,
             )

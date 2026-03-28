@@ -318,6 +318,26 @@ Each entry is a hard-won lesson. Read before starting a new loader or route.
 
 ---
 
+## Phase 1 Architectural Lessons (Codified Rules)
+
+The following patterns emerged during Phase 1 (IPEDS) and must be strictly followed for all Phase 2+ expansions:
+
+### 1. UI Graceful Degradation (`_empty_data` pattern)
+Data sources (IPEDS, ETPL, Scorecard) will always have missing cells. **Never** let a missing row crash a template or trigger a 500 error.
+- **Rule:** If a provider lacks data in a joined table, construct an empty dictionary (e.g., `_empty_ipeds()`) with all expected keys set to `None`.
+- **Templates:** Use Safe Jinja2 checks (`{% if val is not none %}`) rather than trusting that a dict key or attribute exists.
+- **Outcome:** The UI gracefully drops the metric or shows an empty state; it never throws an `UndefinedError`.
+
+### 2. Timezone-Aware Datetimes Only
+- **Rule:** Never use `datetime.utcnow()` (Deprecated in Python 3.12+).
+- **Rule:** Always use `datetime.now(timezone.utc)` when stamping `loaded_at` in datasets or saving model creation times.
+
+### 3. Strict 70% Global Coverage Gate
+- **Rule:** The `pytest` suite is configured to fail the CI build if global coverage drops below 70%.
+- **Rule:** When adding new HTMX deferred tabs (e.g., `/providers/<id>/tab/connections`), you **must** write at least a basic smoke test (`assert res.status_code == 200`) to hit those routes. They contribute heavily to coverage drops if ignored.
+
+---
+
 ## Key docs (reference, don't re-derive)
 - `HAYSTACK_MASTER_PLAN.md` — entity model, phased roadmap, UI grammar
 - `HAYSTACK_IPEDS_V1_SPEC.md` — V1 scope, screen specs, acceptance criteria

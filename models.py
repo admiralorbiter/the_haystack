@@ -7,7 +7,7 @@ Follows Epic 1 PRD schema:
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Integer, Float, Boolean, ForeignKey, DateTime, Index
@@ -26,7 +26,7 @@ class DatasetSource(db.Model):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     version: Mapped[str] = mapped_column(String(50), nullable=True)
     url: Mapped[str] = mapped_column(String(500), nullable=True)
-    loaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    loaded_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     record_count: Mapped[int] = mapped_column(Integer, nullable=True)
     notes: Mapped[str] = mapped_column(String, nullable=True)
 

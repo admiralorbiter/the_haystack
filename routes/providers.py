@@ -736,7 +736,6 @@ def providers_directory():
             db.session.query(Program.org_id)
             .filter(Program.credential_type == cred_filter)
             .distinct()
-            .subquery()
         )
         q = q.filter(Organization.org_id.in_(cred_org_ids))
 
@@ -745,7 +744,6 @@ def providers_directory():
             db.session.query(Program.org_id)
             .filter(Program.cip.like(f"{cip_filter}.%"))
             .distinct()
-            .subquery()
         )
         q = q.filter(Organization.org_id.in_(cip_org_ids))
 
@@ -910,7 +908,7 @@ def provider_tab_connections(org_id: str):
             Organization.org_type == "training",
             Organization.org_id != org_id,
             Program.cip.in_(
-                db.session.query(Program.cip).filter_by(org_id=org_id).subquery()
+                db.session.query(Program.cip).filter_by(org_id=org_id)
             ),
         )
         .group_by(Organization.org_id)
