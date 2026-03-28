@@ -63,6 +63,8 @@ def guided_search_step2():
         return render_template("search/partials/step2_jobs.html")
     elif outcome == "roi":
         return render_template("search/partials/step2_roi.html")
+    elif outcome == "apprenticeship":
+        return render_template("search/partials/step2_apprenticeship.html")
     
     return "<div class='empty-state'>Please select a goal.</div>", 400
 
@@ -93,6 +95,9 @@ def guided_search_resolve():
         if cred:
             # ROI has a dedicated route to do the in-memory Scorecard earnings sorting
             return redirect(url_for("root.guided_search_roi_results", cred=cred))
+            
+    elif outcome == "apprenticeship":
+        return redirect(url_for("root.hub_detail", slug="apprenticeships"))
             
     # Fallback if form is tampered or navigated directly
     return redirect(url_for("root.guided_search"))

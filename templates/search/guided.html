@@ -199,6 +199,17 @@
         </div>
       </label>
       
+      <!-- Option 5: Apprenticeship -->
+      <label class="outcome-card">
+        <input type="radio" name="outcome" value="apprenticeship"
+               hx-get="{{ url_for('root.guided_search_step2', outcome='apprenticeship') }}">
+        <div class="card-content">
+          <div class="card-icon">📇</div>
+          <h3 class="card-title">Find an apprenticeship</h3>
+          <p class="card-desc">See the list of approved registered apprenticeship sponsors and training programs actively operating in KC.</p>
+        </div>
+      </label>
+      
     </div>
     
     <!-- Step 2 Container -->

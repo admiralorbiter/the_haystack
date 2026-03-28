@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}{{ hub.title }} | The Haystack{% endblock %}
+
+{% block extra_css %}
+<style>
+  .hub-hero {
+    background: linear-gradient(135deg, var(--color-surface) 0%, rgba(135, 0, 88, 0.05) 100%);
+    border-bottom: 1px solid var(--color-border);
+    padding: 3rem 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .hub-hero-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .hub-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    display: inline-block;
+  }
+
+  .hub-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .hub-desc {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    max-width: 700px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* Tab strip logic (CSS-only or minimal JS) */
+  .hub-tabs {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: 2rem;
+  }
+
+  .hub-tab-btn {
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    margin-bottom: -2px; /* Pull down over border */
+    transition: all 0.2s;
+  }
+
+  .hub-tab-btn:hover {
+    color: var(--color-primary);
+  }
+
+  .hub-tab-btn.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+
+  .hub-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .hub-panel.active {
+    display: block;
+  }
+
+  /* Shared table styling */
+  table.hub-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  table.hub-table th {
+    text-align: left;
+    padding: 1rem;
+    background: rgba(0,0,0,0.02);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--color-border);
+  }
+
+  table.hub-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.95rem;
+    vertical-align: middle;
+  }
+
+  table.hub-table tr:hover {
+    background: rgba(0,0,0,0.01);
+  }
+
+  table.hub-table tr[data-href] {
+    cursor: pointer;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hub-hero">
+  <div class="hub-hero-inner">
+    <div class="hub-icon">{{ hub.icon }}</div>
+    <h1 class="hub-title">
+      {{ hub.title }}
+      {% if hub.badge %}
+        <span class="badge badge-sm" style="font-size:0.75rem; vertical-align:middle; background:var(--color-primary); color:white;">{{ hub.badge }}</span>
+      {% endif %}
+    </h1>
+    <p class="hub-desc">{{ hub.description }}</p>
+  </div>
+</div>
+
+<div class="container" style="max-width:1200px; margin: 0 auto; padding: 0 1rem;">
+  
+  <div class="hub-tabs" role="tablist">
+    {% for tab in tabs %}
+      <button class="hub-tab-btn {% if loop.first %}active{% endif %}" 
+              onclick="activateHubTab('{{ tab.id }}', this)"
+              id="btn-{{ tab.id }}" 
+              role="tab">
+        {{ tab.icon }} {{ tab.label }}
+        <span style="display:inline-block; padding:2px 8px; border-radius:12px; background:var(--color-surface); font-size:0.8rem; margin-left:8px; border:1px solid var(--color-border);">{{ tab.count }}</span>
+      </button>
+    {% endfor %}
+  </div>
+
+  <div class="hub-content">
+    {% for tab in tabs %}
+      <div id="panel-{{ tab.id }}" class="hub-panel {% if loop.first %}active{% endif %}" role="tabpanel">
+        
+        {% if tab.id == 'sponsors' %}
+        
+          <table class="hub-table">
+            <thead>
+              <tr>
+                <th>ORGANIZATION</th>
+                <th>ROLE</th>
+                <th>CITY</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for org in tab.data %}
+                <tr data-href="{{ url_for('root.employer_detail', org_id=org.org_id) }}">
+                  <td>
+                    <div style="font-weight:600; color:var(--text-main);">{{ org.name }}</div>
+                  </td>
+                  <td>
+                    {% if org.apprenticeship_role == "Employer" %}
+                      <span class="badge badge-sm" style="border:1px solid #ddd; color:#555;">{{ org.apprenticeship_role }}</span>
+                    {% else %}
+                      <span class="badge badge-sm">{{ org.apprenticeship_role }}</span>
+                    {% endif %}
+                  </td>
+                  <td style="color:var(--text-muted);">{{ org.city|title }}, {{ org.state }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+        {% elif tab.id == 'training' %}
+        
+          <table class="hub-table">
+            <thead>
+              <tr>
+                <th>PROGRAM</th>
+                <th>PROVIDER</th>
+                <th>CREDENTIAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for prog in tab.data %}
+                <tr data-href="{{ url_for('root.program_detail', program_id=prog.program_id) }}">
+                  <td>
+                    <div style="font-weight:600; color:var(--text-main);">{{ prog.name }}</div>
+                    <div style="font-size:0.8rem; color:var(--text-muted);">{{ prog.cip_title }}</div>
+                  </td>
+                  <td>{{ prog.org_name }}</td>
+                  <td style="color:var(--text-muted);">{{ prog.cred }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+        {% endif %}
+        
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<script>
+function activateHubTab(tabId, btnElement) {
+  // Hide all panels
+  document.querySelectorAll('.hub-panel').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  // Deactivate all buttons
+  document.querySelectorAll('.hub-tab-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  
+  // Activate target panel and button
+  document.getElementById('panel-' + tabId).classList.add('active');
+  btnElement.classList.add('active');
+}
+</script>
+{% endblock %}

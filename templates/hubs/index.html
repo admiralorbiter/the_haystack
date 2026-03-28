@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Curated Hubs | The Haystack{% endblock %}
+
+{% block extra_css %}
+<style>
+  .hubs-index-wrapper {
+    max-width: 900px;
+    margin: 3rem auto;
+    padding: 0 1rem;
+  }
+  
+  .hubs-index-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  
+  .hubs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .hub-card {
+    display: block;
+    padding: 2rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+  
+  .hub-card:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+  }
+  
+  .hub-card-icon {
+    font-size: 2/5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .hub-card-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    margin: 0 0 0.5rem 0;
+  }
+  
+  .hub-card-desc {
+    font-size: 1rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hubs-index-wrapper">
+  
+  <div class="hubs-index-header">
+    <h1 style="font-size:2.5rem; font-weight:800; color:var(--text-main); margin-bottom:0.5rem;">Curated Hubs</h1>
+    <p style="font-size:1.1rem; color:var(--text-muted); max-width:600px; margin:0 auto;">Pre-filtered, specialized dashboards aggregating critical workforce and training data across specific regions and sectors.</p>
+  </div>
+  
+  <div class="hubs-grid">
+    {% for slug, definition in hubs.items() %}
+      <a href="{{ url_for('root.hub_detail', slug=slug) }}" class="hub-card">
+        <div class="hub-card-icon" style="font-size: 2.5rem;">{{ definition.icon }}</div>
+        <h3 class="hub-card-title">{{ definition.title }}</h3>
+        <p class="hub-card-desc">{{ definition.description }}</p>
+      </a>
+    {% endfor %}
+  </div>
+  
+</div>
+{% endblock %}
