@@ -93,10 +93,10 @@ def test_guided_search_resolve(client):
     assert "#tab_occupations" in resp.headers["Location"]
     
     # 4. ROI (Cred provided)
-    resp = client.get(url_for("root.guided_search_resolve", outcome="roi", cred_filter="Certificate (<1 year)"))
+    resp = client.get(url_for("root.guided_search_resolve", outcome="roi", cred_filter="Certificate (sub-baccalaureate, < 1 year)"))
     assert resp.status_code == 302
-    assert "/programs" in resp.headers["Location"]
-    assert "cred=Certificate+(%3C1+year)" in resp.headers["Location"]
+    assert "/search/guided/roi_results" in resp.headers["Location"]
+    assert "cred=Certificate+(sub-baccalaureate,+%3C+1+year)" in resp.headers["Location"]
 
     # Invalid / Missing data
     resp = client.get(url_for("root.guided_search_resolve", outcome="training")) # missing soc

@@ -57,9 +57,9 @@ def _credlev_for_credential_type(credential_type: str) -> list[str]:
     ct = (credential_type or "").lower()
     matches = []
     if "associate" in ct:
-        matches.append("3")
+        matches.append("2")
     if "bachelor" in ct:
-        matches.append("4")
+        matches.append("3")
     if "master" in ct:
         matches.append("5")
     if "doctor" in ct or "doctoral" in ct:
@@ -68,8 +68,10 @@ def _credlev_for_credential_type(credential_type: str) -> list[str]:
         matches.append("7")
     if "graduate" in ct and "certificate" in ct:
         matches.append("8")
+    if "certificate" in ct and "baccalaureate" in ct:
+        matches.append("4")
     if "certificate" in ct and not matches:
-        matches.extend(["1", "2"])  # try both cert levels
+        matches.append("1")
     if not matches:
         matches = ["1", "2", "3", "4", "5", "6", "7", "8"]  # fallback: all
     return matches

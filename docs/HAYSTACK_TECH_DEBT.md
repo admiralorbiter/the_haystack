@@ -27,7 +27,7 @@
 | D-6 | `org_id` UUID not validated at route entry | 🔴 P1 | ✅ Done 2026-03-27 | `_UUID_RE` regex check added to `provider_detail()`. Non-UUID paths return clean 404 instead of a DB error. |
 | D-7 | `completions` suppression ambiguity | 🟡 P2 | ✅ Done 2026-03-27 | `_empty_ipeds()` key names were mismatched (old stale names) causing `Undefined.__format__ TypeError` for providers with no IPEDS row. Fixed by aligning all keys to exactly what `_get_ipeds_enrichment()` writes (`instate_tuition`, `pt_undergrad`, `act_composite_75`, etc.). Real `NULL` vs suppressed distinction still deferred — but no crash now. |
 | D-8 | `total_completions` with credential filter double-counts | 🟡 P2 | ✅ Done 2026-03-27 | Fixed in `providers_directory()` using `db.case()` — when `cred_filter` is active the aggregate only sums programs matching that credential type. Orgs with mixed credentials no longer show inflated totals. |
-
+| D-9 | Scorecard `CREDLEV` mapping off-by-one error | 🔴 P1 | ✅ Done 2026-03-27 | `_credlev_for_credential_type()` in `routes/programs.py` previously mapped Bachelor's to `4` (Post-Bacc) and Associate's to `3` (Bachelor's), causing massive silently missed joins. Fixed by aligning to official Scorecard numeric taxonomy: `2` (Associate), `3` (Bachelor), `4` (Post-Bacc). |
 ---
 
 ## Routing & API

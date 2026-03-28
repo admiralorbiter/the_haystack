@@ -91,12 +91,51 @@ def guided_search_resolve():
     elif outcome == "roi":
         cred = request.args.get("cred_filter", "").strip()
         if cred:
-            # We direct them to programs filtered by credential. 
-            # Note: sorting by Scorecard earnings requires Phase 2 FTS extensions, defaults to completions.
-            return redirect(url_for("root.programs_directory", cred=cred))
+            # ROI has a dedicated route to do the in-memory Scorecard earnings sorting
+            return redirect(url_for("root.guided_search_roi_results", cred=cred))
             
     # Fallback if form is tampered or navigated directly
     return redirect(url_for("root.guided_search"))
+
+# -----------------------------------------------------------------------------
+# ROI Custom Result View
+# -----------------------------------------------------------------------------
+
+@root_bp.route("/search/guided/roi_results")
+def guided_search_roi_results():
+    from models import Organization
+    from routes.programs import _scorecard_fos_for_program
+    
+    cred = request.args.get("cred", "").strip()
+    if not cred:
+        return redirect(url_for("root.guided_search"))
+        
+    programs = (
+        db.session.query(Program, Organization)
+        .join(Organization, Program.org_id == Organization.org_id)
+        .filter(Program.credential_type == cred)
+        .all()
+    )
+    
+    results = []
+    for p, org in programs:
+        sc = _scorecard_fos_for_program(org.unitid, p.cip, p.credential_type)
+        earnings = None
+        if sc:
+            earnings = sc.get('earn_2yr') or sc.get('earn_1yr')
+        
+        results.append({
+            'program': p,
+            'organization': org,
+            'earnings': earnings,
+            'earnings_val': earnings if isinstance(earnings, int) else 0
+        })
+        
+    # Sort descending by earnings, drop those with no data
+    results = [r for r in results if r['earnings_val'] > 0]
+    results.sort(key=lambda x: x['earnings_val'], reverse=True)
+    
+    return render_template("search/roi_results.html", results=results[:50], cred=cred)
 
 
 # -----------------------------------------------------------------------------

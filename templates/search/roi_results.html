@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}High ROI Programs — {{ cred }} — The Haystack{% endblock %}
+{% block content %}
+
+<div style="margin-bottom: 2rem;">
+    <a href="{{ url_for('root.guided_search') }}" style="color:var(--text-muted); text-decoration:none; font-size:0.9rem;">← Back to Guided Search</a>
+</div>
+
+<div class="page-header" style="margin-bottom: 2rem; border-bottom: 1px solid var(--color-surface); padding-bottom: 1rem;">
+    <h1 style="font-size: 2.2rem; margin: 0 0 0.5rem 0;">Highest ROI Programs (<span style="color: var(--color-primary);">{{ cred }}</span>)</h1>
+    <p style="color: var(--text-muted); font-size: 1.1rem; margin:0;">
+        Showing the top programs in the KC Region ranked by median earnings from the College Scorecard. Non-reporting programs are omitted.
+    </p>
+</div>
+
+{% if results %}
+<div style="padding: 1rem; background: rgba(0,0,0,0.02); border-radius: 8px; border: 1px solid var(--color-border); margin-bottom: 2rem;">
+    <table style="width:100%; border-collapse: collapse; text-align: left;">
+        <thead>
+            <tr style="border-bottom: 2px solid var(--color-border);">
+                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-size: 0.85rem; text-transform:uppercase;">Rank</th>
+                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-size: 0.85rem; text-transform:uppercase;">Program</th>
+                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-size: 0.85rem; text-transform:uppercase;">Provider</th>
+                <th style="padding: 0.75rem 0.5rem; color: var(--text-muted); font-size: 0.85rem; text-transform:uppercase; text-align:right;">Median Earnings</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in results %}
+            <tr style="border-bottom: 1px solid var(--color-border); transition: background 0.15s;" onmouseover="this.style.background='var(--color-surface)'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 1rem 0.5rem; font-weight: bold; color: var(--text-muted);">#{{ loop.index }}</td>
+                <td style="padding: 1rem 0.5rem;">
+                    <div style="font-weight: 600; font-size: 1.05rem;">
+                        <a href="{{ url_for('root.program_detail', program_id=r.program.program_id) }}" style="color:var(--color-primary); text-decoration:none;">{{ r.program.name }}</a>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">CIP {{ r.program.cip }}</div>
+                </td>
+                <td style="padding: 1rem 0.5rem;">
+                    <a href="{{ url_for('root.provider_detail', org_id=r.organization.org_id) }}" style="color:var(--text-main); text-decoration:none;">{{ r.organization.name }}</a>
+                </td>
+                <td style="padding: 1rem 0.5rem; text-align:right; font-weight: bold; font-size: 1.15rem; color: var(--color-success);">
+                    ${{ '{:,}'.format(r.earnings_val) }}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state" style="padding: 4rem 2rem; text-align: center; border: 1px dashed var(--color-border); border-radius: 8px;">
+    <div style="font-size: 3rem; margin-bottom: 1rem; filter: grayscale(1); opacity:0.5;">💸</div>
+    <h3 style="margin-top:0;">No Data Available</h3>
+    <p style="color: var(--text-muted); max-width: 400px; margin: 0 auto;">We don't have enough verified Scorecard earnings data to confidently rank {{ cred }} programs in this region.</p>
+</div>
+{% endif %}
+
+{% endblock %}

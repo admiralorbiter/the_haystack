@@ -481,33 +481,35 @@ These are hooks, not full implementations. Add the DOM elements and stub routes 
 **Status:** Done (Implemented via HTMX multi-step wizard)
 **Goal:** Let users start from a need and have Haystack trace backward to providers and programs. The inverse of browsing.
 
-**Design principle:** Most tools assume you know what you're looking for. Inverse Search assumes you know the *outcome* you need ("train 20 welders", "find a cert program near ZIP 64111") and helps you find the path.
+**Design principle:** Most tools assume you know what you're looking for. Inverse Search assumes you know the *outcome* you need ("train 20 welders", "find highest earning nursing degree") and helps you find the path.
 
-**Exit criteria:** `/search/guided` renders a 3-step form that produces a filtered provider/program list.
+**Exit criteria:** `/search/guided` renders a 3-step form that produces a filtered provider/program list. **COMPLETED.**
 
 **Effort estimate:** 1.5–2 weeks
 
 ### Design
 **Step 1 — What outcome do you need?**
-- I need to find training programs for someone
-- I need to find providers that offer a field of study
-- I need to understand what jobs a program connects to
-- I need to compare providers by outcome
+The user selects one of four primary intent paths:
+1. **Find programs for a specific job/career** (Training)
+2. **Find providers offering a specific field of study** (Field)
+3. **Discover what jobs a specific program prepares you for** (Jobs)
+4. **Find programs with the highest ROI / median earnings** (ROI)
 
 **Step 2 — Refine (changes by outcome type):**
-- For training: select occupation family (SOC group) → system resolves to CIP codes → returns providers
-- For field of study: select CIP family → returns programs and providers
-- For job connections: select a program or CIP → returns linked occupations
+- **Training:** Typeahead search against 800+ SOC occupations → resolves to program directory filtered by crosswalked `soc`.
+- **Field:** Select one of 38 CIP families from a dropdown → resolves to field detail directory.
+- **Jobs:** Typeahead search against 1,200+ active programs → resolves to program detail page (Occupations tab).
+- **ROI:** Select a credential type → resolves to a dedicated ROI ranking view.
 
-**Step 3 — Filter the results:**
-- Renders the standard directory with pre-populated filters from the guided path
-- User can then adjust freely
+**Step 3 — Resolution:**
+- Rather than trying to parse complex JSON objects, the wizard dynamically builds standard URL query parameters and acts as a redirect layer to existing, robust views (e.g. `GET /programs?soc=...`).
+- *Exception:* The ROI path redirects to `GET /search/guided/roi_results`, which executes an in-memory ranking of programs against the College Scorecard `scorecard_field_of_study` table.
 
 ### Implementation notes
-- The route `GET /search/guided` is already stubbed from Epic 0
-- Relies on the CIP↔SOC `program_occupation` table built in Epic 2
-- Uses HTMX for step-by-step form progression (each step swap returns the next step's HTML fragment)
-- Results are standard directory pages — no new templates needed
+- The route `GET /search/guided/resolve` acts as the traffic cop, mapping wizard state to directory parameters.
+- Built HTMX API endpoints (`/api/search/occupations`, `/api/search/programs`) for wicked-fast typeahead filtering directly against the SQLite database.
+- Used `program_fts` virtual tables for robust partial string matching without complex LIKE queries.
+- Scorecard `CREDLEV` mappings were patched to correctly pull Bachelor's (3) and Associate's (2) level earnings.
 
 ---
 
