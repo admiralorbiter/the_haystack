@@ -57,7 +57,7 @@ A local KC data platform that lets users explore training providers, programs, o
 
 ### UI rules (non-negotiable)
 - Every page uses the shared shell: nav + breadcrumb + snapshot strip + tabs + evidence/methods footer
-- No new top-level nav per dataset
+- No new top-level nav per dataset. Custom cross-sectional views (e.g. Apprenticeships) MUST be implemented via the generic `routes/hubs.py` Portals system.
 - Mobile navigation must use a **bottom tab bar**, not a hamburger menu
 - Max 6 snapshot metrics per page
 - Every page needs an empty state and a data freshness indicator

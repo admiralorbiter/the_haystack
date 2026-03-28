@@ -4,78 +4,104 @@
 
 {% block extra_css %}
 <style>
-  .hubs-index-wrapper {
-    max-width: 900px;
-    margin: 3rem auto;
-    padding: 0 1rem;
-  }
-  
-  .hubs-index-header {
-    text-align: center;
+  .hubs-index-hero {
+    background: linear-gradient(135deg, var(--color-surface) 0%, rgba(135, 0, 88, 0.05) 100%);
+    border-bottom: 1px solid var(--color-border);
+    padding: 5rem 1rem 4rem 1rem;
     margin-bottom: 3rem;
+    /* Full bleed breakout */
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    text-align: center;
   }
   
   .hubs-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 2rem;
+    padding-bottom: 4rem;
   }
   
   .hub-card {
-    display: block;
-    padding: 2rem;
-    background: var(--color-surface);
+    display: flex;
+    flex-direction: column;
+    padding: 2.5rem;
+    background: white; /* Contrast against the bg */
     border: 1px solid var(--color-border);
-    border-radius: 12px;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    border-radius: 16px; /* slightly more round */
+    text-decoration: none !important;
+    transition: all 0.25s cubic-bezier(0.1, 0.7, 0.1, 1);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02), 0 1px 3px rgba(0,0,0,0.04);
   }
   
   .hub-card:hover {
     border-color: var(--color-primary);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(135,0,88,0.08), 0 4px 8px rgba(0,0,0,0.04);
   }
   
   .hub-card-icon {
-    font-size: 2/5rem;
-    margin-bottom: 1rem;
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    background: var(--color-surface);
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px; /* Squircle icon block */
   }
   
   .hub-card-title {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 800;
+    color: var(--text-main); /* Not primary color, let hover handle primary styling */
+    margin: 0 0 0.8rem 0;
+    transition: color 0.2s;
+  }
+  
+  .hub-card:hover .hub-card-title {
     color: var(--color-primary);
-    margin: 0 0 0.5rem 0;
   }
   
   .hub-card-desc {
-    font-size: 1rem;
+    font-size: 1.05rem;
     color: var(--text-muted);
-    line-height: 1.5;
+    line-height: 1.6;
     margin: 0;
+    flex-grow: 1; /* Pushes any footer to the bottom */
+  }
+  
+  .hub-card-footer {
+    margin-top: 2rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="hubs-index-wrapper">
-  
-  <div class="hubs-index-header">
-    <h1 style="font-size:2.5rem; font-weight:800; color:var(--text-main); margin-bottom:0.5rem;">Curated Hubs</h1>
-    <p style="font-size:1.1rem; color:var(--text-muted); max-width:600px; margin:0 auto;">Pre-filtered, specialized dashboards aggregating critical workforce and training data across specific regions and sectors.</p>
+<div class="hubs-index-hero">
+  <div style="max-width:800px; margin:0 auto;">
+    <h1 style="font-size:3rem; font-weight:900; color:var(--text-main); margin-bottom:1rem; letter-spacing:-0.03em;">Curated Hubs</h1>
+    <p style="font-size:1.25rem; color:var(--text-muted); line-height:1.6;">Explore pre-filtered dashboards aggregating critical workforce and training data across specific regions and sectors.</p>
   </div>
+</div>
   
-  <div class="hubs-grid">
-    {% for slug, definition in hubs.items() %}
-      <a href="{{ url_for('root.hub_detail', slug=slug) }}" class="hub-card">
-        <div class="hub-card-icon" style="font-size: 2.5rem;">{{ definition.icon }}</div>
-        <h3 class="hub-card-title">{{ definition.title }}</h3>
-        <p class="hub-card-desc">{{ definition.description }}</p>
-      </a>
-    {% endfor %}
-  </div>
-  
+<div class="hubs-grid">
+  {% for slug, definition in hubs.items() %}
+    <a href="{{ url_for('root.hub_detail', slug=slug) }}" class="hub-card">
+      <div class="hub-card-icon">{{ definition.icon }}</div>
+      <h3 class="hub-card-title">{{ definition.title }}</h3>
+      <p class="hub-card-desc">{{ definition.description }}</p>
+      <div class="hub-card-footer">
+        Open Hub <span style="font-size:1.2rem; transform: translateY(1px);">→</span>
+      </div>
+    </a>
+  {% endfor %}
 </div>
 {% endblock %}

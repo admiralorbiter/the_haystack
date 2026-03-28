@@ -13,10 +13,21 @@ Every dataset you add does exactly **one** of these three things:
 | Integration Type | What it does | Example |
 |---|---|---|
 | **Entity source** | Creates new Organizations or Programs that don't exist yet | IPEDS, WIOA ETPL |
-| **Entity enricher** | Adds data onto existing entities (no new rows) | Scorecard, IPEDS IPEDS raw tables |
+| **Entity enricher** | Adds data onto existing entities (no new rows) | Scorecard, IPEDS raw tables |
 | **Mapping/crosswalk** | Links entities to each other | CIP↔SOC crosswalk |
 
 Identify which type you're building **before writing any code**. This determines everything downstream.
+
+---
+
+## Part 1.5 — The Hubs / Portals Pattern
+
+When onboarding a new dataset with a unique thematic scope (e.g. "Govt Contractors" or "Apprenticeships"), **DO NOT create a standalone route or template**. 
+
+Instead, leverage the **Hubs Engine** (`routes/hubs.py`).
+1. Define a new dictionary entry in `HUBS_CONFIG` representing the curated portal.
+2. Provide two lambda functions (`data_func`) to dynamically query `Organizations` and `Programs` meeting the new criteria.
+3. The engine will automatically generate a premium, tabbed dashboard inheriting from `templates/hubs/detail.html`.
 
 ---
 
