@@ -361,3 +361,93 @@ class TestLoadCipTitles:
         from loaders.utils import load_cip_titles
         titles = load_cip_titles(path=Path("/nonexistent/path/cip_titles.xlsx"))
         assert titles == {}
+
+
+# ===========================================================================
+# load_cip_soc.py — integration tests
+# ===========================================================================
+
+class TestLoadCipSoc:
+    def test_load_cip_soc_success(self, db_session):
+        import pandas as pd
+        from unittest.mock import patch
+        from loaders.load_cip_soc import run
+        from models import Organization, Program, Occupation, ProgramOccupation
+
+        mock_df = pd.DataFrame({
+            "cipcode": ["51.3801", "11.0701", "99.9999", "invalid"],
+            "soccode": ["29-1141", "15-1252", "99-9999", ""],
+            "soctitle": ["Registered Nurses", "Software Developers", "Unmatched", ""]
+        })
+
+        # Base program
+        db_session.add(Organization(org_id="org1", name="Test Org", org_type="training", city="KC", state="MO"))
+        db_session.add(Program(program_id="prog1", org_id="org1", name="Nursing", cip="51.3801", credential_type="certificate"))
+        db_session.add(Program(program_id="prog2", org_id="org1", name="CS", cip="11.0701", credential_type="certificate"))
+        db_session.commit()
+
+        from unittest.mock import MagicMock
+        mock_session_ctx = MagicMock()
+        mock_session_ctx.__enter__.return_value = db_session
+        
+        # Need to patch CROSSWALK_FILE and Session
+        with patch("pandas.read_excel", return_value=mock_df), \
+             patch("loaders.load_cip_soc.CROSSWALK_FILE") as mock_file, \
+             patch("loaders.load_cip_soc.Session", return_value=mock_session_ctx):
+            mock_file.exists.return_value = True
+            mock_file.name = "mock.xlsx"
+            
+            # Also test dry-run branch
+            run(dry_run=True, verbose=True)
+            run(dry_run=False, verbose=True)
+
+            # Idempotency
+            run(dry_run=False, verbose=False)
+
+        occs = db_session.query(Occupation).all()
+        assert len(occs) == 2
+
+        links = db_session.query(ProgramOccupation).all()
+        assert len(links) == 2
+        assert len(links) == 2
+
+
+# ===========================================================================
+# load_scorecard.py — integration tests
+# ===========================================================================
+
+class TestLoadScorecard:
+    def test_load_scorecard_main(self):
+        import sys
+        import pandas as pd
+        from unittest.mock import patch, MagicMock
+        from loaders import load_scorecard
+
+        mock_zip_ctx = MagicMock()
+        mock_zip = mock_zip_ctx.__enter__.return_value
+        mock_zip.namelist.return_value = [load_scorecard.INSTITUTION_FILE, load_scorecard.FOS_FILE]
+        
+        mock_inst_df = pd.DataFrame({
+            "UNITID": ["123456", "999999"],
+            "col_good": ["A", "B"],
+            "col_bad": ["NULL", "PS"]
+        })
+        
+        mock_fos_df = pd.DataFrame({
+            "UNITID": ["123456", "999999"],
+            "CIPCODE": ["5101", "1107"],
+            "CREDLEV": ["2", "3"]
+        })
+        
+        mock_conn = MagicMock()
+
+        with patch("sys.argv", ["load_scorecard.py", "--zip", "dummy.zip"]), \
+             patch("loaders.load_scorecard.Path.exists", return_value=True), \
+             patch("loaders.load_scorecard.sqlite3.connect", return_value=mock_conn), \
+             patch("loaders.load_scorecard._get_kc_unitids", return_value={"123456"}), \
+             patch("loaders.load_scorecard.zipfile.ZipFile", return_value=mock_zip_ctx), \
+             patch("pandas.read_csv", side_effect=[mock_inst_df, mock_fos_df]):
+             
+            load_scorecard.main()
+            
+        assert mock_conn.close.called
