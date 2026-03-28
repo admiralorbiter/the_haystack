@@ -14,6 +14,8 @@
   <div class="title-row">
     <h1 class="m-0">{{ snapshot.cip_title }}</h1>
     {{ components.entity_badge('program', snapshot.credential_type) }}
+    {% if prog.is_wioa_eligible %}<span class="badge badge-wioa">WIOA Eligible</span>{% endif %}
+    {% if prog.is_apprenticeship %}<span class="badge badge-apprenticeship">Apprenticeship</span>{% endif %}
   </div>
   <div style="color:var(--text-muted); margin-bottom:var(--spacing-sm);">
     <a href="{{ url_for('root.provider_detail', org_id=org.org_id) }}" style="color:var(--accent);">{{ org.name }}</a>
@@ -41,6 +43,8 @@
 
   {% if snapshot.completions is not none %}
     {{ components.stat_card('Annual Completions', '{:,}'.format(snapshot.completions)) }}
+  {% elif prog.is_wioa_eligible %}
+    {{ components.stat_card('Annual Completions', 'N/A', caveat='WIOA data unlinked') }}
   {% else %}
     {{ components.stat_card('Annual Completions', '—', caveat='Data suppressed') }}
   {% endif %}
@@ -55,6 +59,10 @@
 {% if snapshot.sc_earn_2yr %}
 <p class="methods-note" style="margin-top: calc(-1 * var(--spacing-md)); margin-bottom: var(--spacing-xl);">
   💡 Earnings = Scorecard median for working graduates 2 years after completing this field &amp; credential.
+</p>
+{% elif prog.is_wioa_eligible %}
+<p class="methods-note" style="margin-top: calc(-1 * var(--spacing-md)); margin-bottom: var(--spacing-xl);">
+  Scorecard earnings data is only available for Title IV-eligible institutions. This program is WIOA-funded and not reported to the College Scorecard.
 </p>
 {% else %}
 <p class="methods-note" style="margin-top: calc(-1 * var(--spacing-md)); margin-bottom: var(--spacing-xl);">

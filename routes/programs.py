@@ -320,6 +320,7 @@ def programs_directory():
     org_filter = request.args.get("org", "").strip()
     soc_filter = request.args.get("soc", "").strip()
     comp_filter = request.args.get("comp", "").strip()
+    pathway_filter = request.args.get("pathway", "").strip()
     search_q = request.args.get("q", "").strip()
     sort = request.args.get("sort", "completions")
     page = max(1, int(request.args.get("page", 1) or 1))
@@ -383,6 +384,11 @@ def programs_directory():
     elif comp_filter == "high":
         q = q.filter(Program.completions >= 50)
 
+    if pathway_filter == "wioa":
+        q = q.filter(Program.is_wioa_eligible == True)
+    elif pathway_filter == "apprenticeship":
+        q = q.filter(Program.is_apprenticeship == True)
+
     _SORT_SAFE = {"completions", "name", "provider", "field", "occupations"}
     if sort == "name":
         q = q.order_by(Program.name.asc())
@@ -445,6 +451,7 @@ def programs_directory():
         org_filter=org_filter,
         soc_filter=soc_filter,
         comp_filter=comp_filter,
+        pathway_filter=pathway_filter,
         search_q=search_q,
         sort=sort,
         fts_active=fts_active,

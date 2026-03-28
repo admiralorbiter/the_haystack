@@ -23,6 +23,12 @@
           <td data-sort-val="{{ row.cip_title | lower }}">
             <a href="{{ prog_url }}" class="provider-name-link">{{ row.cip_title }}</a>
             <span class="cred-badge">{{ row.program.credential_type }}</span>
+            {% if row.program.is_wioa_eligible %}
+              <span class="badge badge-wioa badge-sm">WIOA</span>
+            {% endif %}
+            {% if row.program.is_apprenticeship %}
+              <span class="badge badge-apprenticeship badge-sm">Apprenticeship</span>
+            {% endif %}
           </td>
           <td data-sort-val="{{ row.org_name | lower }}">
             <a href="{{ url_for('root.provider_detail', org_id=row.org_id) }}" class="org-link"
@@ -31,6 +37,8 @@
           <td class="num-col" data-sort-val="{{ row.program.completions if row.program.completions is not none else -999999999 }}">
             {% if row.program.completions is not none %}
               {{ '{:,}'.format(row.program.completions) }}
+            {% elif row.program.is_wioa_eligible %}
+              <span class="suppressed-label" title="WIOA programs do not report completions to IPEDS">N/A (WIOA)</span>
             {% else %}
               <span class="suppressed-label" title="Data suppressed by IPEDS">&mdash;</span>
             {% endif %}

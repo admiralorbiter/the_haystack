@@ -55,6 +55,9 @@ def _provider_metrics(org_id: str) -> dict:
     programs = db.session.query(Program).filter_by(org_id=org_id).all()
 
     total_programs = len(programs)
+    wioa_programs = sum(1 for p in programs if p.is_wioa_eligible)
+    apprenticeship_programs = sum(1 for p in programs if p.is_apprenticeship)
+
     comp_values = [p.completions for p in programs if p.completions is not None]
     total_completions = sum(comp_values) if comp_values else None
 
@@ -81,6 +84,8 @@ def _provider_metrics(org_id: str) -> dict:
 
     return {
         "total_programs": total_programs,
+        "wioa_programs": wioa_programs,
+        "apprenticeship_programs": apprenticeship_programs,
         "total_completions": total_completions,
         "top_credential": top_credential,
         "top_cip_label": top_cip_label,
@@ -246,6 +251,8 @@ def _build_provider_rows(snap_a, snap_b, ipeds_a, ipeds_b) -> list[dict]:
     rows = [
         # Programmatic
         _row("Programs Offered", snap_a["total_programs"], snap_b["total_programs"]),
+        _row("WIOA Eligible", snap_a["wioa_programs"], snap_b["wioa_programs"], fmt="neutral", note="Funded alternative pathway"),
+        _row("Apprenticeship", snap_a["apprenticeship_programs"], snap_b["apprenticeship_programs"], fmt="neutral", note="Registered DOL pathway"),
         _row("Annual Completions", snap_a["total_completions"], snap_b["total_completions"]),
         _row("Linked Occupations", snap_a["linked_occupations"], snap_b["linked_occupations"]),
         # Enrollment

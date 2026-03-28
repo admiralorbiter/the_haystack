@@ -213,6 +213,8 @@ def fields_directory():
             "program_count": r.program_count,
             "provider_count": r.provider_count,
             "total_completions": r.total_completions,
+            # True when all programs in this field are WIOA-only (no IPEDS-sourced data)
+            "wioa_only": r.total_completions is None and r.program_count > 0,
         }
         for r in rows
         if r.family and r.family in CIP_FAMILY_NAMES  # skip unknown/aggregate families

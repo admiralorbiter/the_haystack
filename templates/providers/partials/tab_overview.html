@@ -1,7 +1,7 @@
 {# Overview tab — server-rendered on initial page load #}
 
 {# ── IPEDS Institutional Data ─────────────────────────────────────────────── #}
-{% if ipeds %}
+{% if ipeds and not org.org_id.startswith('wioa_') %}
 <div class="tab-section" style="margin-bottom:1.25rem;">
   <h3 class="section-title">Institutional Data <span style="font-size:0.78rem;font-weight:normal;color:var(--text-muted);">IPEDS 2024</span></h3>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:0.6rem;">
@@ -174,12 +174,22 @@
           <a href="{{ url_for('root.program_detail', program_id=p.program_id) }}" style="text-decoration:none; color:var(--text-main); font-weight:500;">
             {{ p.name }}
           </a>
-          <div style="font-size:0.78rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">CIP {{ p.cip }}</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">
+            CIP {{ p.cip }}
+            {% if p.is_wioa_eligible %}
+              <span class="badge badge-wioa badge-sm" style="margin-left:4px;">WIOA</span>
+            {% endif %}
+            {% if p.is_apprenticeship %}
+              <span class="badge badge-apprenticeship badge-sm" style="margin-left:4px;">Apprenticeship</span>
+            {% endif %}
+          </div>
         </td>
         <td style="font-size:0.88rem; color:var(--text-muted);" data-sort-val="{{ p.credential_type | lower }}">{{ p.credential_type }}</td>
         <td class="num-col" data-sort-val="{{ p.completions if p.completions is not none else -999999999 }}">
           {% if p.completions is not none %}
             <strong>{{ '{:,}'.format(p.completions) }}</strong>
+          {% elif p.is_wioa_eligible %}
+            <span class="suppressed-label" title="WIOA programs do not report completions to IPEDS">N/A (WIOA)</span>
           {% else %}
             <span class="suppressed-label" title="Suppressed by NCES to protect student privacy">&mdash;</span>
           {% endif %}
@@ -212,8 +222,20 @@
 {% endif %}
 
 {% else %}
+{% if org.org_id.startswith('wioa_') %}
+<div class="suppression-notice" style="border-left-color: var(--badge-wioa-bg, #0d9488);">
+  <div class="suppression-icon">📋</div>
+  <h4>WIOA Eligible Training Provider</h4>
+  <p>
+    <strong>{{ org.name }}</strong> is registered on the federal WIOA Eligible Training Provider List.
+    This provider does not report to IPEDS and is not a Title IV-eligible institution.
+    Program and outcome data is sourced directly from <strong>RAPIDS / TrainingProviderResults.gov</strong>.
+  </p>
+</div>
+{% else %}
 <div class="empty-state">
   <div class="empty-icon">📋</div>
   <p>No program records found for this provider in IPEDS 2024.</p>
 </div>
+{% endif %}
 {% endif %}

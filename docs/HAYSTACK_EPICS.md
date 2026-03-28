@@ -24,7 +24,50 @@
 
 ---
 
-## Epic 11 — Ecosystem / Network View
+## Epic 10 — Non-Title IV Training Base
+**Goal:** Expand Haystack beyond traditional degree-granting colleges. Ingest state and federal registries to surface short-term credentials, union trade schools, and coding bootcamps. Sequence: This must be completed fully across all three datasets before introducing wage data (Epic 11).
+
+**Datasets to Incorporate:**
+1. State WIOA ETPL (Missouri & Kansas eligible training providers)
+2. DOL RAPIDS (Registered Apprenticeships)
+3. VA WEAMS (GI Bill approved facilities)
+
+**Design principle:** 
+All new organizations should map seamlessly into our existing `Organization` and `Program` tables. We will apply an Identity Reconciliation pattern (fuzzy matching on name/address) to merge duplicates if a school exists in both IPEDS and ETPL. 
+
+**Schema considerations:**
+We will inspect the raw ETPL and RAPIDS data before deciding between simple boolean flags (`is_wioa_eligible`) vs a mapping table. Any approach must maintain graceful degradation (`_empty_data`) for non-IPEDS schools missing scorecard metrics.
+
+**Exit criteria:** 
+- The `/providers` directory correctly lists trade schools, union halls, and bootcamps alongside IPEDS universities.
+- Provider and Program detail pages cleanly badge these entities as "WIOA Eligible", "Registered Apprenticeship", or "VA Approved" without UI crashing.
+
+**Effort estimate:** 2 weeks
+
+---
+
+## Epic 11 — Workforce Connections (BLS OEWS)
+**Goal:** Connect educational programs to real-world outcomes by displaying regional wage and demand data for the occupations those programs train for.
+
+**Datasets to Incorporate:**
+1. May 2023 State Occupational Employment and Wage Estimates (BLS OEWS)
+
+**Design principle:** 
+The user should never have to guess the ROI of a program. If they view a Medical Assistant program, they should immediately see the median, 25th, and 75th percentile regional wages for Medical Assistants.
+
+**Exit criteria:** 
+- The `/occupations` directory shows median salaries and annual job openings.
+- Program detail pages feature a "Career Trajectory" widget showing local wages for related occupations (via the CIP->SOC crosswalk).
+
+**Implementation notes:**
+- Will load BLS data into a new `occupation_wage` table, keyed by `soc` and `county_fips` or state code.
+- Relies heavily on the `program_occupation` crosswalk links established in Phase 1.
+
+**Effort estimate:** 1 week
+
+---
+
+## Epic 12 — Ecosystem / Network View
 **Goal:** Show the connections between organizations as a visual network, not just a list. A new view mode on the Organizations/Providers directory that makes relationships visible.
 
 **Design principle:** The List view shows *what exists*. The Network view shows *how things connect*. Both should be toggleable on any directory page where relationship data exists.
@@ -52,7 +95,7 @@
 
 ---
 
-## Epic 12 — Briefing Builder
+## Epic 13 — Briefing Builder
 **Goal:** Let users collect stats and entities as they browse and generate a shareable, printable one-pager. Turn Haystack from a research tool into a deliverable generator.
 
 **Design principle:** Workforce navigators, policy analysts, and grant writers need to communicate findings to others. A briefing builder means Haystack generates the artifact, not just informs it.

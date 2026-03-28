@@ -94,7 +94,7 @@
 
       {# Programs #}
       <tr class="compare-section-header"><td colspan="3">Programs &amp; Offerings</td></tr>
-      {% for row in rows[:3] %}
+      {% for row in rows[:5] %}
       <tr>
         <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
         <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>
@@ -104,7 +104,7 @@
 
       {# Enrollment #}
       <tr class="compare-section-header"><td colspan="3">Enrollment</td></tr>
-      {% for row in rows[3:5] %}
+      {% for row in rows[5:7] %}
       <tr>
         <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
         <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>
@@ -114,7 +114,7 @@
 
       {# Admissions & Cost #}
       <tr class="compare-section-header"><td colspan="3">Admissions &amp; Cost</td></tr>
-      {% for row in rows[5:8] %}
+      {% for row in rows[7:10] %}
       <tr>
         <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
         <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>
@@ -124,7 +124,7 @@
 
       {# Financial Aid #}
       <tr class="compare-section-header"><td colspan="3">Financial Aid</td></tr>
-      {% for row in rows[8:10] %}
+      {% for row in rows[10:12] %}
       <tr>
         <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
         <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>
@@ -134,7 +134,7 @@
 
       {# Outcomes #}
       <tr class="compare-section-header"><td colspan="3">Outcomes &amp; Graduation</td></tr>
-      {% for row in rows[10:] %}
+      {% for row in rows[12:] %}
       <tr>
         <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
         <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>

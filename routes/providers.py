@@ -26,7 +26,11 @@ from models import (
 
 from . import root_bp
 
+# Standard UUID pattern (IPEDS-sourced providers)
 _UUID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
+# Broader safe org_id pattern — allows standard UUIDs, WIOA-prefixed IDs (wioa_xxxxxxxx),
+# and any future source-prefixed IDs. Prevents path traversal / SQL injection attempts.
+_ORG_ID_RE = re.compile(r'^[0-9a-zA-Z_\-]{4,45}$')
 
 
 def _valid_unitid(unitid: str | None) -> bool:
@@ -107,16 +111,25 @@ def _provider_snapshot(org_id: str) -> dict:
             .scalar() or 0
         )
 
-    # Dataset source freshness
-    ds = (
-        db.session.query(DatasetSource)
-        .filter(DatasetSource.source_id.like("ipeds_hd_%"))
-        .order_by(DatasetSource.loaded_at.desc())
-        .first()
-    )
+    # Dataset source freshness — prefer WIOA source for WIOA-prefixed orgs
+    is_wioa_provider = org_id.startswith("wioa_")
+    if is_wioa_provider:
+        ds = (
+            db.session.query(DatasetSource)
+            .filter(DatasetSource.source_id.like("wioa_%"))
+            .order_by(DatasetSource.loaded_at.desc())
+            .first()
+        )
+    else:
+        ds = (
+            db.session.query(DatasetSource)
+            .filter(DatasetSource.source_id.like("ipeds_hd_%"))
+            .order_by(DatasetSource.loaded_at.desc())
+            .first()
+        )
 
-    # Scorecard coverage — look up unitid from org record, then query summary
-    _unitid = db.session.query(Organization.unitid).filter_by(org_id=org_id).scalar()
+    # Scorecard coverage — only valid for IPEDS unitid-linked providers
+    _unitid = None if is_wioa_provider else db.session.query(Organization.unitid).filter_by(org_id=org_id).scalar()
     sc_summary = _scorecard_summary(_unitid)
 
     return {
@@ -819,8 +832,8 @@ def providers_directory():
 
 @root_bp.route("/providers/<org_id>")
 def provider_detail(org_id: str):
-    # Validate UUID format to return clean 404 instead of DB error
-    if not _UUID_RE.match(org_id):
+    # Validate org_id format — allows standard UUIDs and source-prefixed IDs (wioa_, etc.)
+    if not _ORG_ID_RE.match(org_id):
         abort(404)
     org = _get_provider_or_404(org_id)
     snapshot = _provider_snapshot(org_id)

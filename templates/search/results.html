@@ -84,6 +84,8 @@
             <p style="margin:0 0 0.5rem 0; color:var(--text-muted); font-size:0.9rem;">{{ p.org_name }}</p>
             <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items: center;">
               <span class="chip" style="margin:0;">{{ p.program.credential_type }}</span>
+              {% if p.program.is_wioa_eligible %}<span class="badge badge-wioa badge-sm" style="margin:0;">WIOA</span>{% endif %}
+              {% if p.program.is_apprenticeship %}<span class="badge badge-apprenticeship badge-sm" style="margin:0;">Apprenticeship</span>{% endif %}
               {% if p.program.completions %}<span style="font-size:0.78rem; color:var(--text-muted);">🎓 {{ p.program.completions }} completions/yr</span>{% endif %}
             </div>
           </div>

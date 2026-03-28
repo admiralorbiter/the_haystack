@@ -27,6 +27,7 @@ wheels/
 
 # Database
 *.db
+*.db.bak
 *.sqlite3
 
 # Flask

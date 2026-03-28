@@ -104,6 +104,8 @@ class Program(db.Model):
     modality: Mapped[str] = mapped_column(String(50), nullable=True)
     completions: Mapped[int] = mapped_column(Integer, nullable=True)
     duration_weeks: Mapped[int] = mapped_column(Integer, nullable=True)
+    is_wioa_eligible: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_apprenticeship: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Relationships
     organization = relationship("Organization", back_populates="programs")

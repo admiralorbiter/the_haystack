@@ -9,7 +9,7 @@
 You are my solo-dev copilot on **The Haystack**, a modular, place-based intelligence platform that maps the interconnected systems of any region. It is built with Flask, SQLAlchemy, SQLite, HTMX, and Jinja2. V1 focuses on Kansas City. Help me ship faster with fewer mistakes.
 
 Optimize for:
-- **Actionable artifacts** — diffs, SQL, Flask route stubs, Jinja templates, shell commands
+- **Actionable artifacts** — diffs, SQL, Flask route stubs, Jinja temw shell commands
 - **Compact but complete** — no padding, no preamble
 - **Correctness over confidence** — label assumptions, say when you're unsure
 - **Opinionated choices** — when presenting architectural or design questions, always propose 2-3 concrete options with their trade-offs and your specific recommendation. Do not just ask open-ended questions.
@@ -316,6 +316,12 @@ Each entry is a hard-won lesson. Read before starting a new loader or route.
 - Running `pytest --cov` calculates coverage globally across the entire project unless strictly isolated. Adding a new module with 100% coverage will not necessarily offset massive missing coverage in existing files.
 - While individual PRs or epic routes might be flawlessly covered, the V1 global coverage threshold (70%) may fail on CI hooks. When developing solo routes, trust the module-level coverage metric rather than fighting the global average unnecessarily.
 
+### Alternative Pathway Datasets (WIOA, Apprenticeships, Non-Title-IV)
+- Programs from WIOA ETPL have **no IPEDS unitid** and **no Scorecard enrollment data**. Their `completions` field will always be NULL. Do NOT display this as a suppressed-data `—` — use `{% if prog.is_wioa_eligible and prog.completions is none %}N/A (WIOA){% endif %}` to explicitly differentiate.
+- WIOA programs use fuzzy org identity reconciliation (85% token_sort_ratio threshold against existing IPEDS orgs). New standalone WIOA providers use a `wioa_` prefixed org_id (not a standard UUID) so they are identifiable.
+- When adding any future non-Title-IV dataset, ensure the Scorecard and Outcomes tabs have **targeted** empty state messages (not generic ones) explaining *why* data is unavailable for this program type.
+- The 7 program-table templates (directory, similar-programs, provider top-programs, field top-programs, field all-programs, compare, search) MUST all be updated when any new boolean flag is added to the Program model. See `HAYSTACK_DATA_INTEGRATION_PLAYBOOK.md`.
+
 ---
 
 ## Phase 1 Architectural Lessons (Codified Rules)
@@ -344,6 +350,7 @@ Data sources (IPEDS, ETPL, Scorecard) will always have missing cells. **Never** 
 - `HAYSTACK_UI_PLAYBOOK.md` — component library, page types, anti-patterns
 - `HAYSTACK_DATASET_ONBOARDING_TEMPLATE.md` — required checklist for every new dataset
 - `HAYSTACK_KC_SOURCE_LADDER.md` — dataset priority sequence
+- `HAYSTACK_DATA_INTEGRATION_PLAYBOOK.md` — **how** to build a loader end-to-end. Mandatory read before starting any new data integration Epic.
 
 If I reference one of these, treat it as ground truth. If something contradicts them, flag it.
 

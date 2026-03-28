@@ -9,6 +9,7 @@ python-dotenv==1.0.1
 pandas==2.2.2
 openpyxl==3.1.2
 requests==2.32.3
+thefuzz==0.22.1
 
 # Dev tools (not needed in production)
 ruff==0.4.4

@@ -451,3 +451,54 @@ class TestLoadScorecard:
             load_scorecard.main()
             
         assert mock_conn.close.called
+
+# ===========================================================================
+# load_etpl.py
+# ===========================================================================
+class TestLoadEtpl:
+    def test_load_etpl_main(self, db_session):
+        import pandas as pd
+        from unittest.mock import patch, MagicMock
+        from loaders import load_etpl
+        
+        mock_csv = pd.DataFrame({
+            "field_etp": ["Trade School A"],
+            "field_program_name": ["Welding"],
+            "field_address": ["123 Main St"],
+            "field_city": ["Kansas City"],
+            "field_state": ["MO"],
+            "field_zip": ["64111"],
+            "field_entity_type": ["National Apprenticeship"],
+            "field_associated_credential": ["Certificate"],
+            "field_cip_code": ["48.0508"],
+            "field_program_format": ["In-person"],
+            "field_program_length_weeks": ["12"],
+            "field_program_url": ["http://test.com"],
+            "field_program_soc_occ_1": ["51-412100"],
+            "field_program_soc_occ_2": [""],
+            "field_program_soc_occ_3": [""]
+        })
+        
+        with patch("pathlib.Path.exists", return_value=True), \
+             patch("pandas.read_csv", return_value=mock_csv), \
+             patch("loaders.load_etpl._get_kc_zips", return_value={"64111"}), \
+             patch("loaders.load_etpl.record_dataset_source"):
+            
+            res = load_etpl.load_etpl(db_session, dry_run=False, verbose=True)
+            assert res["loaded_orgs"] == 1
+            assert res["loaded_progs"] == 1
+        
+        from models import Organization, Program, ProgramOccupation
+        org = db_session.query(Organization).filter_by(name="Trade School A").first()
+        assert org is not None
+        assert org.org_type == "training"
+        
+        prog = db_session.query(Program).filter_by(org_id=org.org_id).first()
+        assert prog is not None
+        assert prog.name == "Welding"
+        assert prog.is_apprenticeship is True
+        assert prog.is_wioa_eligible is True
+        
+        po = db_session.query(ProgramOccupation).filter_by(program_id=prog.program_id).all()
+        assert len(po) == 1
+        assert po[0].soc == "51-4121"

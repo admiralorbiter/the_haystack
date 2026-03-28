@@ -65,6 +65,8 @@
         <td class="num-col" data-sort-val="{{ field.total_completions if field.total_completions is not none else -999999999 }}">
           {% if field.total_completions is not none %}
             {{ '{:,}'.format(field.total_completions) }}
+          {% elif field.wioa_only %}
+            <span class="suppressed-label" title="Programs in this field are WIOA-funded and do not report completions to IPEDS">N/A (WIOA)</span>
           {% else %}
             <span class="suppressed-label" title="All programs in this field have suppressed data">&mdash;</span>
           {% endif %}

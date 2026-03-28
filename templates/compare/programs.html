@@ -92,6 +92,21 @@
       {# Program profile — text/label rows #}
       <tr class="compare-section-header"><td colspan="3">Program Profile</td></tr>
       <tr>
+        <td class="compare-row-label">Funding / Pathway</td>
+        <td class="compare-cell label-only neutral">
+          {% if prog_a.is_wioa_eligible and prog_a.is_apprenticeship %}WIOA + Apprenticeship
+          {% elif prog_a.is_wioa_eligible %}WIOA Eligible
+          {% elif prog_a.is_apprenticeship %}Registered Apprenticeship
+          {% else %}Standard{% endif %}
+        </td>
+        <td class="compare-cell label-only neutral">
+          {% if prog_b.is_wioa_eligible and prog_b.is_apprenticeship %}WIOA + Apprenticeship
+          {% elif prog_b.is_wioa_eligible %}WIOA Eligible
+          {% elif prog_b.is_apprenticeship %}Registered Apprenticeship
+          {% else %}Standard{% endif %}
+        </td>
+      </tr>
+      <tr>
         <td class="compare-row-label">Credential Type</td>
         <td class="compare-cell label-only neutral">{{ prog_a.credential_type or '—' }}</td>
         <td class="compare-cell label-only neutral">{{ prog_b.credential_type or '—' }}</td>
@@ -138,7 +153,7 @@
       {% if prog_a.completions is none or prog_b.completions is none %}
       <tr>
         <td colspan="3" style="padding:var(--spacing-xs) var(--spacing-md); font-size:0.8rem; color:var(--text-muted);">
-          ℹ️ — means NCES suppressed this value to protect student privacy (small cohort size).
+          ℹ️ — means NCES suppressed this value to protect student privacy. N/A means data is not reported to IPEDS (e.g. WIOA alternative pathways).
         </td>
       </tr>
       {% endif %}
@@ -148,9 +163,9 @@
 
   {# ── Methods footer ──────────────────────────────────────────────── #}
   <div class="methods-footer">
-    <strong>Data sources:</strong> IPEDS (NCES) Completions 2023–24.
+    <strong>Data sources:</strong> IPEDS (NCES) Completions 2023–24, WIOA ETPL alternative pathways.
     CIP codes follow the 2020 taxonomy. Occupation links derived from CIP↔SOC 2020 crosswalk (NCES).
-    Suppressed values shown as —.
+    Suppressed values shown as —. Unlinked alternative pathway data shown as N/A.
   </div>
 
 </div>

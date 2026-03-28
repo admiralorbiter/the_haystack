@@ -25,6 +25,21 @@
     Completions are awards actually conferred during the academic year — not enrollment or graduation rates.
     A student can earn multiple awards in a single year.
   </p>
+  {% elif prog.is_wioa_eligible %}
+  <div class="suppression-notice" style="border-left-color: var(--badge-wioa-bg, #0d9488);">
+    <div class="suppression-icon">📊</div>
+    <h4>This Program Does Not Report to IPEDS</h4>
+    <p>
+      <strong>WIOA Eligible Training Providers</strong> receive federal workforce funding
+      but are not degree-granting institutions required to report to the Department of Education's
+      IPEDS system. Completion data simply does not exist in this database — it is
+      <em>not</em> suppressed or withheld.
+    </p>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+      For program outcomes, contact the provider directly or check the
+      <a href="https://www.dws.mo.gov/WorkforceDevelopment/WIOA/" target="_blank" rel="noopener">Missouri WIOA ETPL</a>.
+    </p>
+  </div>
   {% else %}
   <div class="suppression-notice">
     <div class="suppression-icon">🔒</div>

@@ -90,6 +90,22 @@
   color: var(--text-main);
 }
 
+.badge-wioa {
+  background-color: #2e8b57; /* SeaGreen - federal program signal */
+  color: var(--text-light);
+}
+
+.badge-apprenticeship {
+  background-color: #d97706; /* Amber/Orange - DOL registered signal */
+  color: var(--text-light);
+}
+
+.badge-sm {
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  text-transform: none; /* Keep original casing for small inline tags */
+}
+
 /* ── Institution type badge (4-year / 2-year / Certificate) ──────────────── */
 .inst-type-badge {
   display: inline-block;
