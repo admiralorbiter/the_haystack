@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Methodology & Data Sources — The Haystack{% endblock %}
+
+{% block meta_description %}
+<meta name="description" content="Detailed methodology and data sources powering The Haystack. Learn how we calculate Career Grades, integrate IPEDS data, and track local labor market momentum.">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="title-row">
+        <h1>Methodology & Data Sources</h1>
+    </div>
+    <p style="color: var(--text-muted); max-width: 800px; line-height: 1.6;">
+        The Haystack is built on the philosophy of <strong>high-trust, localized intelligence</strong>. We pull from
+        federal, state, and local datasets to build an accurate picture of the Kansas City regional training and labor market.
+        Because these datasets are rarely clean or perfectly interoperable, this page details exactly where our data comes from
+        and the assumptions we make.
+    </p>
+</div>
+
+<div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: var(--spacing-xl); align-items: start;">
+    
+    <!-- EDUCATION DATA -->
+    <section>
+        <h2 class="section-title">Educational Pipeline (Phase 1)</h2>
+        <div class="methods-block">
+            <h4>IPEDS (National Center for Education Statistics)</h4>
+            <p>
+                We ingest 12 individual data files from the Fall 2024 IPEDS collection. This represents Title IV accredited institutions.
+                We pull graduation rates (150% and 200%), net price, cost of attendance, enrollment demographics, and program-level completions.
+            </p>
+            <p class="methods-note" style="margin-top: 8px;">* Note: Program-level data uses CIP codes which we crosswalk to SOC occupational codes.</p>
+        </div>
+
+        <div class="methods-block">
+            <h4>WIOA ETPL</h4>
+            <p>
+                Eligible Training Provider Lists for both Kansas and Missouri. This brings non-Title IV short-term and technical training
+                onto the platform. Since WIOA uses proprietary program structures, we use a fuzzy-matching entity reconciliation algorithm
+                to merge WIOA providers with existing IPEDS institutions when possible.
+            </p>
+        </div>
+
+        <div class="methods-block">
+            <h4>Registered Apprenticeships</h4>
+            <p>
+                Sourced from the Department of Labor Partner Finder. We geofence apprenticeship sponsors to the KC MSA via ZIP codes.
+                Because DOL data often lacks structured occupation codes, some apprenticeship-to-career links are manually curated or inferred.
+            </p>
+        </div>
+    </section>
+
+    <!-- LABOR MARKET DATA -->
+    <section>
+        <h2 class="section-title">Workforce Intelligence (Phase 2)</h2>
+        
+        <div class="methods-block">
+            <h4>Occupational Earnings (BLS OEWS)</h4>
+            <p>
+                We use the Bureau of Labor Statistics Occupational Employment and Wage Statistics. We prioritize local  
+                <strong>Kansas City MSA</strong> data for all wage bands. If a specific occupation is extremely rare locally and the BLS suppresses
+                its data to protect employer privacy, we explicitly fallback to National data and tag it with <code>(Nat.)</code>.
+            </p>
+        </div>
+
+        <div class="methods-block">
+            <h4>Employment Projections (BLS EP)</h4>
+            <p>
+                We integrate the BLS 2024–2034 10-year employment projections. Because the BLS does not publish 10-year forecasts for localized metro areas, our long-term trajectory percentage is based on the national forecast. This tracks both total employment growth and annual openings (replacement volume).
+            </p>
+        </div>
+
+        <div class="methods-block">
+            <h4>Kansas City Industry Momentum (BLS QCEW)</h4>
+            <p>
+                To provide a fast-moving signal of local demand, we ingest the Quarterly Census of Employment and Wages for the KC Metro counties. We run a trailing 3-year linear regression on Private Sector (Ownership Code 5) industry employment. If an industry is growing locally, the occupations that staff that industry receive a positive momentum signal via our NAICS-to-SOC Matrix integration.
+            </p>
+        </div>
+
+        <div class="methods-block">
+            <h4>O*NET Ontology</h4>
+            <p>
+                Sourced from the US Department of Labor. We use O*NET Job Zones (Education/Experience levels 1-5), Core Skills, and Alternate Titles (to power plain-language search). O*NET's "Bright Outlook" is natively integrated to highlight careers with massive national upside.
+            </p>
+        </div>
+
+        <div class="methods-block">
+            <h4>Automation Risk & Remote Potential</h4>
+            <p>
+                To assess future-proofing, we import two specialized academic datasets: the <strong>Frey & Osborne</strong> Automation Probability matrix (evaluating routine cognitive/manual tasks susceptible to computerization) and the <strong>Dingel & Neiman</strong> Teleworkability dataset (assessing whether tasks can be feasibly performed from home).
+            </p>
+        </div>
+
+        <div class="methods-block">
+            <h4>College Scorecard</h4>
+            <p>
+                Sourced from the Department of Education. We link our programs to College Scorecard data to surface outcomes such as median debt at graduation and earnings post-graduation. This connects the cost of training to the expected ROI.
+            </p>
+        </div>
+    </section>
+</div>
+
+<!-- CAREER INTELLIGENCE -->
+<div style="margin-top: var(--spacing-xl);">
+    <h2 class="section-title">KC Career Intelligence Algorithms</h2>
+    
+    <div class="methods-block">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: var(--spacing-sm);">
+            <h4 style="margin: 0;">Outlook "Career Grade" Matrix</h4>
+            <span class="badge-beta">Beta</span>
+        </div>
+        <p style="margin-bottom: var(--spacing-md);">
+            The <a href="{{ url_for('root.outlook_index') }}">Outlook</a> dashboard assigns a proprietary Career Grade to every SOC occupation. 
+            This grade acts as a <strong>weighted composite score</strong> designed to evaluate a career's overall vitality in the KC region.
+            Every occupation is ranked on a 0-100 percentile scale against all other careers before weights are applied. 
+            Missing data points default to average percentiles to prevent undue penalization.
+        </p>
+
+        <table class="data-table" style="max-width: 600px;">
+            <thead>
+                <tr>
+                    <th>Factor</th>
+                    <th>Weight</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Demand Volume</strong></td>
+                    <td>25%</td>
+                    <td>BLS Projections (Annual Openings)</td>
+                </tr>
+                <tr>
+                    <td><strong>Compensation</strong></td>
+                    <td>20%</td>
+                    <td>BLS OEWS (KC Median Wage)</td>
+                </tr>
+                <tr>
+                    <td><strong>Demand Trajectory</strong></td>
+                    <td>20%</td>
+                    <td>BLS Projections (10-yr Growth)</td>
+                </tr>
+                <tr>
+                    <td><strong>Local KC Signal</strong></td>
+                    <td>15%</td>
+                    <td>BLS QCEW (Trailing Momentum of Top Industry)</td>
+                </tr>
+                <tr>
+                    <td><strong>Fast ROI</strong></td>
+                    <td>10%</td>
+                    <td>Wage divided by O*NET Job Zone</td>
+                </tr>
+                <tr>
+                    <td><strong>Future Proof</strong></td>
+                    <td>10%</td>
+                    <td>Frey & Osborne (Inverted Automation Risk)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

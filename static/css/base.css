@@ -61,6 +61,27 @@ h1, h2, h3, h4 {
     font-size: 0.9rem;
   }
 
+  /* Dropdown mobile override */
+  .nav-dropdown-menu {
+    position: static;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    box-shadow: none;
+    background-color: transparent;
+    padding: 0 0 0.5rem 1rem;
+    display: none;
+  }
+  .nav-dropdown:hover .nav-dropdown-menu,
+  .nav-dropdown:active .nav-dropdown-menu,
+  .nav-dropdown:focus-within .nav-dropdown-menu {
+    display: flex;
+  }
+  .nav-dropdown-menu a {
+    color: var(--text-main);
+    padding: 0.25rem 0;
+  }
+
   /* Snapshot strip: single-column stack */
   .snapshot-strip {
     grid-template-columns: 1fr 1fr;

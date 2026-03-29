@@ -62,6 +62,10 @@ def index():
         pulse_industries=pulse_industries,
     )
 
+@root_bp.route("/methods")
+def methods():
+    return render_template("methods.html")
+
 
 # These imports must be AFTER the blueprint definition — this is Flask's required pattern.
 # ruff: noqa: E402, F401

@@ -32,17 +32,38 @@
             <a href="{{ url_for('root.guided_search') }}" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); text-decoration:none; font-size:0.85rem; color:var(--text-muted); font-weight:600; transition:color 0.2s;" onmouseover="this.style.color='var(--color-primary)'" onmouseout="this.style.color='var(--text-muted)'" title="Advanced Guided Search">Adv.</a>
         </form>
         <nav class="nav-links">
-            <a href="{{ url_for('root.outlook_index') }}">Outlook</a>
-            <a href="{{ url_for('root.guided_search') }}">Explore</a>
-            <a href="{{ url_for('root.hubs_index') }}">Hubs</a>
-            <a href="{{ url_for('root.providers_directory') }}">Providers</a>
-            <a href="{{ url_for('root.employers_directory') }}">Employers</a>
-            <a href="{{ url_for('root.occupations_directory') }}">Occupations</a>
-            <a href="{{ url_for('root.industries_directory') }}">Industries</a>
-            <a href="{{ url_for('root.programs_directory') }}">Programs</a>
-            <a href="{{ url_for('root.fields_directory') }}">Fields</a>
-            <a href="{{ url_for('root.map_view') }}">Map</a>
-            <a href="#">Methods</a>
+            <a href="{{ url_for('root.outlook_index') }}">
+                Outlook <span class="badge-beta">Beta</span>
+            </a>
+            
+            <div class="nav-dropdown">
+                <a class="nav-dropdown-toggle">Education <span class="nav-caret">▼</span></a>
+                <div class="nav-dropdown-menu">
+                    <a href="{{ url_for('root.providers_directory') }}">Providers</a>
+                    <a href="{{ url_for('root.programs_directory') }}">Programs</a>
+                    <a href="{{ url_for('root.fields_directory') }}">Fields</a>
+                </div>
+            </div>
+
+            <div class="nav-dropdown">
+                <a class="nav-dropdown-toggle">Economy <span class="nav-caret">▼</span></a>
+                <div class="nav-dropdown-menu">
+                    <a href="{{ url_for('root.occupations_directory') }}">Occupations</a>
+                    <a href="{{ url_for('root.industries_directory') }}">Industries</a>
+                    <a href="{{ url_for('root.employers_directory') }}">Employers</a>
+                </div>
+            </div>
+
+            <div class="nav-dropdown">
+                <a class="nav-dropdown-toggle">Discover <span class="nav-caret">▼</span></a>
+                <div class="nav-dropdown-menu">
+                    <a href="{{ url_for('root.hubs_index') }}">Hubs</a>
+                    <a href="{{ url_for('root.map_view') }}">Map</a>
+                    <a href="{{ url_for('root.guided_search') }}">Explore (Advanced)</a>
+                </div>
+            </div>
+
+            <a href="{{ url_for('root.methods') }}">Methods</a>
         </nav>
     </header>
 
