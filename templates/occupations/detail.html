@@ -62,6 +62,11 @@
             onclick="document.querySelectorAll('.tab').forEach(b => b.classList.remove('active')); this.classList.add('active');">
       Training Path ({{ snapshot.program_count }})
     </button>
+    <button class="tab" id="tab-btn-pathways"
+            hx-get="{{ url_for('root.occupation_tab_pathways', soc=occ.soc) }}"
+            onclick="document.querySelectorAll('.tab').forEach(b => b.classList.remove('active')); this.classList.add('active');">
+      Career Ladder
+    </button>
     <button class="tab" id="tab-btn-methods"
             hx-get="{{ url_for('root.occupation_tab_methods', soc=occ.soc) }}"
             onclick="document.querySelectorAll('.tab').forEach(b => b.classList.remove('active')); this.classList.add('active');">

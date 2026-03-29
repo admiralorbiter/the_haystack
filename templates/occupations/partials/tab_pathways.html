@@ -1,0 +1,167 @@
+<div style="padding-top: var(--spacing-lg);">
+
+  {% if next_steps %}
+  <section style="margin-bottom: var(--spacing-xl);">
+    <h3 style="color: #10b981; margin-bottom: var(--spacing-xs);">Next Steps (Upskilling)</h3>
+    <p style="color: var(--text-muted); margin-bottom: var(--spacing-md); font-size: 0.95rem;">Roles requiring more preparation that offer at least a 10% expected wage increase.</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--spacing-lg);">
+      {% for step in next_steps %}
+      <div style="background: var(--color-surface); padding: var(--spacing-lg); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border-left: 5px solid #10b981;">
+        <h4 style="margin-bottom: var(--spacing-sm);"><a href="{{ url_for('root.occupation_detail', soc=step.occ.soc) }}">{{ step.occ.title }}</a></h4>
+        
+        <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);">
+          <span class="badge" style="background: var(--color-bg); border: 1px solid var(--color-border); color: var(--text-muted);">Zone {{ step.occ.job_zone }}</span>
+          {% if step.wage_bump_pct %}
+            <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #047857; border: 1px solid rgba(16, 185, 129, 0.3);">+{{ "%.0f"|format(step.wage_bump_pct) }}% Wage Bump</span>
+          {% endif %}
+        </div>
+        
+        {% if step.wage_bump %}
+        <p style="color: #10b981; font-weight: bold; font-size: 1.1rem; margin-bottom: var(--spacing-xs);">
+          Potential Raise: +${{ "{:,.0f}".format(step.wage_bump) }} / yr
+        </p>
+        {% endif %}
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: var(--spacing-md);">Median Wage: ${{ "{:,.0f}".format(step.kc_wage.median_wage) if step.kc_wage and step.kc_wage.median_wage else 'N/A' }}</p>
+      
+        {% if step.skill_gaps %}
+          <div style="background: rgba(245, 158, 11, 0.05); border: 1px dotted rgba(245, 158, 11, 0.5); padding: var(--spacing-sm); border-radius: var(--radius-sm); margin-bottom: var(--spacing-md);">
+            <strong style="font-size: 0.85rem; display: block; margin-bottom: 6px; color: var(--text-main);">Key Skill Gaps:</strong>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            {% for gap in step.skill_gaps %}
+              <span class="badge" style="background: white; border: 1px solid #fcd34d; color: #b45309; font-weight: normal;">{{ gap.name }} (+{{ "{:.0f}".format(gap.bump) }})</span>
+            {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      
+        <!-- ROI Break-Even Calculator -->
+        {% if step.wage_bump %}
+          <div class="roi-calculator" data-wage-bump="{{ step.wage_bump }}" style="background: rgba(0,0,0,0.02); border-radius: var(--radius-md); padding: var(--spacing-md); border: 1px solid var(--color-border);">
+            <strong style="display: block; margin-bottom: 4px; font-size: 0.95rem;">ROI Break-Even Calculator</strong>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--spacing-sm);">See how long training takes to pay for itself.</p>
+            
+            <div style="display: flex; align-items: center; background: white; border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 6px 10px; margin-bottom: 6px;">
+              <span style="color: var(--text-muted); font-weight: bold; margin-right: 8px;">$</span>
+              <input type="number" class="tuition-input" placeholder="Tuition Cost" value="{{ step.debt_avg if step.debt_avg else '' }}" oninput="updateRoi(this)" style="border: none; outline: none; width: 100%; font-size: 1rem; color: var(--text-main);">
+            </div>
+            
+            {% if step.debt_avg %}
+              <p style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; margin-bottom: var(--spacing-sm);">
+                *Pre-filled with median student debt for KC grads.
+              </p>
+            {% else %}
+              <p style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; margin-bottom: var(--spacing-sm);">
+                *Enter a training cost to see your ROI.
+              </p>
+            {% endif %}
+            
+            <div style="margin-top: var(--spacing-sm); font-weight: 600; font-size: 0.95rem; color: var(--color-primary); display: flex; align-items: center;">
+              Break-even: 
+              <span class="roi-years" style="margin-left: 8px; background: rgba(59, 130, 246, 0.1); color: #1d4ed8; padding: 2px 8px; border-radius: 12px;">--</span> 
+              <span style="margin-left: 4px; font-weight: normal; font-size: 0.9rem;">years</span>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if lateral_moves %}
+  <section style="margin-bottom: var(--spacing-xl);">
+    <h3 style="color: var(--color-secondary); margin-bottom: var(--spacing-xs);">Lateral Moves</h3>
+    <p style="color: var(--text-muted); margin-bottom: var(--spacing-md); font-size: 0.95rem;">Roles requiring similar preparation that utilize your existing foundation.</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--spacing-lg);">
+      {% for step in lateral_moves %}
+      <div style="background: var(--color-surface); padding: var(--spacing-md); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border-left: 5px solid var(--color-secondary);">
+        <h4 style="margin-bottom: var(--spacing-sm);"><a href="{{ url_for('root.occupation_detail', soc=step.occ.soc) }}">{{ step.occ.title }}</a></h4>
+        
+        <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);">
+          <span class="badge" style="background: var(--color-bg); border: 1px solid var(--color-border); color: var(--text-muted);">Zone {{ step.occ.job_zone }}</span>
+        </div>
+        
+        <p style="margin-bottom: 6px; font-size: 0.95rem;">
+          Median Wage: <strong>${{ "{:,.0f}".format(step.kc_wage.median_wage) if step.kc_wage and step.kc_wage.median_wage else 'N/A' }}</strong>
+        </p>
+
+        {% if step.wage_bump %}
+          {% if step.wage_bump > 0 %}
+            <p style="color: #10b981; font-weight: bold; font-size: 0.9rem;">Raise: +${{ "{:,.0f}".format(step.wage_bump) }}</p>
+          {% else %}
+            <p style="color: #ef4444; font-weight: bold; font-size: 0.9rem;">Cut: -${{ "{:,.0f}".format(step.wage_bump|abs) }}</p>
+          {% endif %}
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if previous_steps %}
+  <section style="margin-bottom: var(--spacing-xl);">
+    <h3 style="color: var(--text-muted); margin-bottom: var(--spacing-xs);">Previous Steps</h3>
+    <p style="color: var(--text-muted); margin-bottom: var(--spacing-md); font-size: 0.95rem;">Common entry-level foundational roles for this pathway.</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--spacing-md);">
+      {% for step in previous_steps %}
+      <div style="background: var(--color-surface); padding: var(--spacing-md); border-radius: var(--radius-md); border: 1px solid var(--color-border); opacity: 0.9;">
+        <h5 style="margin-bottom: var(--spacing-xs);"><a href="{{ url_for('root.occupation_detail', soc=step.occ.soc) }}">{{ step.occ.title }}</a></h5>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Zone {{ step.occ.job_zone }}</div>
+        <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-main);">${{ "{:,.0f}".format(step.kc_wage.median_wage) if step.kc_wage and step.kc_wage.median_wage else 'N/A' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if not next_steps and not lateral_moves and not previous_steps %}
+  <div style="text-align: center; padding: 4rem 2rem; background: var(--color-surface); border-radius: var(--radius-md); margin-top: var(--spacing-lg);">
+    <h3 style="color: var(--text-muted); margin-bottom: var(--spacing-sm);">No Pathway Data Available</h3>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">We don't have enough structural linkage data to map career stepping stones for this occupation yet.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function updateRoi(input) {
+  const container = input.closest('.roi-calculator');
+  const wageBump = parseFloat(container.dataset.wageBump);
+  const costStr = input.value.replace(/,/g, '');
+  const cost = parseFloat(costStr);
+  const resultSpan = container.querySelector('.roi-years');
+  
+  if (!isNaN(cost) && cost > 0 && wageBump > 0) {
+    const years = cost / wageBump;
+    resultSpan.textContent = years.toFixed(1);
+    
+    // Color coding based on payoff time
+    if (years <= 2) {
+      resultSpan.style.background = 'rgba(16, 185, 129, 0.1)';
+      resultSpan.style.color = '#047857';
+    } else if (years <= 5) {
+      resultSpan.style.background = 'rgba(59, 130, 246, 0.1)';
+      resultSpan.style.color = '#1d4ed8';
+    } else {
+      resultSpan.style.background = 'rgba(245, 158, 11, 0.1)';
+      resultSpan.style.color = '#b45309';
+    }
+  } else {
+    resultSpan.textContent = '--';
+    resultSpan.style.background = 'rgba(0,0,0,0.05)';
+    resultSpan.style.color = 'var(--text-muted)';
+  }
+}
+
+// Initialize on load
+setTimeout(() => {
+  document.querySelectorAll('.tuition-input').forEach(input => {
+    if(input.value) {
+      updateRoi(input);
+    }
+  });
+}, 100);
+</script>

@@ -378,18 +378,14 @@ Before building Strategy B/C, evaluate these named employer data sources for the
 
 ---
 
-## Epic 14 — Stepping Stones & ROI Break-Even Pathways
+## ✅ Epic 14 — Stepping Stones & ROI Break-Even Pathways (Shipped 2026-03-29)
 **Goal:** Shift from static occupation endpoints to sequenced, connected career pathways — helping users trace the journey from entry-level to their ultimate goal, with every step costing real money and paying real wages.
 
-**Design principle:** Education is not a single leap. A CNA cert leads to LPN leads to RN. Haystack should make that ladder visible, cost it out, and show the payoff at every rung. We will build UI views that natively stack related careers (e.g. Nursing Assistant [Job Zone 2] -> LPN [Job Zone 3] -> RN [Job Zone 5]), graphing wage jumps visually with a "Find Training for Next Step" affordance.
-
-**Status:** 🔬 Research Spike — requires Labor-First primitives (Occupations directory) first.
-
-**Research Spike:**
-- **O*NET `RelatedOccupation`** data (already ingested in Epic 11) is the primary structural engine for stepping stone proximity. Evaluate how to translate `index_score` into a visual step-size metric.
-- **Note:** Census LEHD J2J Flows cannot be used here — J2J tracks firm/industry (NAICS) transitions, not occupation (SOC) transitions. Stepping Stones must rely on O*NET structural similarity instead. J2J has been pivoted to Epic 18 (Industry Profiles).
-- Investigate Credential Engine Registry (CTDL) for structured credential stacking schemas showing how certs roll up into degrees.
-- Prototype the "Interactive ROI Slider" math: cost of credential ÷ (BLS median wage − current wage) = break-even years.
+**What shipped:**
+- **Pathway Segmentation:** O*NET Job Zones group related careers into "Next Steps" (Upskilling), "Lateral Moves", and "Previous Steps".
+- **Strict Economic Filter:** Algorithmic gating logic prevents "False Promotions" by requiring Next Steps to offer a >10% median wage jump.
+- **Skill Gaps Engine:** Matrix diffs the user's current `OccupationSkill` vs the target's, isolating top numerical capability jumps (e.g., "Critical Thinking +15").
+- **Local ROI Break-Even Math:** A reactive client-side Break-Even calculator integrated into "Next Step" cards. It proactively pulls the targeted `scorecard_field_of_study.debt_stgp_mdn` to pre-fill the cost of KC training programs, outputting years-to-pay-off instantly.
 
 **Data dependencies:**
 - Epic 11 (BLS OEWS wages) — ✅ Shipped

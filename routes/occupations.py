@@ -15,13 +15,20 @@ from models import (
     Occupation,
     OccupationIndustry,
     OccupationProjection,
+    OccupationSkill,
     OccupationWage,
     Organization,
     Program,
     ProgramOccupation,
     IndustryQCEW,
+    RelatedOccupation,
     db,
 )
+import sqlite3
+from pathlib import Path
+
+_DB_PATH = Path(__file__).resolve().parent.parent / "db" / "haystack.db"
+
 from .career_grade import get_career_grades
 from . import root_bp
 from .cip_utils import cip_title
@@ -318,3 +325,107 @@ def occupation_tab_methods(soc: str):
         "occupations/partials/tab_methods.html",
         occ=occ,
     )
+
+@root_bp.route("/occupations/<soc>/tab/pathways")
+def occupation_tab_pathways(soc: str):
+    occ = _get_occ(soc)
+    kc_wage = _get_kc_wage(soc)
+    
+    # 1. Fetch related occupations
+    related_links = (
+        db.session.query(RelatedOccupation, Occupation)
+        .join(Occupation, Occupation.soc == RelatedOccupation.related_soc)
+        .filter(RelatedOccupation.soc == soc)
+        .all()
+    )
+    
+    previous_steps = []
+    lateral_moves = []
+    next_steps = []
+    
+    current_zone = occ.job_zone or 0
+    current_median = kc_wage.median_wage if kc_wage and kc_wage.median_wage else 0
+    
+    # Pre-fetch skills for current occupation to calculate skill gaps
+    current_skills = {s.element_name: s.importance_score for s in occ.skills}
+    
+    for rel, rel_occ in related_links:
+        target_kc_wage = _get_kc_wage(rel_occ.soc)
+        target_median = target_kc_wage.median_wage if target_kc_wage and target_kc_wage.median_wage else 0
+        
+        target_zone = rel_occ.job_zone or 0
+        
+        wage_bump = target_median - current_median if (target_median and current_median) else None
+        
+        # Calculate Skill Gap (Top 3 skills that need the biggest numerical jump)
+        target_skills = {s.element_name: s.importance_score for s in rel_occ.skills}
+        skill_gaps = []
+        for name, target_score in target_skills.items():
+            current_score = current_skills.get(name, 0)
+            diff = target_score - current_score
+            if diff > 0:
+                skill_gaps.append({"name": name, "bump": diff})
+        skill_gaps = sorted(skill_gaps, key=lambda x: x["bump"], reverse=True)[:3]
+        
+        # Calculate local debt average for KC programs linked to this target
+        # Join program_occupation -> program -> organization (unitid)
+        # Then hit scorecard_field_of_study via raw sql
+        debt_avg = None
+        try:
+            conn = sqlite3.connect(_DB_PATH)
+            sc_row = conn.execute(
+                '''
+                SELECT AVG(s.DEBT_ALL_STGP_EVAL_MDN)
+                FROM scorecard_field_of_study s
+                JOIN organization o ON o.unitid = s.UNITID
+                JOIN program p ON p.org_id = o.org_id
+                JOIN program_occupation po ON po.program_id = p.program_id
+                WHERE po.soc = ? AND s.DEBT_ALL_STGP_EVAL_MDN NOT IN ("PrivacySuppressed", "NULL", "")
+                ''',
+                (rel_occ.soc,)
+            ).fetchone()
+            conn.close()
+            if sc_row and sc_row[0]:
+                debt_avg = int(sc_row[0])
+        except Exception:
+            pass
+        
+        item = {
+            "occ": rel_occ,
+            "kc_wage": target_kc_wage,
+            "wage_bump": wage_bump,
+            "wage_bump_pct": (wage_bump / current_median * 100) if wage_bump and current_median else 0,
+            "skill_gaps": skill_gaps,
+            "debt_avg": debt_avg,
+            "index_score": rel.index_score
+        }
+        
+        if target_zone < current_zone:
+            previous_steps.append(item)
+        elif target_zone == current_zone:
+            lateral_moves.append(item)
+        else:
+            # Strict Economic Filter for Next Steps: > 10% wage bump required.
+            if item["wage_bump_pct"] >= 10:
+                next_steps.append(item)
+            elif item["wage_bump"] is None:
+                # If we don't have wage data, we'll keep it as a potential step
+                next_steps.append(item)
+            else:
+                # Looks like a step up in zone, but not a 10% wage bump.
+                lateral_moves.append(item)
+                
+    # Sort them by wage bump or index score
+    previous_steps = sorted(previous_steps, key=lambda x: x["index_score"] or 0, reverse=True)[:10]
+    lateral_moves = sorted(lateral_moves, key=lambda x: x["index_score"] or 0, reverse=True)[:10]
+    next_steps = sorted(next_steps, key=lambda x: x["wage_bump"] or x["index_score"] or 0, reverse=True)
+    
+    return render_template(
+        "occupations/partials/tab_pathways.html",
+        occ=occ,
+        kc_wage=kc_wage,
+        previous_steps=previous_steps,
+        lateral_moves=lateral_moves,
+        next_steps=next_steps
+    )
+
