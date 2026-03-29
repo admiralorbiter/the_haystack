@@ -11,15 +11,15 @@ def index():
 
     # ── Regional summary stats ────────────────────────────────────────────
     provider_count = db.session.query(func.count(Organization.org_id)).scalar() or 0
-    program_count  = db.session.query(func.count(Program.program_id)).scalar() or 0
+    program_count = db.session.query(func.count(Program.program_id)).scalar() or 0
     total_completions = (
         db.session.query(func.sum(Program.completions))
         .filter(Program.completions.isnot(None))
-        .scalar() or 0
+        .scalar()
+        or 0
     )
     occ_count = (
-        db.session.query(func.count(func.distinct(ProgramOccupation.soc)))
-        .scalar() or 0
+        db.session.query(func.count(func.distinct(ProgramOccupation.soc))).scalar() or 0
     )
 
     return render_template(
@@ -33,4 +33,5 @@ def index():
 
 # These imports must be AFTER the blueprint definition — this is Flask's required pattern.
 # ruff: noqa: E402, F401
-from . import briefing, compare, employers, fields, guided_search, hubs, map, programs, providers, search  # noqa: E402, F401
+from . import (briefing, compare, employers, fields,  # noqa: E402, F401
+               guided_search, hubs, map, programs, providers, search)

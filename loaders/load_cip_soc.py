@@ -26,11 +26,12 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+
 from config import Config
 from loaders.utils import CROSSWALK_DIR, normalize_cip, record_dataset_source
 from models import Occupation, Program, ProgramOccupation, db
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 
 SOURCE_ID = "nces_cip_soc_2020"
 SOURCE_NAME = "NCES CIP 2020 → SOC 2018 Crosswalk"
@@ -180,7 +181,9 @@ def run(dry_run: bool = False, verbose: bool = False) -> None:
 
     unique_cips = len(crosswalk)
     total_links = sum(len(v) for v in crosswalk.values())
-    print(f"  Crosswalk: {unique_cips} CIP codes → {total_links} SOC links ({skipped} rows skipped)")
+    print(
+        f"  Crosswalk: {unique_cips} CIP codes → {total_links} SOC links ({skipped} rows skipped)"
+    )
 
     if dry_run:
         print("\n  [DRY RUN] Would load the above crosswalk. No writes made.")
@@ -224,7 +227,9 @@ def run(dry_run: bool = False, verbose: bool = False) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Load CIP→SOC crosswalk into Haystack DB.")
+    parser = argparse.ArgumentParser(
+        description="Load CIP→SOC crosswalk into Haystack DB."
+    )
     parser.add_argument(
         "--dry-run", action="store_true", help="Preview without writing"
     )

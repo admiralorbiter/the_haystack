@@ -16,11 +16,10 @@ from pathlib import Path
 from flask import abort, render_template, request, url_for
 from sqlalchemy import func
 
-from models import (
-    DatasetSource, Occupation, Organization,
-    Program, ProgramOccupation, ProgramDemographics, db,
-)
-from routes.cip_utils import CIP_FAMILY_NAMES, cip_family_code, cip_family_label, cip_title
+from models import (DatasetSource, Occupation, Organization, Program,
+                    ProgramDemographics, ProgramOccupation, db)
+from routes.cip_utils import (CIP_FAMILY_NAMES, cip_family_code,
+                              cip_family_label, cip_title)
 
 from . import root_bp
 
@@ -33,6 +32,7 @@ _UUID_RE = re.compile(r"^[0-9a-f\-]{8,40}$", re.IGNORECASE)
 # ---------------------------------------------------------------------------
 # Helpers — reused across both entity types
 # ---------------------------------------------------------------------------
+
 
 def _parse_ids(raw: str | None, max_count: int = 2) -> list[str]:
     """
@@ -70,7 +70,8 @@ def _provider_metrics(org_id: str) -> dict:
     top_cip_code = cip_families.most_common(1)[0][0] if cip_families else None
     top_cip_label = (
         f"{CIP_FAMILY_NAMES.get(top_cip_code, '')} ({top_cip_code})"
-        if top_cip_code else None
+        if top_cip_code
+        else None
     )
 
     program_ids = [p.program_id for p in programs]
@@ -79,7 +80,8 @@ def _provider_metrics(org_id: str) -> dict:
         occ_count = (
             db.session.query(func.count(func.distinct(ProgramOccupation.soc)))
             .filter(ProgramOccupation.program_id.in_(program_ids))
-            .scalar() or 0
+            .scalar()
+            or 0
         )
 
     return {
@@ -98,8 +100,13 @@ def _provider_metrics(org_id: str) -> dict:
 # ---------------------------------------------------------------------------
 
 _CALSYS = {
-    "1": "Semester", "2": "Quarter", "3": "Trimester",
-    "4": "4-1-4", "5": "Other", "6": "Varies", "7": "Continuous",
+    "1": "Semester",
+    "2": "Quarter",
+    "3": "Trimester",
+    "4": "4-1-4",
+    "5": "Other",
+    "6": "Varies",
+    "7": "Continuous",
 }
 _OPENADMP = {"1": "Open Admission", "2": "Selective Admission"}
 
@@ -150,6 +157,7 @@ def _ipeds_compare(unitid: str) -> dict:
         row = dict(row)
     except sqlite3.Error as exc:
         import sys
+
         print(f"[compare] IPEDS DB error for unitid={unitid!r}: {exc}", file=sys.stderr)
         return {}
 
@@ -215,6 +223,7 @@ def _ipeds_compare(unitid: str) -> dict:
 # Winner logic — annotate which side wins each metric row
 # ---------------------------------------------------------------------------
 
+
 def _annotate_winner(val_a, val_b, higher_is_better: bool) -> tuple[str, str]:
     """
     Returns (label_a, label_b) where each is 'winner', 'loser', or 'tie'.
@@ -236,6 +245,7 @@ def _build_provider_rows(snap_a, snap_b, ipeds_a, ipeds_b) -> list[dict]:
     Each row: {label, val_a, val_b, status_a, status_b, fmt, note}
     fmt: 'number', 'currency', 'percent', 'text', 'neutral'
     """
+
     def _row(label, val_a, val_b, fmt="number", higher=True, note=""):
         sa, sb = _annotate_winner(val_a, val_b, higher)
         return {
@@ -251,47 +261,132 @@ def _build_provider_rows(snap_a, snap_b, ipeds_a, ipeds_b) -> list[dict]:
     rows = [
         # Programmatic
         _row("Programs Offered", snap_a["total_programs"], snap_b["total_programs"]),
-        _row("WIOA Eligible", snap_a["wioa_programs"], snap_b["wioa_programs"], fmt="neutral", note="Funded alternative pathway"),
-        _row("Apprenticeship", snap_a["apprenticeship_programs"], snap_b["apprenticeship_programs"], fmt="neutral", note="Registered DOL pathway"),
-        _row("Annual Completions", snap_a["total_completions"], snap_b["total_completions"]),
-        _row("Linked Occupations", snap_a["linked_occupations"], snap_b["linked_occupations"]),
+        _row(
+            "WIOA Eligible",
+            snap_a["wioa_programs"],
+            snap_b["wioa_programs"],
+            fmt="neutral",
+            note="Funded alternative pathway",
+        ),
+        _row(
+            "Apprenticeship",
+            snap_a["apprenticeship_programs"],
+            snap_b["apprenticeship_programs"],
+            fmt="neutral",
+            note="Registered DOL pathway",
+        ),
+        _row(
+            "Annual Completions",
+            snap_a["total_completions"],
+            snap_b["total_completions"],
+        ),
+        _row(
+            "Linked Occupations",
+            snap_a["linked_occupations"],
+            snap_b["linked_occupations"],
+        ),
         # Enrollment
-        _row("Total Enrollment", ipeds_a.get("enrollment_total"), ipeds_b.get("enrollment_total"),
-             fmt="neutral", higher=True, note="Headcount — larger = more students served"),
-        _row("Distance Ed Share", ipeds_a.get("distance_ed_pct"), ipeds_b.get("distance_ed_pct"),
-             fmt="percent", higher=False,
-             note="% of enrollment via distance education — neutral signal"),
+        _row(
+            "Total Enrollment",
+            ipeds_a.get("enrollment_total"),
+            ipeds_b.get("enrollment_total"),
+            fmt="neutral",
+            higher=True,
+            note="Headcount — larger = more students served",
+        ),
+        _row(
+            "Distance Ed Share",
+            ipeds_a.get("distance_ed_pct"),
+            ipeds_b.get("distance_ed_pct"),
+            fmt="percent",
+            higher=False,
+            note="% of enrollment via distance education — neutral signal",
+        ),
         # Admissions
-        _row("Acceptance Rate", ipeds_a.get("acceptance_rate"), ipeds_b.get("acceptance_rate"),
-             fmt="percent", higher=False,
-             note="Lower = more selective (not inherently better)"),
+        _row(
+            "Acceptance Rate",
+            ipeds_a.get("acceptance_rate"),
+            ipeds_b.get("acceptance_rate"),
+            fmt="percent",
+            higher=False,
+            note="Lower = more selective (not inherently better)",
+        ),
         # Cost
-        _row("In-State Tuition", ipeds_a.get("instate_tuition"), ipeds_b.get("instate_tuition"),
-             fmt="currency", higher=False, note="Annual tuition & fees"),
-        _row("Net Price", ipeds_a.get("net_price"), ipeds_b.get("net_price"),
-             fmt="currency", higher=False, note="Average net price after grants/scholarships"),
+        _row(
+            "In-State Tuition",
+            ipeds_a.get("instate_tuition"),
+            ipeds_b.get("instate_tuition"),
+            fmt="currency",
+            higher=False,
+            note="Annual tuition & fees",
+        ),
+        _row(
+            "Net Price",
+            ipeds_a.get("net_price"),
+            ipeds_b.get("net_price"),
+            fmt="currency",
+            higher=False,
+            note="Average net price after grants/scholarships",
+        ),
         # Aid
-        _row("Any Grant Recipients", ipeds_a.get("any_grant_pct"), ipeds_b.get("any_grant_pct"),
-             fmt="percent", higher=True, note="% of undergrads receiving any grant aid"),
-        _row("Pell Grant Recipients", ipeds_a.get("pell_pct"), ipeds_b.get("pell_pct"),
-             fmt="percent", higher=True, note="% of undergrads receiving Pell grants (low-income signal)"),
+        _row(
+            "Any Grant Recipients",
+            ipeds_a.get("any_grant_pct"),
+            ipeds_b.get("any_grant_pct"),
+            fmt="percent",
+            higher=True,
+            note="% of undergrads receiving any grant aid",
+        ),
+        _row(
+            "Pell Grant Recipients",
+            ipeds_a.get("pell_pct"),
+            ipeds_b.get("pell_pct"),
+            fmt="percent",
+            higher=True,
+            note="% of undergrads receiving Pell grants (low-income signal)",
+        ),
         # Outcomes
-        _row("150% Graduation Rate", ipeds_a.get("grad_rate_150"), ipeds_b.get("grad_rate_150"),
-             fmt="percent", higher=True),
-        _row("Pell Grad Rate", ipeds_a.get("grad_rate_pell"), ipeds_b.get("grad_rate_pell"),
-             fmt="percent", higher=True, note="Graduation rate for Pell grant recipients"),
-        _row("200% Graduation Rate", ipeds_a.get("grad_rate_200"), ipeds_b.get("grad_rate_200"),
-             fmt="percent", higher=True, note="Completion within twice the normal time"),
+        _row(
+            "150% Graduation Rate",
+            ipeds_a.get("grad_rate_150"),
+            ipeds_b.get("grad_rate_150"),
+            fmt="percent",
+            higher=True,
+        ),
+        _row(
+            "Pell Grad Rate",
+            ipeds_a.get("grad_rate_pell"),
+            ipeds_b.get("grad_rate_pell"),
+            fmt="percent",
+            higher=True,
+            note="Graduation rate for Pell grant recipients",
+        ),
+        _row(
+            "200% Graduation Rate",
+            ipeds_a.get("grad_rate_200"),
+            ipeds_b.get("grad_rate_200"),
+            fmt="percent",
+            higher=True,
+            note="Completion within twice the normal time",
+        ),
         # Faculty
-        _row("Student-Faculty Ratio", ipeds_a.get("student_faculty_ratio"),
-             ipeds_b.get("student_faculty_ratio"),
-             fmt="neutral", higher=False, note="Lower = smaller class sizes"),
+        _row(
+            "Student-Faculty Ratio",
+            ipeds_a.get("student_faculty_ratio"),
+            ipeds_b.get("student_faculty_ratio"),
+            fmt="neutral",
+            higher=False,
+            note="Lower = smaller class sizes",
+        ),
     ]
     return rows
 
 
-def _build_program_rows(prog_a, prog_b, org_a, org_b, occ_a, occ_b, demo_a, demo_b, sc_a, sc_b) -> dict:
+def _build_program_rows(
+    prog_a, prog_b, org_a, org_b, occ_a, occ_b, demo_a, demo_b, sc_a, sc_b
+) -> dict:
     """Build comparison rows for program compare in groups."""
+
     def _row(label, val_a, val_b, fmt="number", higher=True, note=""):
         sa, sb = _annotate_winner(val_a, val_b, higher)
         return {
@@ -315,28 +410,81 @@ def _build_program_rows(prog_a, prog_b, org_a, org_b, occ_a, occ_b, demo_a, demo
     ]
 
     demographics = [
-        _row("Women", _pct(demo_a, "pct_women"), _pct(demo_b, "pct_women"), fmt="percent", higher=True),
-        _row("Men", _pct(demo_a, "pct_men"), _pct(demo_b, "pct_men"), fmt="percent", higher=True),
-        _row("White", _pct(demo_a, "pct_white"), _pct(demo_b, "pct_white"), fmt="percent", higher=True),
-        _row("Black", _pct(demo_a, "pct_black"), _pct(demo_b, "pct_black"), fmt="percent", higher=True),
-        _row("Hispanic", _pct(demo_a, "pct_hispanic"), _pct(demo_b, "pct_hispanic"), fmt="percent", higher=True),
-        _row("Asian", _pct(demo_a, "pct_asian"), _pct(demo_b, "pct_asian"), fmt="percent", higher=True),
+        _row(
+            "Women",
+            _pct(demo_a, "pct_women"),
+            _pct(demo_b, "pct_women"),
+            fmt="percent",
+            higher=True,
+        ),
+        _row(
+            "Men",
+            _pct(demo_a, "pct_men"),
+            _pct(demo_b, "pct_men"),
+            fmt="percent",
+            higher=True,
+        ),
+        _row(
+            "White",
+            _pct(demo_a, "pct_white"),
+            _pct(demo_b, "pct_white"),
+            fmt="percent",
+            higher=True,
+        ),
+        _row(
+            "Black",
+            _pct(demo_a, "pct_black"),
+            _pct(demo_b, "pct_black"),
+            fmt="percent",
+            higher=True,
+        ),
+        _row(
+            "Hispanic",
+            _pct(demo_a, "pct_hispanic"),
+            _pct(demo_b, "pct_hispanic"),
+            fmt="percent",
+            higher=True,
+        ),
+        _row(
+            "Asian",
+            _pct(demo_a, "pct_asian"),
+            _pct(demo_b, "pct_asian"),
+            fmt="percent",
+            higher=True,
+        ),
     ]
 
     sc_a_dict = sc_a or {}
     sc_b_dict = sc_b or {}
 
     scorecard = [
-        _row("Median Earnings (1yr)", sc_a_dict.get("earn_1yr"), sc_b_dict.get("earn_1yr"), fmt="currency", higher=True, note="Earnings 1 year after graduation"),
-        _row("Median Earnings (2yr)", sc_a_dict.get("earn_2yr"), sc_b_dict.get("earn_2yr"), fmt="currency", higher=True, note="Earnings 2 years after graduation"),
-        _row("Median Debt", sc_a_dict.get("debt_stgp_mdn"), sc_b_dict.get("debt_stgp_mdn"), fmt="currency", higher=False, note="Median student loan debt"),
+        _row(
+            "Median Earnings (1yr)",
+            sc_a_dict.get("earn_1yr"),
+            sc_b_dict.get("earn_1yr"),
+            fmt="currency",
+            higher=True,
+            note="Earnings 1 year after graduation",
+        ),
+        _row(
+            "Median Earnings (2yr)",
+            sc_a_dict.get("earn_2yr"),
+            sc_b_dict.get("earn_2yr"),
+            fmt="currency",
+            higher=True,
+            note="Earnings 2 years after graduation",
+        ),
+        _row(
+            "Median Debt",
+            sc_a_dict.get("debt_stgp_mdn"),
+            sc_b_dict.get("debt_stgp_mdn"),
+            fmt="currency",
+            higher=False,
+            note="Median student loan debt",
+        ),
     ]
 
-    return {
-        "outcomes": outcomes,
-        "demographics": demographics,
-        "scorecard": scorecard
-    }
+    return {"outcomes": outcomes, "demographics": demographics, "scorecard": scorecard}
 
 
 def _winner_sentence(rows: list[dict], name_a: str, name_b: str) -> str:
@@ -366,6 +514,7 @@ def _winner_sentence(rows: list[dict], name_a: str, name_b: str) -> str:
 # Provider compare — GET /compare/providers?ids=A,B
 # ---------------------------------------------------------------------------
 
+
 @root_bp.route("/compare/providers")
 def compare_providers():
     raw = request.args.get("ids", "")
@@ -374,6 +523,7 @@ def compare_providers():
     if len(ids) < 2:
         # Insufficient IDs — redirect to directory with a hint
         from flask import redirect
+
         return redirect(url_for("root.providers_directory"))
 
     id_a, id_b = ids[0], ids[1]
@@ -419,7 +569,9 @@ def compare_providers():
         summary=summary,
         id_a=id_a,
         id_b=id_b,
-        data_as_of=ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown",
+        data_as_of=(
+            ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown"
+        ),
         data_source=ds.name if ds else "IPEDS",
     )
 
@@ -428,6 +580,7 @@ def compare_providers():
 # Program compare — GET /compare/programs?ids=A,B
 # ---------------------------------------------------------------------------
 
+
 @root_bp.route("/compare/programs")
 def compare_programs():
     raw = request.args.get("ids", "")
@@ -435,6 +588,7 @@ def compare_programs():
 
     if len(ids) < 2:
         from flask import redirect
+
         return redirect(url_for("root.programs_directory"))
 
     id_a, id_b = ids[0], ids[1]
@@ -456,12 +610,14 @@ def compare_programs():
     occ_a = (
         db.session.query(func.count(ProgramOccupation.soc))
         .filter_by(program_id=id_a)
-        .scalar() or 0
+        .scalar()
+        or 0
     )
     occ_b = (
         db.session.query(func.count(ProgramOccupation.soc))
         .filter_by(program_id=id_b)
-        .scalar() or 0
+        .scalar()
+        or 0
     )
 
     demo_a = db.session.query(ProgramDemographics).filter_by(program_id=id_a).first()
@@ -470,9 +626,15 @@ def compare_programs():
     sc_a = _scorecard_fos_for_program(org_a.unitid, prog_a.cip, prog_a.credential_type)
     sc_b = _scorecard_fos_for_program(org_b.unitid, prog_b.cip, prog_b.credential_type)
 
-    row_groups = _build_program_rows(prog_a, prog_b, org_a, org_b, occ_a, occ_b, demo_a, demo_b, sc_a, sc_b)
-    flat_rows = row_groups["outcomes"] + row_groups["demographics"] + row_groups["scorecard"]
-    summary = _winner_sentence(flat_rows, cip_title(prog_a.name), cip_title(prog_b.name))
+    row_groups = _build_program_rows(
+        prog_a, prog_b, org_a, org_b, occ_a, occ_b, demo_a, demo_b, sc_a, sc_b
+    )
+    flat_rows = (
+        row_groups["outcomes"] + row_groups["demographics"] + row_groups["scorecard"]
+    )
+    summary = _winner_sentence(
+        flat_rows, cip_title(prog_a.name), cip_title(prog_b.name)
+    )
 
     ds = (
         db.session.query(DatasetSource)
@@ -506,6 +668,8 @@ def compare_programs():
         cip_fam_b=cip_fam_b,
         cip_label_a=cip_label_a,
         cip_label_b=cip_label_b,
-        data_as_of=ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown",
+        data_as_of=(
+            ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown"
+        ),
         data_source=ds.name if ds else "IPEDS",
     )

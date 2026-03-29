@@ -9,7 +9,9 @@ from flask import render_template, request
 from sqlalchemy import func
 
 from models import Organization, db
+
 from . import root_bp
+
 
 @root_bp.route("/employers")
 def employers_directory():
@@ -20,7 +22,7 @@ def employers_directory():
     # Query all organizations that are employers OR intermediaries
     query = db.session.query(Organization).filter(
         Organization.org_type.in_(["employer", "intermediary"]),
-        Organization.is_active == True
+        Organization.is_active == True,
     )
 
     if q:
@@ -47,14 +49,13 @@ def employers_directory():
         q=q,
     )
 
+
 @root_bp.route("/employers/<org_id>")
 def employer_detail(org_id: str):
     org = db.session.query(Organization).filter_by(org_id=org_id).first()
     if not org or org.org_type not in ["employer", "intermediary"]:
         from flask import abort
+
         abort(404)
-        
-    return render_template(
-        "employers/detail.html",
-        org=org
-    )
+
+    return render_template("employers/detail.html", org=org)

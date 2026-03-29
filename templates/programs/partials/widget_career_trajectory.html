@@ -1,0 +1,88 @@
+{# Career Trajectory Widget — HTMX fragment #}
+
+{% if top_occupations %}
+<div class="tab-section">
+  <h3 class="section-title">Career Trajectory
+    <span style="font-weight:normal; font-size:0.85rem; color:var(--text-muted);">(Kansas City MSA wages via BLS)</span>
+  </h3>
+  {% if prog.cip.startswith('24.') %}
+  <div style="background-color: var(--bg-secondary); border-left: 4px solid #d97706; padding: var(--spacing-md); margin-bottom: var(--spacing-md); font-size: 0.9rem;">
+    <strong style="color:var(--text-primary);">Data Limitation:</strong> As a foundational/transfer program, Liberal Arts &amp; General Studies maps structurally to very few vocational occupations in the federal government's crosswalk (typically exclusively teaching). In reality, graduates probabilistically enter a wide variety of white-collar fields, management, and communications roles. Actual career outcomes will be mapped via Census LEHD data in Phase 4.
+  </div>
+  {% endif %}
+  <div class="trajectory-cards" style="display:flex; flex-direction:column; gap:var(--spacing-md);">
+    {% for occ, confidence in top_occupations %}
+        
+        {# Find the KC MSA wage for this occupation #}
+        {% set ns = namespace(kc_wage=none) %}
+        {% for w in occ.wages %}
+            {% if w.area_type == 'msa' and 'Kansas City' in w.area_name %}
+                {% set ns.kc_wage = w %}
+            {% endif %}
+        {% endfor %}
+        {% set kc_wage = ns.kc_wage %}
+        
+        <div class="stat-card" style="border-left: 4px solid var(--accent-blue);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--spacing-sm);">
+            <div>
+                <div class="stat-label" style="color:var(--text-primary); font-weight:600; font-size:1.05rem;">
+                    {{ occ.title }}
+                </div>
+                <div style="font-family:monospace; font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
+                    SOC: {{ occ.soc }}
+                    {% if occ.job_zone %} | Job Zone {{ occ.job_zone }}{% endif %}
+                </div>
+            </div>
+            {% if confidence is not none %}
+              <div class="confidence-pill {% if confidence >= 0.9 %}conf-high{% elif confidence >= 0.5 %}conf-med{% else %}conf-low{% endif %}" title="Mapping confidence">
+                {{ '%.0f%%'|format(confidence * 100) }} match
+              </div>
+            {% endif %}
+          </div>
+          
+          {% if kc_wage and kc_wage.median_wage %}
+          <div style="display:flex; gap:var(--spacing-lg); margin-top:var(--spacing-md); align-items:baseline;">
+              <div>
+                  <div class="stat-label">Entry Level (25th)</div>
+                  <div class="stat-value" style="font-size:1.1rem; color:var(--text-muted);">
+                    {% if kc_wage.pct_25_wage %}
+                      ${{ '{:,.0f}'.format(kc_wage.pct_25_wage) }}
+                    {% else %}
+                      <span title="Data suppressed by BLS">N/A</span>
+                    {% endif %}
+                  </div>
+              </div>
+              <div>
+                  <div class="stat-label">Median Wage</div>
+                  <div class="stat-value" style="font-size:1.4rem; color:var(--accent-blue);">${{ '{:,.0f}'.format(kc_wage.median_wage) }}</div>
+              </div>
+              <div>
+                  <div class="stat-label">Experienced (75th)</div>
+                  <div class="stat-value" style="font-size:1.1rem; color:var(--text-muted);">
+                    {% if kc_wage.pct_75_wage %}
+                      ${{ '{:,.0f}'.format(kc_wage.pct_75_wage) }}
+                    {% else %}
+                      <span title="Data suppressed by BLS">N/A</span>
+                    {% endif %}
+                  </div>
+              </div>
+              <div style="margin-left:auto; text-align:right;">
+                  <div class="stat-label">Regional Demand</div>
+                  <div class="stat-value" style="font-size:1.1rem;">{{ '{:,.0f}'.format(kc_wage.employment_count) if kc_wage.employment_count else 'N/A' }} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">employed</span></div>
+              </div>
+          </div>
+          {% else %}
+          <div style="margin-top:var(--spacing-md); color:var(--text-muted); font-size:0.9rem; font-style:italic;">
+             Regional wage data not available or suppressed for this occupation.
+          </div>
+          {% endif %}
+        </div>
+    {% endfor %}
+  </div>
+  <p style="font-size:0.85rem; color:var(--text-muted); margin-top:var(--spacing-sm);">
+    <a href="#" onclick="document.getElementById('tab-btn-occupations').click(); return false;">
+      View all linked occupations &rarr;
+    </a>
+  </p>
+</div>
+{% endif %}

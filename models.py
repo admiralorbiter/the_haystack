@@ -186,6 +186,31 @@ class Occupation(db.Model):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     soc_major: Mapped[str] = mapped_column(String(10), nullable=True)
     soc_minor: Mapped[str] = mapped_column(String(10), nullable=True)
+    job_zone: Mapped[int] = mapped_column(Integer, nullable=True)
+    bright_outlook: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    
+    wages = relationship("OccupationWage", back_populates="occupation", cascade="all, delete-orphan")
+
+
+class OccupationWage(db.Model):
+    __tablename__ = "occupation_wage"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    soc: Mapped[str] = mapped_column(ForeignKey("occupation.soc"), nullable=False)
+    area_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'national', 'state', 'msa'
+    area_code: Mapped[str] = mapped_column(String(20), nullable=False)
+    area_name: Mapped[str] = mapped_column(String(255), nullable=True)
+    
+    employment_count: Mapped[int] = mapped_column(Integer, nullable=True)
+    annual_mean_wage: Mapped[float] = mapped_column(Float, nullable=True)
+    median_wage: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_25_wage: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_75_wage: Mapped[float] = mapped_column(Float, nullable=True)
+    
+    occupation = relationship("Occupation", back_populates="wages")
+
+Index("ix_occupation_wage_soc", OccupationWage.soc)
+Index("ix_occupation_wage_area", OccupationWage.area_type, OccupationWage.area_code)
 
 
 class ProgramOccupation(db.Model):

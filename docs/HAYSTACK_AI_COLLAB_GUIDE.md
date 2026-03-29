@@ -313,6 +313,11 @@ Each entry is a hard-won lesson. Read before starting a new loader or route.
 - This will silently break exact database string matching when the JS variable is sent back to an API or filter query (e.g. "Associate's degree" becomes "Associate&#39;s degree").
 - **Fix:** Always use the `|tojson` filter when hydrating JS variables from Jinja: `const myVar = {{ python_var|tojson }};`. This securely encodes the string as a valid JS literal.
 
+### Jinja Variable Scoping in Loops
+- If you use `{% set my_var = val %}` inside a `{% for %}` loop, that assignment is strictly localized to the loop iteration. It will **not** leak out to the surrounding scope.
+- If you need a loop to compute or find a value to use after the loop ends, you MUST use a Jinja `namespace` object.
+- **Fix:** `{% set ns = namespace(found=none) %}` outside the loop, `{% set ns.found = val %}` inside the loop, and reference `ns.found` afterward.
+
 ### Global Pytest Coverage Fluctuation
 - Running `pytest --cov` calculates coverage globally across the entire project unless strictly isolated. Adding a new module with 100% coverage will not necessarily offset massive missing coverage in existing files.
 - While individual PRs or epic routes might be flawlessly covered, the V1 global coverage threshold (70%) may fail on CI hooks. When developing solo routes, trust the module-level coverage metric rather than fighting the global average unnecessarily.

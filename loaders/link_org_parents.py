@@ -35,7 +35,7 @@ from thefuzz import fuzz
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app import create_app
-from models import db, Organization, Relationship
+from models import Organization, Relationship, db
 
 # ---------------------------------------------------------------------------
 # Threshold for partial_ratio (containment): the IPEDS college name
@@ -108,8 +108,11 @@ def find_parent(
         if wioa_city and college_city:
             wioa_first = wioa_city.split()[0]
             coll_first = college_city.split()[0]
-            if (wioa_city not in college_city and college_city not in wioa_city
-                    and wioa_first != coll_first):
+            if (
+                wioa_city not in college_city
+                and college_city not in wioa_city
+                and wioa_first != coll_first
+            ):
                 continue
 
         partial = fuzz.partial_ratio(wioa_name, college_name)
@@ -127,7 +130,9 @@ def find_parent(
     return best_match, round(best_score / 100, 3)
 
 
-def run(threshold: int = DEFAULT_THRESHOLD, dry_run: bool = False, verbose: bool = False) -> dict:
+def run(
+    threshold: int = DEFAULT_THRESHOLD, dry_run: bool = False, verbose: bool = False
+) -> dict:
     app = create_app()
     with app.app_context():
         all_orgs = db.session.query(Organization).all()
@@ -165,18 +170,22 @@ def run(threshold: int = DEFAULT_THRESHOLD, dry_run: bool = False, verbose: bool
                     if verbose:
                         print(f"  [Manual]   '{sat.name}' -> '{parent.name}'")
                     if not dry_run:
-                        db.session.add(Relationship(
-                            from_entity_type="organization",
-                            from_entity_id=sat.org_id,
-                            to_entity_type="organization",
-                            to_entity_id=parent.org_id,
-                            rel_type="parent_org",
-                            confidence=1.0,
-                            source="manual",
-                        ))
+                        db.session.add(
+                            Relationship(
+                                from_entity_type="organization",
+                                from_entity_id=sat.org_id,
+                                to_entity_type="organization",
+                                to_entity_id=parent.org_id,
+                                rel_type="parent_org",
+                                confidence=1.0,
+                                source="manual",
+                            )
+                        )
                     linked += 1
                 else:
-                    print(f"  [Warn] Manual override for '{sat.name}' references unknown org_id '{override_target}'")
+                    print(
+                        f"  [Warn] Manual override for '{sat.name}' references unknown org_id '{override_target}'"
+                    )
                     skipped += 1
                 continue
 
@@ -184,28 +193,36 @@ def run(threshold: int = DEFAULT_THRESHOLD, dry_run: bool = False, verbose: bool
             parent, score = find_parent(sat, colleges, threshold)
             if parent:
                 if verbose:
-                    print(f"  [Link]     '{sat.name}' -> '{parent.name}'  (conf={score})")
+                    print(
+                        f"  [Link]     '{sat.name}' -> '{parent.name}'  (conf={score})"
+                    )
                 if not dry_run:
-                    db.session.add(Relationship(
-                        from_entity_type="organization",
-                        from_entity_id=sat.org_id,
-                        to_entity_type="organization",
-                        to_entity_id=parent.org_id,
-                        rel_type="parent_org",
-                        confidence=score,
-                        source="auto_fuzzy",
-                    ))
+                    db.session.add(
+                        Relationship(
+                            from_entity_type="organization",
+                            from_entity_id=sat.org_id,
+                            to_entity_type="organization",
+                            to_entity_id=parent.org_id,
+                            rel_type="parent_org",
+                            confidence=score,
+                            source="auto_fuzzy",
+                        )
+                    )
                 linked += 1
             else:
                 if verbose:
-                    print(f"  [Skip]     '{sat.name}' -- no match above threshold {threshold}")
+                    print(
+                        f"  [Skip]     '{sat.name}' -- no match above threshold {threshold}"
+                    )
                 skipped += 1
 
         if not dry_run:
             db.session.commit()
             print(f"\n  Committed {linked} parent_org links.")
         else:
-            print(f"\n  [DRY RUN] Would write {linked} parent_org links, skipped {skipped}.")
+            print(
+                f"\n  [DRY RUN] Would write {linked} parent_org links, skipped {skipped}."
+            )
 
         return {"linked": linked, "skipped": skipped}
 
@@ -215,12 +232,21 @@ def main():
         description="Link WIOA satellite orgs to IPEDS parent colleges.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--threshold", type=int, default=DEFAULT_THRESHOLD,
-                        help=f"partial_ratio threshold (default: {DEFAULT_THRESHOLD})")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Preview matches without writing to DB")
-    parser.add_argument("--verbose", "-v", action="store_true",
-                        help="Print each match/skip/suppress/manual decision")
+    parser.add_argument(
+        "--threshold",
+        type=int,
+        default=DEFAULT_THRESHOLD,
+        help=f"partial_ratio threshold (default: {DEFAULT_THRESHOLD})",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Preview matches without writing to DB"
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Print each match/skip/suppress/manual decision",
+    )
     args = parser.parse_args()
 
     result = run(threshold=args.threshold, dry_run=args.dry_run, verbose=args.verbose)

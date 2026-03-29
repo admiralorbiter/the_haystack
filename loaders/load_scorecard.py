@@ -36,7 +36,13 @@ except ImportError:
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = PROJECT_ROOT / "db" / "haystack.db"
-DEFAULT_ZIP = PROJECT_ROOT / "data" / "raw" / "scorecard" / "College_Scorecard_Raw_Data_03232026.zip"
+DEFAULT_ZIP = (
+    PROJECT_ROOT
+    / "data"
+    / "raw"
+    / "scorecard"
+    / "College_Scorecard_Raw_Data_03232026.zip"
+)
 
 INSTITUTION_FILE = "Most-Recent-Cohorts-Institution.csv"
 FOS_FILE = "Most-Recent-Cohorts-Field-of-Study.csv"
@@ -98,10 +104,13 @@ def load_institution(
 
     # Filter columns by availability in KC subset
     kept_cols = [
-        col for col in kc_df.columns
+        col
+        for col in kc_df.columns
         if _availability_ratio(kc_df[col]) >= _MIN_AVAILABILITY
     ]
-    print(f"  Columns: {len(kept_cols)} of {len(kc_df.columns)} kept (≥50% available in KC)")
+    print(
+        f"  Columns: {len(kept_cols)} of {len(kc_df.columns)} kept (≥50% available in KC)"
+    )
 
     kc_df = kc_df[kept_cols]
 
@@ -114,14 +123,15 @@ def load_institution(
     # Insert rows (clean suppression markers to empty string)
     placeholders = ", ".join("?" for _ in kept_cols)
     rows_to_insert = [
-        [_clean_value(row[col]) for col in kept_cols]
-        for _, row in kc_df.iterrows()
+        [_clean_value(row[col]) for col in kept_cols] for _, row in kc_df.iterrows()
     ]
     cursor.executemany(
         f'INSERT INTO "scorecard_institution" VALUES ({placeholders})',
         rows_to_insert,
     )
-    cursor.execute('CREATE INDEX "ix_scorecard_institution_unitid" ON "scorecard_institution" ("UNITID")')
+    cursor.execute(
+        'CREATE INDEX "ix_scorecard_institution_unitid" ON "scorecard_institution" ("UNITID")'
+    )
     conn.commit()
     print(f"  ✓ scorecard_institution: {len(kc_df)} rows, {len(kept_cols)} columns")
     return len(kc_df)
@@ -172,8 +182,7 @@ def load_field_of_study(
 
     placeholders = ", ".join("?" for _ in cols)
     rows_to_insert = [
-        [_clean_value(row[col]) for col in cols]
-        for _, row in kc_df.iterrows()
+        [_clean_value(row[col]) for col in cols] for _, row in kc_df.iterrows()
     ]
     cursor.executemany(
         f'INSERT INTO "scorecard_field_of_study" VALUES ({placeholders})',
@@ -188,7 +197,9 @@ def load_field_of_study(
     return len(kc_df)
 
 
-def record_dataset_source(conn: sqlite3.Connection, inst_count: int, fos_count: int) -> None:
+def record_dataset_source(
+    conn: sqlite3.Connection, inst_count: int, fos_count: int
+) -> None:
     """Write a dataset_source record for audit trail."""
     now = datetime.now().isoformat()
     conn.execute(

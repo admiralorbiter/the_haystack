@@ -59,5 +59,5 @@
 |------|--------|-------|
 | Epic 2.9: Pre-Phase-3 Hardening | ✅ Shipped | org_fact, soft-delete, API namespace, search spec, analytics tables |
 | Epic 10: Non-Title IV Training Base | ✅ Shipped 2026-03-28 | ETPL, RAPIDS, Employers, Hubs all landed |
-| Epic 11: BLS OEWS Wage Integration | 🔲 Planned | Map SOCs to wage metrics — do after Epic 2.9 |
+| Epic 11: BLS OEWS Wage Integration | ✅ Shipped | Map SOCs to wage metrics — done |
 | Epic 12: Network Explorer | 🔲 Planned | Graph UI for relationships |

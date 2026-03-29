@@ -5,21 +5,34 @@ Powers curated portals across the site (e.g. Apprenticeships).
 Built to handle scaling logic without adding one-off templates per dataset.
 """
 
-from flask import render_template, abort
+from flask import abort, render_template
 from sqlalchemy import func
-from . import root_bp
-from models import db, Organization, Program
+
+from models import Organization, Program, db
 from routes.cip_utils import cip_title
 
+from . import root_bp
+
+
 def _get_apprenticeship_orgs():
-    return db.session.query(Organization).filter(
-        Organization.is_apprenticeship_partner == True,
-        Organization.is_active == True
-    ).order_by(Organization.name).all()
+    return (
+        db.session.query(Organization)
+        .filter(
+            Organization.is_apprenticeship_partner == True,
+            Organization.is_active == True,
+        )
+        .order_by(Organization.name)
+        .all()
+    )
+
 
 def _get_apprenticeship_progs():
     rows = (
-        db.session.query(Program, Organization.name.label("org_name"), Organization.org_id.label("_org_id"))
+        db.session.query(
+            Program,
+            Organization.name.label("org_name"),
+            Organization.org_id.label("_org_id"),
+        )
         .join(Organization, Program.org_id == Organization.org_id)
         .filter(Program.is_apprenticeship == True)
         .order_by(Program.name)
@@ -33,10 +46,11 @@ def _get_apprenticeship_progs():
             "cip_title": cip_title(r.Program.cip),
             "cred": r.Program.credential_type,
             "org_name": r.org_name,
-            "org_id": r._org_id
+            "org_id": r._org_id,
         }
         for r in rows
     ]
+
 
 HUBS_CONFIG = {
     "apprenticeships": {
@@ -50,47 +64,46 @@ HUBS_CONFIG = {
                 "label": "Regional Sponsors",
                 "icon": "🏢",
                 "count": 0,
-                "data_func": _get_apprenticeship_orgs
+                "data_func": _get_apprenticeship_orgs,
             },
             {
                 "id": "training",
                 "label": "Training Programs",
                 "icon": "🎓",
                 "count": 0,
-                "data_func": _get_apprenticeship_progs
-            }
-        ]
+                "data_func": _get_apprenticeship_progs,
+            },
+        ],
     }
 }
+
 
 @root_bp.route("/hubs/")
 def hubs_index():
     return render_template("hubs/index.html", hubs=HUBS_CONFIG)
 
+
 @root_bp.route("/hubs/<slug>")
 def hub_detail(slug):
     if slug not in HUBS_CONFIG:
         abort(404)
-        
+
     hub = HUBS_CONFIG[slug]
-    
+
     # Execute the queries and populate data payloads
     # Overwriting a copy of the config for request safety
     rendered_tabs = []
-    
+
     for tab in hub["tabs"]:
         data = tab["data_func"]()
-        rendered_tabs.append({
-            "id": tab["id"],
-            "label": tab["label"],
-            "icon": tab["icon"],
-            "count": len(data),
-            "data": data
-        })
-        
-    return render_template(
-        "hubs/detail.html",
-        slug=slug,
-        hub=hub,
-        tabs=rendered_tabs
-    )
+        rendered_tabs.append(
+            {
+                "id": tab["id"],
+                "label": tab["label"],
+                "icon": tab["icon"],
+                "count": len(data),
+                "data": data,
+            }
+        )
+
+    return render_template("hubs/detail.html", slug=slug, hub=hub, tabs=rendered_tabs)

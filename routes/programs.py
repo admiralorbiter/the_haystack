@@ -14,17 +14,15 @@ Implements:
 import sqlite3
 from pathlib import Path
 
-from .cip_utils import CIP_FAMILY_NAMES, cip_family_label, cip_title
-
 from flask import abort, render_template, request
 from sqlalchemy import func, text
+from sqlalchemy.orm import joinedload
 
-from models import (
-    DatasetSource, Occupation, Organization,
-    Program, ProgramOccupation, RegionCounty, db,
-)
+from models import (DatasetSource, Occupation, Organization, Program,
+                    ProgramOccupation, RegionCounty, db)
 
 from . import root_bp
+from .cip_utils import CIP_FAMILY_NAMES, cip_family_label, cip_title
 
 _DB_PATH = Path(__file__).resolve().parent.parent / "db" / "haystack.db"
 
@@ -33,14 +31,14 @@ _SC_SUPPRESS = {"", "PrivacySuppressed", "PS", "NULL"}
 
 # Map Scorecard CREDLEV codes → fragments of our credential_type strings
 _CREDLEV_MAP: dict[str, list[str]] = {
-    "1":  ["certificate", "<", "1", "sub"],   # sub-baccalaureate < 1yr
-    "2":  ["certificate", "1", "2", "sub"],   # sub-baccalaureate 1-2yr
-    "3":  ["associate"],
-    "4":  ["bachelor"],
-    "5":  ["master"],
-    "6":  ["doctor"],
-    "7":  ["professional"],
-    "8":  ["graduate", "certificate"],
+    "1": ["certificate", "<", "1", "sub"],  # sub-baccalaureate < 1yr
+    "2": ["certificate", "1", "2", "sub"],  # sub-baccalaureate 1-2yr
+    "3": ["associate"],
+    "4": ["bachelor"],
+    "5": ["master"],
+    "6": ["doctor"],
+    "7": ["professional"],
+    "8": ["graduate", "certificate"],
 }
 
 
@@ -77,7 +75,9 @@ def _credlev_for_credential_type(credential_type: str) -> list[str]:
     return matches
 
 
-def _scorecard_fos_for_program(unitid: str | None, cip: str | None, credential_type: str | None) -> dict | None:
+def _scorecard_fos_for_program(
+    unitid: str | None, cip: str | None, credential_type: str | None
+) -> dict | None:
     """
     Look up the Scorecard Field-of-Study row for a specific program.
     Joins on: UNITID + 4-digit CIP prefix + CREDLEV code(s).
@@ -118,23 +118,22 @@ def _scorecard_fos_for_program(unitid: str | None, cip: str | None, credential_t
                 return None
 
         return {
-            "cip_norm":       row[0],
-            "cip_desc":       row[1],
-            "credlev":        row[2],
-            "creddesc":       row[3],
-            "earn_1yr":       _sc_int(row[4]),
-            "earn_2yr":       _sc_int(row[5]),
+            "cip_norm": row[0],
+            "cip_desc": row[1],
+            "credlev": row[2],
+            "creddesc": row[3],
+            "earn_1yr": _sc_int(row[4]),
+            "earn_2yr": _sc_int(row[5]),
             "earn_count_2yr": _sc_int(row[6]),
-            "earn_nat_4yr":   _sc_int(row[7]),
+            "earn_nat_4yr": _sc_int(row[7]),
             "earn_nat_count": _sc_int(row[8]),
-            "debt_stgp_mdn":  _sc_int(row[9]),
-            "debt_pp_mdn":    _sc_int(row[10]),
-            "ipeds_count1":   _sc_int(row[11]),
-            "ipeds_count2":   _sc_int(row[12]),
+            "debt_stgp_mdn": _sc_int(row[9]),
+            "debt_pp_mdn": _sc_int(row[10]),
+            "ipeds_count1": _sc_int(row[11]),
+            "ipeds_count2": _sc_int(row[12]),
         }
     except sqlite3.OperationalError:
         return None  # table not yet created (test DB)
-
 
 
 def _get_program_or_404(program_id: str) -> Program:
@@ -150,7 +149,8 @@ def _program_snapshot(prog: Program, org: Organization) -> dict:
     occ_count = (
         db.session.query(func.count(ProgramOccupation.soc))
         .filter_by(program_id=prog.program_id)
-        .scalar() or 0
+        .scalar()
+        or 0
     )
     ds = (
         db.session.query(DatasetSource)
@@ -168,7 +168,9 @@ def _program_snapshot(prog: Program, org: Organization) -> dict:
         "linked_occupations": occ_count,
         "sc_earn_2yr": sc_fos.get("earn_2yr") if sc_fos else None,
         "data_source": ds.name if ds else "IPEDS",
-        "data_as_of": ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown",
+        "data_as_of": (
+            ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown"
+        ),
     }
 
 
@@ -192,7 +194,7 @@ def _fts_program_ids(query: str) -> list[str]:
     Sanitizes the query string to avoid FTS5 syntax errors.
     """
     # Strip FTS5 special characters that would cause parse errors
-    safe_q = query.replace('"', '').replace("'", "").strip()
+    safe_q = query.replace('"', "").replace("'", "").strip()
     if not safe_q:
         return []
     try:
@@ -221,7 +223,7 @@ def _ipeds_cip_enrollment_by_family(cip_family: str, limit: int = 10) -> list[di
         conn = sqlite3.connect(_DB_PATH)
         cur = conn.cursor()
         rows = cur.execute(
-            '''
+            """
             SELECT o.name, CAST(e.EFTOTLT AS INTEGER) as enrolled
             FROM ipeds_ef2024cp e
             JOIN org_alias a ON CAST(e.UNITID AS TEXT) = a.source_id AND a.source = "ipeds"
@@ -229,7 +231,7 @@ def _ipeds_cip_enrollment_by_family(cip_family: str, limit: int = 10) -> list[di
             WHERE e.CIPCODE = ? AND e.EFCIPLEV = "601"
             ORDER BY enrolled DESC
             LIMIT ?
-            ''',
+            """,
             (family_cip, limit),
         ).fetchall()
         conn.close()
@@ -241,6 +243,7 @@ def _ipeds_cip_enrollment_by_family(cip_family: str, limit: int = 10) -> list[di
 # ---------------------------------------------------------------------------
 # Directory — GET /programs
 # ---------------------------------------------------------------------------
+
 
 @root_bp.route("/programs")
 def programs_directory():
@@ -273,7 +276,9 @@ def programs_directory():
             func.count(ProgramOccupation.soc).label("occ_count"),
         )
         .join(Organization, Organization.org_id == Program.org_id)
-        .outerjoin(ProgramOccupation, ProgramOccupation.program_id == Program.program_id)
+        .outerjoin(
+            ProgramOccupation, ProgramOccupation.program_id == Program.program_id
+        )
         .filter(Organization.org_type == "training")
         .group_by(Program.program_id)
     )
@@ -344,7 +349,11 @@ def programs_directory():
         .all()
     )
     all_cip_families = sorted(
-        {r[0].split(".")[0] for r in db.session.query(Program.cip).all() if r[0] and "." in r[0]}
+        {
+            r[0].split(".")[0]
+            for r in db.session.query(Program.cip).all()
+            if r[0] and "." in r[0]
+        }
     )
     all_orgs = (
         db.session.query(Organization.org_id, Organization.name)
@@ -397,6 +406,7 @@ def programs_directory():
 # Detail page — GET /programs/<program_id>
 # ---------------------------------------------------------------------------
 
+
 @root_bp.route("/programs/<program_id>")
 def program_detail(program_id: str):
     prog = _get_program_or_404(program_id)
@@ -411,6 +421,7 @@ def program_detail(program_id: str):
         db.session.query(Occupation, ProgramOccupation.confidence)
         .join(ProgramOccupation, ProgramOccupation.soc == Occupation.soc)
         .filter(ProgramOccupation.program_id == program_id)
+        .options(joinedload(Occupation.wages))
         .order_by(ProgramOccupation.confidence.desc().nulls_last())
         .limit(5)
         .all()
@@ -495,6 +506,7 @@ def program_detail(program_id: str):
 # HTMX tab fragments
 # ---------------------------------------------------------------------------
 
+
 @root_bp.route("/programs/<program_id>/tab/overview")
 def program_tab_overview(program_id: str):
     prog = _get_program_or_404(program_id)
@@ -504,6 +516,7 @@ def program_tab_overview(program_id: str):
         db.session.query(Occupation, ProgramOccupation.confidence)
         .join(ProgramOccupation, ProgramOccupation.soc == Occupation.soc)
         .filter(ProgramOccupation.program_id == program_id)
+        .options(joinedload(Occupation.wages))
         .order_by(ProgramOccupation.confidence.desc().nulls_last())
         .limit(5)
         .all()
@@ -576,6 +589,7 @@ def program_tab_occupations(program_id: str):
         db.session.query(Occupation, ProgramOccupation.confidence)
         .join(ProgramOccupation, ProgramOccupation.soc == Occupation.soc)
         .filter(ProgramOccupation.program_id == program_id)
+        .options(joinedload(Occupation.wages))
         .order_by(ProgramOccupation.confidence.desc().nulls_last(), Occupation.title)
         .all()
     )
@@ -597,6 +611,7 @@ def program_tab_outcomes(program_id: str):
         org=org,
     )
 
+
 @root_bp.route("/programs/<program_id>/tab/demographics")
 def program_tab_demographics(program_id: str):
     prog = _get_program_or_404(program_id)
@@ -605,8 +620,9 @@ def program_tab_demographics(program_id: str):
         "programs/partials/tab_demographics.html",
         prog=prog,
         org=org,
-        demographics=prog.demographics
+        demographics=prog.demographics,
     )
+
 
 @root_bp.route("/programs/<program_id>/tab/scorecard")
 def program_tab_scorecard(program_id: str):
@@ -615,9 +631,11 @@ def program_tab_scorecard(program_id: str):
     unitid = org.unitid if org else None
 
     # Scorecard Field-of-Study earnings for this specific program
-    sc_fos = _scorecard_fos_for_program(
-        unitid, prog.cip, prog.credential_type
-    ) if unitid else None
+    sc_fos = (
+        _scorecard_fos_for_program(unitid, prog.cip, prog.credential_type)
+        if unitid
+        else None
+    )
 
     return render_template(
         "programs/partials/tab_scorecard.html",

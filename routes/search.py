@@ -12,14 +12,15 @@ from flask import render_template, request
 from sqlalchemy import func
 
 from models import Organization, Program, db
-from .cip_utils import CIP_FAMILY_NAMES, cip_title
 
 from . import root_bp
+from .cip_utils import CIP_FAMILY_NAMES, cip_title
 
 _DB_PATH = Path(__file__).resolve().parent.parent / "db" / "haystack.db"
 
+
 def _fts_org_ids(query: str, limit: int = 5) -> list[str]:
-    safe_q = query.replace('"', '').replace("'", "").strip()
+    safe_q = query.replace('"', "").replace("'", "").strip()
     if not safe_q:
         return []
     try:
@@ -34,8 +35,9 @@ def _fts_org_ids(query: str, limit: int = 5) -> list[str]:
     except sqlite3.OperationalError:
         return []
 
+
 def _fts_program_ids(query: str, limit: int = 5) -> list[str]:
-    safe_q = query.replace('"', '').replace("'", "").strip()
+    safe_q = query.replace('"', "").replace("'", "").strip()
     if not safe_q:
         return []
     try:
@@ -50,14 +52,15 @@ def _fts_program_ids(query: str, limit: int = 5) -> list[str]:
     except sqlite3.OperationalError:
         return []
 
+
 @root_bp.route("/search")
 def search_view():
     q = request.args.get("q", "").strip()
-    
+
     org_results = []
     prog_results = []
     field_results = []
-    
+
     if not q:
         return render_template("search/results.html", q=q, orgs=[], progs=[], fields=[])
 
@@ -73,9 +76,13 @@ def search_view():
             .all()
         )
         org_ids = [o.org_id for o in fallback_orgs]
-        
+
     if org_ids:
-        org_rows = db.session.query(Organization).filter(Organization.org_id.in_(org_ids), Organization.is_active == True).all()
+        org_rows = (
+            db.session.query(Organization)
+            .filter(Organization.org_id.in_(org_ids), Organization.is_active == True)
+            .all()
+        )
         org_dict = {o.org_id: o for o in org_rows}
         # Maintain FTS rank order
         org_results = [org_dict[uuid] for uuid in org_ids if uuid in org_dict]
@@ -91,7 +98,7 @@ def search_view():
             .all()
         )
         prog_ids = [p.program_id for p in fallback_progs]
-        
+
     if prog_ids:
         pr_rows = (
             db.session.query(Program, Organization.name.label("org_name"))
@@ -103,36 +110,36 @@ def search_view():
         for uuid in prog_ids:
             if uuid in pr_dict:
                 r = pr_dict[uuid]
-                prog_results.append({
-                    "program": r.Program,
-                    "cip_title": cip_title(r.Program.name),
-                    "org_name": r.org_name
-                })
+                prog_results.append(
+                    {
+                        "program": r.Program,
+                        "cip_title": cip_title(r.Program.name),
+                        "org_name": r.org_name,
+                    }
+                )
 
     # 3. Search Fields
     q_lower = q.lower()
     for code, name in CIP_FAMILY_NAMES.items():
         if q_lower in name.lower() or q_lower in code:
-            field_results.append({
-                "code": code,
-                "name": name
-            })
+            field_results.append({"code": code, "name": name})
             if len(field_results) >= 5:
                 break
-                
+
     try:
         from models import SearchEvent
+
         total = len(org_results) + len(prog_results) + len(field_results)
         se = SearchEvent(query_text=q[:500], result_count=total)
         db.session.add(se)
         db.session.commit()
     except Exception:
         db.session.rollback()
-        
+
     return render_template(
         "search/results.html",
         q=q,
         orgs=org_results,
         progs=prog_results,
-        fields=field_results
+        fields=field_results,
     )

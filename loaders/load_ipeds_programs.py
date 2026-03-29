@@ -28,20 +28,15 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config import Config
-from loaders.utils import (
-    AWARD_LEVEL_NAMES,
-    AWARD_LEVEL_NAMES_LEGACY,
-    IPEDS_DIR,
-    load_cip_titles,
-    make_program_name,
-    normalize_cip,
-    parse_completions,
-    record_dataset_source,
-)
-from models import OrgAlias, Program, db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
+
+from config import Config
+from loaders.utils import (AWARD_LEVEL_NAMES, AWARD_LEVEL_NAMES_LEGACY,
+                           IPEDS_DIR, load_cip_titles, make_program_name,
+                           normalize_cip, parse_completions,
+                           record_dataset_source)
+from models import OrgAlias, Program, db
 
 SOURCE_ID = "ipeds_c"
 SOURCE_NAME = "IPEDS Completions (Part A)"
@@ -99,7 +94,9 @@ def load_programs(
     df["_cip_norm"] = df["CIPCODE"].apply(normalize_cip)
     df_skipped_totals = df[df["_cip_norm"].isna()].shape[0]
     df = df[df["_cip_norm"].notna()].copy()
-    print(f"  After CIP-99/invalid filter: {len(df):,} rows ({df_skipped_totals} aggregate/invalid skipped)")
+    print(
+        f"  After CIP-99/invalid filter: {len(df):,} rows ({df_skipped_totals} aggregate/invalid skipped)"
+    )
 
     # Parse completions — blank/suppressed → None
     df["_completions"] = df["CTOTALT"].apply(parse_completions)
@@ -112,7 +109,13 @@ def load_programs(
         print(f"\n  [DRY RUN] Would process {len(df)} program rows:")
         print(f"    Suppressed completions: {suppressed_count}")
         print(f"    Award levels found: {sorted(df['_awlevel'].unique())}")
-        return {"loaded": 0, "updated": 0, "suppressed": suppressed_count, "skipped": df_skipped_totals, "failed": 0}
+        return {
+            "loaded": 0,
+            "updated": 0,
+            "suppressed": suppressed_count,
+            "skipped": df_skipped_totals,
+            "failed": 0,
+        }
 
     # --- Group by (unitid, cip, awlevel) and sum completions ---
     # Multiple rows can exist per CIP + award level (gender/race disaggregation).
@@ -167,13 +170,15 @@ def load_programs(
                     credential_type=credential_type,
                     cip=cip,
                     completions=completions,
-                    modality=None,          # IPEDS C does not carry modality
-                    duration_weeks=None,    # IPEDS C does not carry duration
+                    modality=None,  # IPEDS C does not carry modality
+                    duration_weeks=None,  # IPEDS C does not carry duration
                 )
             )
             loaded += 1
             if verbose:
-                comp_display = str(completions) if completions is not None else "suppressed"
+                comp_display = (
+                    str(completions) if completions is not None else "suppressed"
+                )
                 print(f"  [insert] {cip} — {credential_type} ({comp_display})")
 
     session.commit()
@@ -203,7 +208,9 @@ def load_programs(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Load IPEDS completions into program table.")
+    parser = argparse.ArgumentParser(
+        description="Load IPEDS completions into program table."
+    )
     parser.add_argument(
         "--region", default="kansas-city", help="Region slug (used for messaging only)"
     )

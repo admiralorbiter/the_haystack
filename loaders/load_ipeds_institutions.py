@@ -19,24 +19,21 @@ Usage:
 import argparse
 import os
 import sys
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pandas as pd
 
 # Make project root importable from this script location
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config import Config
-from loaders.utils import (
-    IPEDS_DIR,
-    get_kc_county_fips,
-    pad_county_fips,
-    record_dataset_source,
-)
-from models import OrgAlias, Organization, db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
+
+from config import Config
+from loaders.utils import (IPEDS_DIR, get_kc_county_fips, pad_county_fips,
+                           record_dataset_source)
+from models import OrgAlias, Organization, db
 
 SOURCE_ID = "ipeds_hd"
 SOURCE_NAME = "IPEDS HD — Institution Directory"
@@ -46,15 +43,15 @@ SOURCE_URL = "https://nces.ed.gov/ipeds/datacenter/data/HD{year}.zip"
 # All training providers are 'training' in V1; we preserve sector detail
 # in org_alias notes for potential future use.
 SECTOR_MAP = {
-    "1": "training",   # Public, 4-year or above
-    "2": "training",   # Private not-for-profit, 4-year or above
-    "3": "training",   # Private for-profit, 4-year or above
-    "4": "training",   # Public, 2-year
-    "5": "training",   # Private not-for-profit, 2-year
-    "6": "training",   # Private for-profit, 2-year
-    "7": "training",   # Public, less-than 2-year
-    "8": "training",   # Private not-for-profit, less-than 2-year
-    "9": "training",   # Private for-profit, less-than 2-year
+    "1": "training",  # Public, 4-year or above
+    "2": "training",  # Private not-for-profit, 4-year or above
+    "3": "training",  # Private for-profit, 4-year or above
+    "4": "training",  # Public, 2-year
+    "5": "training",  # Private not-for-profit, 2-year
+    "6": "training",  # Private for-profit, 2-year
+    "7": "training",  # Public, less-than 2-year
+    "8": "training",  # Private not-for-profit, less-than 2-year
+    "9": "training",  # Private for-profit, less-than 2-year
 }
 
 
@@ -151,9 +148,7 @@ def load_institutions(
 
         # --- Deduplication rule ---
         alias = (
-            session.query(OrgAlias)
-            .filter_by(source="ipeds", source_id=unitid)
-            .first()
+            session.query(OrgAlias).filter_by(source="ipeds", source_id=unitid).first()
         )
 
         if alias:
@@ -185,7 +180,9 @@ def load_institutions(
             # New org — insert organization + alias
             org = Organization(
                 name=name,
-                org_type=SECTOR_MAP.get(str(row.get("SECTOR", "0")).strip(), "training"),
+                org_type=SECTOR_MAP.get(
+                    str(row.get("SECTOR", "0")).strip(), "training"
+                ),
                 city=city,
                 state=state,
                 county_fips=county_fips,
@@ -229,7 +226,9 @@ def load_institutions(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Load IPEDS institutions for a region.")
+    parser = argparse.ArgumentParser(
+        description="Load IPEDS institutions for a region."
+    )
     parser.add_argument(
         "--region", default="kansas-city", help="Region slug (default: kansas-city)"
     )
@@ -237,7 +236,9 @@ def main() -> None:
         "--year", type=int, default=2024, help="IPEDS data year (default: 2024)"
     )
     parser.add_argument(
-        "--dry-run", action="store_true", help="Preview what would be loaded without writing"
+        "--dry-run",
+        action="store_true",
+        help="Preview what would be loaded without writing",
     )
     parser.add_argument(
         "--verbose", action="store_true", help="Print every insert/update"

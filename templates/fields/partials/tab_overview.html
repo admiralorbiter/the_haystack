@@ -133,10 +133,22 @@
   {% if top_occs %}
   <ul class="occ-list">
     {% for row in top_occs %}
+    {% set ns = namespace(kc_wage=none) %}
+    {% for w in row.occ.wages %}
+      {% if w.area_type == 'msa' and 'Kansas City' in w.area_name %}
+        {% set ns.kc_wage = w %}
+      {% endif %}
+    {% endfor %}
+    {% set kc_wage = ns.kc_wage %}
     <li class="occ-item">
       <span class="occ-title">{{ row.occ.title }}</span>
       <span style="display:flex; align-items:center; gap:var(--spacing-sm);">
         <span class="occ-soc" style="font-family:monospace; font-size:0.8rem; color:var(--text-muted);">{{ row.occ.soc }}</span>
+        {% if kc_wage and kc_wage.median_wage %}
+          <span style="font-size:0.8rem; font-weight:600; color:var(--accent-blue);" title="Median wage in KC MSA">
+            ${{ '{:,.0f}'.format(kc_wage.median_wage) }}
+          </span>
+        {% endif %}
         <span class="occ-prog-count" title="{{ row.prog_count }} program(s) in this field link to this occupation">
           {{ row.prog_count }} prog.
         </span>

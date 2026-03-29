@@ -12,20 +12,19 @@ Implements:
 
 from flask import abort, render_template, request
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
-from models import (
-    DatasetSource, Occupation, Organization,
-    Program, ProgramOccupation, db,
-)
+from models import (DatasetSource, Occupation, Organization, Program,
+                    ProgramOccupation, db)
 
+from . import root_bp
 from .cip_utils import CIP_FAMILY_NAMES, cip_family_label, cip_title
 from .programs import _ipeds_cip_enrollment_by_family
-from . import root_bp
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _validate_family(cip_family: str) -> str:
     """
@@ -48,14 +47,16 @@ def _field_snapshot(cip_family: str) -> dict:
         db.session.query(func.count(Program.program_id))
         .join(Organization, Organization.org_id == Program.org_id)
         .filter(Program.cip.like(like), Organization.org_type == "training")
-        .scalar() or 0
+        .scalar()
+        or 0
     )
 
     provider_count = (
         db.session.query(func.count(func.distinct(Program.org_id)))
         .join(Organization, Organization.org_id == Program.org_id)
         .filter(Program.cip.like(like), Organization.org_type == "training")
-        .scalar() or 0
+        .scalar()
+        or 0
     )
 
     total_completions = (
@@ -71,12 +72,15 @@ def _field_snapshot(cip_family: str) -> dict:
         .join(Program, Program.program_id == ProgramOccupation.program_id)
         .join(Organization, Organization.org_id == Program.org_id)
         .filter(Program.cip.like(like), Organization.org_type == "training")
-        .scalar() or 0
+        .scalar()
+        or 0
     )
 
     # Top credential: most common credential_type in this family
     top_cred_row = (
-        db.session.query(Program.credential_type, func.count(Program.program_id).label("n"))
+        db.session.query(
+            Program.credential_type, func.count(Program.program_id).label("n")
+        )
         .join(Organization, Organization.org_id == Program.org_id)
         .filter(Program.cip.like(like), Organization.org_type == "training")
         .group_by(Program.credential_type)
@@ -101,7 +105,9 @@ def _field_snapshot(cip_family: str) -> dict:
         "linked_occupations": occ_count,
         "top_credential": top_credential,
         "data_source": ds.name if ds else "IPEDS",
-        "data_as_of": ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown",
+        "data_as_of": (
+            ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown"
+        ),
     }
 
 
@@ -110,7 +116,9 @@ def _top_programs(cip_family: str, limit: int = 10):
     rows = (
         db.session.query(Program, Organization.name.label("org_name"))
         .join(Organization, Organization.org_id == Program.org_id)
-        .filter(Program.cip.like(f"{cip_family}.%"), Organization.org_type == "training")
+        .filter(
+            Program.cip.like(f"{cip_family}.%"), Organization.org_type == "training"
+        )
         .order_by(Program.completions.desc().nulls_last())
         .limit(limit)
         .all()
@@ -134,7 +142,9 @@ def _top_providers(cip_family: str, limit: int = 5):
             func.sum(Program.completions).label("completions"),
         )
         .join(Program, Program.org_id == Organization.org_id)
-        .filter(Program.cip.like(f"{cip_family}.%"), Organization.org_type == "training")
+        .filter(
+            Program.cip.like(f"{cip_family}.%"), Organization.org_type == "training"
+        )
         .group_by(Organization.org_id)
         .order_by(func.sum(Program.completions).desc().nulls_last())
         .limit(limit)
@@ -163,8 +173,11 @@ def _top_occupations(cip_family: str, limit: int = 8):
         .join(ProgramOccupation, ProgramOccupation.soc == Occupation.soc)
         .join(Program, Program.program_id == ProgramOccupation.program_id)
         .join(Organization, Organization.org_id == Program.org_id)
-        .filter(Program.cip.like(f"{cip_family}.%"), Organization.org_type == "training")
+        .filter(
+            Program.cip.like(f"{cip_family}.%"), Organization.org_type == "training"
+        )
         .group_by(Occupation.soc)
+        .options(joinedload(Occupation.wages))
         .order_by(func.count(func.distinct(ProgramOccupation.program_id)).desc())
         .limit(limit)
         .all()
@@ -175,6 +188,7 @@ def _top_occupations(cip_family: str, limit: int = 8):
 # ---------------------------------------------------------------------------
 # Directory — GET /fields
 # ---------------------------------------------------------------------------
+
 
 @root_bp.route("/fields")
 def fields_directory():
@@ -232,6 +246,7 @@ def fields_directory():
 # Detail — GET /fields/<cip_family>
 # ---------------------------------------------------------------------------
 
+
 @root_bp.route("/fields/<cip_family>")
 def field_detail(cip_family: str):
     code = _validate_family(cip_family)
@@ -266,6 +281,7 @@ def field_detail(cip_family: str):
 # ---------------------------------------------------------------------------
 # HTMX tab fragments
 # ---------------------------------------------------------------------------
+
 
 @root_bp.route("/fields/<cip_family>/tab/overview")
 def field_tab_overview(cip_family: str):
@@ -333,6 +349,7 @@ def field_tab_occupations(cip_family: str):
         .join(Organization, Organization.org_id == Program.org_id)
         .filter(Program.cip.like(f"{code}.%"), Organization.org_type == "training")
         .group_by(Occupation.soc)
+        .options(joinedload(Occupation.wages))
         .order_by(func.count(func.distinct(ProgramOccupation.program_id)).desc())
         .all()
     )

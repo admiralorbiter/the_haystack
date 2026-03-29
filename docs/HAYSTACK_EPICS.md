@@ -20,7 +20,7 @@
 | **10 Non-Title IV Training Base** | WIOA ETPL + Apprenticeships ingested, Hubs + Employers shipped | ✅ Shipped 2026-03-28 |
 | **2.9 Pre-Phase-3 Hardening** | org_fact table, soft-delete, API namespace, search spec, analytics | ✅ Shipped 2026-03-29 |
 | **6.5 Program Compare** | Head-to-head program-level side-by-side | ✅ Shipped 2026-03-29 |
-| **11 Workforce Connections** | BLS OEWS wage & O*NET demand integration | 🔲 Planned |
+| **11 Workforce Connections** | BLS OEWS wage & O*NET demand integration | ✅ Shipped 2026-03-29 |
 | **12 Ecosystem & Network View** | Force-directed graph of provider relationships | 🔲 Planned |
 | **13 Briefing Builder** | Collect stats/entities and generate printable one-pager | 🔲 Planned |
 | **14 Stepping Stones** | Sequenced credential pathways + ROI break-even calculator | 🔬 Research Spike |
@@ -111,26 +111,15 @@
 
 ---
 
-## Epic 11 — Workforce Connections (BLS OEWS + O*NET)
+## ✅ Epic 11 — Workforce Connections (BLS OEWS + O*NET) (Shipped 2026-03-29)
 **Goal:** Connect educational programs to real-world outcomes by displaying regional wage and demand data for related occupations. This unlocks the "ROI" narrative and is a prerequisite for Epics 14 and 15.
 
-**Datasets to Incorporate:**
-1. **BLS OEWS** — May 2024 State Occupational Employment and Wage Estimates (median, 25th, 75th pct wages by SOC)
-2. **O*NET** — Occupational taxonomy, job zone levels, bright outlook flags
-
-**Design principle:**
-The user should never have to guess the ROI of a program. Viewing a Medical Assistant program should immediately surface the median, 25th, and 75th percentile regional wages for Medical Assistants in the KC MSA.
-
-**Exit criteria:**
-- Program detail pages show a "Career Trajectory" widget with local wages for linked occupations (via CIP→SOC crosswalk).
-- The `/occupations` or `/fields` pages show BLS wage bands alongside program completions.
-
-**Implementation notes:**
-- Load BLS data into a new `occupation_wage` table keyed by `soc` and state/MSA code.
-- Relies on the `program_occupation` crosswalk (CIP↔SOC) established in Phase 1.
-- O*NET job zone data enriches the `Occupation` model with entry-level vs. experienced requirements.
-
-**Effort estimate:** 1–1.5 weeks
+**What shipped:**
+- **O*NET Integration**: `loaders/load_onet_data.py` enriches occupations with Job Zone classifications.
+- **BLS OEWS Integration**: `loaders/load_bls_oews.py` populates the new `OccupationWage` table with 25th, Median, and 75th percentile wage bands plus regional demand metrics (specifically KC MSA).
+- **Career Trajectory Widget**: The `widget_career_trajectory.html` surfaces regional entry, median, and experienced wages natively on Program Detail pages.
+- **Data Completeness**: "Linked Occupations" tables on Program and Field pages now render KC MSA Median Wages directly inline.
+- **Graceful Rendering**: Created explicit Jinja scope handling across loops, and "Data Suppressed" tooltips for highly specialized federal records lacking top-percentile wage brackets. Added foundational/transfer crosswalk alerts for Liberal Arts (CIP 24) mappings.
 
 ---
 

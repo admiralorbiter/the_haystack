@@ -22,34 +22,23 @@ No auth -- local dev only. Do not expose in production.
 
 """
 
-
-
 import csv
 import sqlite3
-
 import subprocess
-
 import sys
-
 from pathlib import Path
 
-
-
-from flask import Blueprint, Response, abort, render_template, request, stream_with_context
-
+from flask import (Blueprint, Response, abort, render_template, request,
+                   stream_with_context)
 from sqlalchemy import func
 
-
-
-from models import DatasetSource, Occupation, Organization, Program, ProgramOccupation, db
-
-
+from models import (DatasetSource, Occupation, Organization, Program,
+                    ProgramOccupation, db)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_ROOT / 'db' / 'haystack.db'
+DB_PATH = PROJECT_ROOT / "db" / "haystack.db"
 
 admin_bp = Blueprint("admin", __name__)
-
 
 
 # ---------------------------------------------------------------------------
@@ -59,37 +48,24 @@ admin_bp = Blueprint("admin", __name__)
 # ---------------------------------------------------------------------------
 
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 LOADERS_DIR = PROJECT_ROOT / "loaders"
 
 
-
 ALLOWED_TABLES: dict[str, db.Model] = {
-
     "organizations": Organization,
-
     "programs": Program,
-
     "occupations": Occupation,
-
     "program-occupations": ProgramOccupation,
-
 }
-
 
 
 ALLOWED_LOADERS: dict[str, Path] = {
-
     "load_cip_soc": LOADERS_DIR / "load_cip_soc.py",
-
     "load_ipeds_institutions": LOADERS_DIR / "load_ipeds_institutions.py",
-
     "load_ipeds_programs": LOADERS_DIR / "load_ipeds_programs.py",
-
 }
-
 
 
 # ---------------------------------------------------------------------------
@@ -101,215 +77,106 @@ ALLOWED_LOADERS: dict[str, Path] = {
 # ---------------------------------------------------------------------------
 
 
-
 IPEDS_COLUMNS: dict[str, str] = {
-
     # ── Identifiers ─────────────────────────────────────────────────────────
-
-    "UNITID":       "Unit ID",
-
-    "CIPCODE":      "CIP Code",
-
-    "MAJORNUM":     "Major (1st/2nd)",
-
-    "AWLEVEL":      "Award Level",
-
-
-
+    "UNITID": "Unit ID",
+    "CIPCODE": "CIP Code",
+    "MAJORNUM": "Major (1st/2nd)",
+    "AWLEVEL": "Award Level",
     # ── Institution ─────────────────────────────────────────────────────────
-
-    "INSTNM":       "Institution Name",
-
-    "IALIAS":       "Alias",
-
-    "ADDR":         "Street Address",
-
-    "CITY":         "City",
-
-    "STABBR":       "State",
-
-    "ZIP":          "ZIP Code",
-
-    "FIPS":         "FIPS State Code",
-
-    "OBEREG":       "Bureau Region",
-
-    "CHFNM":        "Chief Admin Name",
-
-    "CHFTITLE":     "Chief Admin Title",
-
-    "GENTELE":      "Phone",
-
-    "FAXTELE":      "Fax",
-
-    "EIN":          "Tax ID (EIN)",
-
-    "OPEID":        "OPE ID",
-
-    "OPEFLAG":      "OPE Participation",
-
-    "WEBADDR":      "Website",
-
-    "ADMINURL":     "Admissions URL",
-
-    "FAIDURL":      "Financial Aid URL",
-
-    "APPLURL":      "Application URL",
-
-    "NPRICURL":     "Net Price Calculator URL",
-
-    "VETURL":       "Veterans URL",
-
-    "ATHURL":       "Athletics URL",
-
-    "DISAURL":      "Disability Services URL",
-
-
-
+    "INSTNM": "Institution Name",
+    "IALIAS": "Alias",
+    "ADDR": "Street Address",
+    "CITY": "City",
+    "STABBR": "State",
+    "ZIP": "ZIP Code",
+    "FIPS": "FIPS State Code",
+    "OBEREG": "Bureau Region",
+    "CHFNM": "Chief Admin Name",
+    "CHFTITLE": "Chief Admin Title",
+    "GENTELE": "Phone",
+    "FAXTELE": "Fax",
+    "EIN": "Tax ID (EIN)",
+    "OPEID": "OPE ID",
+    "OPEFLAG": "OPE Participation",
+    "WEBADDR": "Website",
+    "ADMINURL": "Admissions URL",
+    "FAIDURL": "Financial Aid URL",
+    "APPLURL": "Application URL",
+    "NPRICURL": "Net Price Calculator URL",
+    "VETURL": "Veterans URL",
+    "ATHURL": "Athletics URL",
+    "DISAURL": "Disability Services URL",
     # ── Classification ──────────────────────────────────────────────────────
-
-    "SECTOR":       "Sector",
-
-    "ICLEVEL":      "Level (2yr / 4yr)",
-
-    "CONTROL":      "Control (Public / Private)",
-
-    "HLOFFER":      "Highest Level Offered",
-
-    "UGOFFER":      "Undergrad Programs",
-
-    "GROFFER":      "Graduate Programs",
-
-    "HDEGOFR1":     "Highest Degree Offered",
-
-    "DEGGRANT":     "Degree Granting",
-
-    "HBCU":         "HBCU",
-
-    "HOSPITAL":     "Hospital",
-
-    "MEDICAL":      "Medical School",
-
-    "TRIBAL":       "Tribal College",
-
-    "LOCALE":       "Locale",
-
-    "OPENPUBL":     "Open to Public",
-
-    "PSET4FLAG":    "4-Year Postsecondary",
-
-    "PSEFLAG":      "Postsecondary Flag",
-
-    "INSTCAT":      "Institution Category",
-
-    "CCBASIC":      "Carnegie Basic Classification",
-
-    "C18BASIC":     "Carnegie 2018 Basic",
-
-    "C18IPUG":      "Carnegie 2018 UG Profile",
-
-    "C18ISIZE":     "Carnegie 2018 Size",
-
-    "C18UG":        "Carnegie 2018 UG Enrollment",
-
-    "LONGITUD":     "Longitude",
-
-    "LATITUDE":     "Latitude",
-
-    "COUNTYCD":     "County Code",
-
-    "COUNTYNM":     "County Name",
-
-    "CNGDSTCD":     "Congressional District",
-
-    "F1SYSTYP":     "System Type",
-
-    "F1SYSNAM":     "System Name",
-
-    "INSTSIZE":     "Institution Size",
-
-
-
+    "SECTOR": "Sector",
+    "ICLEVEL": "Level (2yr / 4yr)",
+    "CONTROL": "Control (Public / Private)",
+    "HLOFFER": "Highest Level Offered",
+    "UGOFFER": "Undergrad Programs",
+    "GROFFER": "Graduate Programs",
+    "HDEGOFR1": "Highest Degree Offered",
+    "DEGGRANT": "Degree Granting",
+    "HBCU": "HBCU",
+    "HOSPITAL": "Hospital",
+    "MEDICAL": "Medical School",
+    "TRIBAL": "Tribal College",
+    "LOCALE": "Locale",
+    "OPENPUBL": "Open to Public",
+    "PSET4FLAG": "4-Year Postsecondary",
+    "PSEFLAG": "Postsecondary Flag",
+    "INSTCAT": "Institution Category",
+    "CCBASIC": "Carnegie Basic Classification",
+    "C18BASIC": "Carnegie 2018 Basic",
+    "C18IPUG": "Carnegie 2018 UG Profile",
+    "C18ISIZE": "Carnegie 2018 Size",
+    "C18UG": "Carnegie 2018 UG Enrollment",
+    "LONGITUD": "Longitude",
+    "LATITUDE": "Latitude",
+    "COUNTYCD": "County Code",
+    "COUNTYNM": "County Name",
+    "CNGDSTCD": "Congressional District",
+    "F1SYSTYP": "System Type",
+    "F1SYSNAM": "System Name",
+    "INSTSIZE": "Institution Size",
     # ── IC (Institutional Characteristics) ─────────────────────────────────
-
-    "CALSYS":       "Calendar System",
-
-    "FT_UG":        "Full-Time UG Offered",
-
-    "FT_FTUG":      "Full-Time/Full-Year UG",
-
-    "FTGDNIDP":     "Full-Time Grad (Non-Deg)",
-
-    "PT_UG":        "Part-Time UG Offered",
-
-    "PT_FTUG":      "Part-Time/Full-Year UG",
-
-    "PTGDNIDP":     "Part-Time Grad (Non-Deg)",
-
-    "OPENADMP":     "Open Admissions",
-
-    "CREDITS1":     "Dual Credit",
-
-    "CREDITS2":     "Credit Accepted (AP)",
-
-    "CREDITS3":     "Credit Accepted (Life Exp)",
-
-    "CREDITS4":     "Credit Accepted (Clep)",
-
-    "STUSRV1":      "Remedial Services",
-
-    "STUSRV2":      "Academic Counseling",
-
-    "STUSRV3":      "Employment Services",
-
-    "STUSRV4":      "Daycare for Students",
-
-    "LIBFAC":       "Library Facility",
-
-    "ATHASSOC":     "Intercollegiate Athletics",
-
-    "ENRLFT":       "Full-Time Enrollment",
-
-    "ENRLPT":       "Part-Time Enrollment",
-
-    "ENRLT":        "Total Enrollment",
-
-
-
+    "CALSYS": "Calendar System",
+    "FT_UG": "Full-Time UG Offered",
+    "FT_FTUG": "Full-Time/Full-Year UG",
+    "FTGDNIDP": "Full-Time Grad (Non-Deg)",
+    "PT_UG": "Part-Time UG Offered",
+    "PT_FTUG": "Part-Time/Full-Year UG",
+    "PTGDNIDP": "Part-Time Grad (Non-Deg)",
+    "OPENADMP": "Open Admissions",
+    "CREDITS1": "Dual Credit",
+    "CREDITS2": "Credit Accepted (AP)",
+    "CREDITS3": "Credit Accepted (Life Exp)",
+    "CREDITS4": "Credit Accepted (Clep)",
+    "STUSRV1": "Remedial Services",
+    "STUSRV2": "Academic Counseling",
+    "STUSRV3": "Employment Services",
+    "STUSRV4": "Daycare for Students",
+    "LIBFAC": "Library Facility",
+    "ATHASSOC": "Intercollegiate Athletics",
+    "ENRLFT": "Full-Time Enrollment",
+    "ENRLPT": "Part-Time Enrollment",
+    "ENRLT": "Total Enrollment",
     # ── Completions totals ───────────────────────────────────────────────────
-
-    "CTOTALT":      "Completions Total",
-
-    "CTOTALM":      "Completions Men",
-
-    "CTOTALW":      "Completions Women",
-
-    "CAIANT":       "AI/AN Total",
-
-    "CASIAT":       "Asian Total",
-
-    "CBKAAT":       "Black Total",
-
-    "CHISPT":       "Hispanic Total",
-
-    "CNHPIT":       "NH/PI Total",
-
-    "CWHITT":       "White Total",
-
-    "C2MORT":       "Two+ Races Total",
-
-    "CUNKNT":       "Unknown Race Total",
-
-    "CNRALT":       "Non-Resident Alien Total",
-
+    "CTOTALT": "Completions Total",
+    "CTOTALM": "Completions Men",
+    "CTOTALW": "Completions Women",
+    "CAIANT": "AI/AN Total",
+    "CASIAT": "Asian Total",
+    "CBKAAT": "Black Total",
+    "CHISPT": "Hispanic Total",
+    "CNHPIT": "NH/PI Total",
+    "CWHITT": "White Total",
+    "C2MORT": "Two+ Races Total",
+    "CUNKNT": "Unknown Race Total",
+    "CNRALT": "Non-Resident Alien Total",
 }
 
 
-
 PAGE_SIZE = 50
-
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -319,68 +186,51 @@ PAGE_SIZE = 50
 # ---------------------------------------------------------------------------
 
 
-
 @admin_bp.route("/")
-
 def dashboard():
 
     sources = DatasetSource.query.order_by(DatasetSource.loaded_at.desc()).all()
 
-
-
     row_counts = {
-
         "Organizations": db.session.scalar(func.count(Organization.org_id)),
-
         "Programs": db.session.scalar(func.count(Program.program_id)),
-
         "Occupations": db.session.scalar(func.count(Occupation.soc)),
-
-        "Program → Occupation Links": db.session.scalar(func.count(ProgramOccupation.program_id)),
-
+        "Program → Occupation Links": db.session.scalar(
+            func.count(ProgramOccupation.program_id)
+        ),
     }
-
-
 
     table_links = {
-
         "Organizations": "organizations",
-
         "Programs": "programs",
-
         "Occupations": "occupations",
-
         "Program → Occupation Links": "program-occupations",
-
     }
 
-
-
     return render_template(
-
         "admin/dashboard.html",
-
         sources=sources,
-
         row_counts=row_counts,
-
         table_links=table_links,
-
         allowed_loaders=list(ALLOWED_LOADERS.keys()),
-
     )
 
 
 @admin_bp.route("/freshness")
 def freshness_dashboard():
     from datetime import datetime, timezone
+
     sources = DatasetSource.query.order_by(DatasetSource.loaded_at.desc()).all()
     now = datetime.now(timezone.utc)
-    
+
     status_list = []
     for s in sources:
         # Some timestamps might be naive depending on sqlite driver, enforce timezone awareness
-        loaded = s.loaded_at.replace(tzinfo=timezone.utc) if s.loaded_at.tzinfo is None else s.loaded_at
+        loaded = (
+            s.loaded_at.replace(tzinfo=timezone.utc)
+            if s.loaded_at.tzinfo is None
+            else s.loaded_at
+        )
         days_old = (now - loaded).days if s.loaded_at else 999
         if days_old < 30:
             status = "green"
@@ -388,15 +238,10 @@ def freshness_dashboard():
             status = "yellow"
         else:
             status = "red"
-            
-        status_list.append({
-            "source": s,
-            "days_old": days_old,
-            "status": status
-        })
-        
-    return render_template("admin/freshness.html", statuses=status_list)
 
+        status_list.append({"source": s, "days_old": days_old, "status": status})
+
+    return render_template("admin/freshness.html", statuses=status_list)
 
 
 # ---------------------------------------------------------------------------
@@ -406,53 +251,50 @@ def freshness_dashboard():
 # ---------------------------------------------------------------------------
 
 
-
 TABLE_CONFIG: dict[str, dict] = {
-
     "organizations": {
-
-        "display_cols": ["name", "org_type", "city", "state", "county_fips", "website", "lat", "lon", "unitid", "ein", "org_id"],
-
+        "display_cols": [
+            "name",
+            "org_type",
+            "city",
+            "state",
+            "county_fips",
+            "website",
+            "lat",
+            "lon",
+            "unitid",
+            "ein",
+            "org_id",
+        ],
         "search_col": "name",
-
         "search_label": "organization name",
-
     },
-
     "programs": {
-
-        "display_cols": ["name", "credential_type", "cip", "org_name", "completions", "modality", "duration_weeks", "program_id", "org_id"],
-
+        "display_cols": [
+            "name",
+            "credential_type",
+            "cip",
+            "org_name",
+            "completions",
+            "modality",
+            "duration_weeks",
+            "program_id",
+            "org_id",
+        ],
         "search_col": "name",
-
         "search_label": "program name",
-
     },
-
     "occupations": {
-
         "display_cols": ["title", "soc_major", "soc_minor", "soc"],
-
         "search_col": "title",
-
         "search_label": "occupation title",
-
     },
-
     "program-occupations": {
-
         "display_cols": ["program_id", "soc", "confidence", "source"],
-
         "search_col": "soc",
-
         "search_label": "SOC code",
-
     },
-
 }
-
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -462,9 +304,7 @@ TABLE_CONFIG: dict[str, dict] = {
 # ---------------------------------------------------------------------------
 
 
-
 @admin_bp.route("/data/<table_slug>")
-
 def data_table(table_slug: str):
 
     model = ALLOWED_TABLES.get(table_slug)
@@ -473,13 +313,9 @@ def data_table(table_slug: str):
 
         abort(404)
 
-
-
     config = TABLE_CONFIG[table_slug]
 
     q = request.args.get("q", "").strip()
-
-
 
     # --- Pagination ---
 
@@ -491,17 +327,19 @@ def data_table(table_slug: str):
 
         page = 1
 
-
-
     # --- Sort: default to first display column ---
 
     raw_table_columns = [c.key for c in model.__table__.columns]
 
-    display_cols = [c for c in config["display_cols"] if c in raw_table_columns or c == "org_name"]
+    display_cols = [
+        c for c in config["display_cols"] if c in raw_table_columns or c == "org_name"
+    ]
 
-    default_sort = config["display_cols"][0] if config["display_cols"][0] in raw_table_columns else raw_table_columns[0]
-
-
+    default_sort = (
+        config["display_cols"][0]
+        if config["display_cols"][0] in raw_table_columns
+        else raw_table_columns[0]
+    )
 
     sort_col = request.args.get("sort", default_sort)
 
@@ -521,13 +359,9 @@ def data_table(table_slug: str):
 
         sort_dir = "asc"
 
-
-
     sort_attr = getattr(model, sort_col)
 
     order = sort_attr.asc() if sort_dir == "asc" else sort_attr.desc()
-
-
 
     # --- Programs: enrich with org name via join ---
 
@@ -536,9 +370,7 @@ def data_table(table_slug: str):
         from sqlalchemy.orm import joinedload
 
         query = db.session.query(Program, Organization.name.label("org_name")).join(
-
             Organization, Program.org_id == Organization.org_id
-
         )
 
         if q:
@@ -551,9 +383,9 @@ def data_table(table_slug: str):
 
         page = min(page, total_pages)
 
-        results = query.order_by(order).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).all()
-
-
+        results = (
+            query.order_by(order).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).all()
+        )
 
         rows_as_dicts = []
 
@@ -564,8 +396,6 @@ def data_table(table_slug: str):
             row["org_name"] = org_name
 
             rows_as_dicts.append(row)
-
-
 
     else:
 
@@ -581,19 +411,19 @@ def data_table(table_slug: str):
 
             query = query.filter(search_attr.ilike(f"%{q}%"))
 
-
-
         total = query.count()
 
         total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
 
         page = min(page, total_pages)
 
-        rows = query.order_by(order).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).all()
+        rows = (
+            query.order_by(order).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).all()
+        )
 
-        rows_as_dicts = [{col: getattr(row, col) for col in raw_table_columns} for row in rows]
-
-
+        rows_as_dicts = [
+            {col: getattr(row, col) for col in raw_table_columns} for row in rows
+        ]
 
     # Filter display_cols to only those actually available in rows
 
@@ -601,40 +431,20 @@ def data_table(table_slug: str):
 
     final_cols = [c for c in display_cols if c in available_cols]
 
-
-
     return render_template(
-
         "admin/data_table.html",
-
         table_slug=table_slug,
-
         table_name=table_slug.replace("-", " ").title(),
-
         columns=final_cols,
-
         rows=rows_as_dicts,
-
         total=total,
-
         page=page,
-
         total_pages=total_pages,
-
         sort_col=sort_col,
-
         sort_dir=sort_dir,
-
         q=q,
-
         search_label=config.get("search_label", ""),
-
     )
-
-
-
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -644,9 +454,7 @@ def data_table(table_slug: str):
 # ---------------------------------------------------------------------------
 
 
-
 @admin_bp.route("/run/<loader_name>", methods=["POST"])
-
 def run_loader(loader_name: str):
 
     script_path = ALLOWED_LOADERS.get(loader_name)
@@ -655,8 +463,6 @@ def run_loader(loader_name: str):
 
         abort(404)
 
-
-
     def generate():
 
         yield f"▶ Running {loader_name}...\n"
@@ -664,17 +470,11 @@ def run_loader(loader_name: str):
         yield "-" * 50 + "\n"
 
         process = subprocess.Popen(
-
             [sys.executable, str(script_path)],
-
             stdout=subprocess.PIPE,
-
             stderr=subprocess.STDOUT,
-
             text=True,
-
             cwd=str(PROJECT_ROOT),
-
         )
 
         for line in process.stdout:
@@ -693,20 +493,11 @@ def run_loader(loader_name: str):
 
             yield f"❌ Exited with code {process.returncode}\n"
 
-
-
     return Response(
-
         stream_with_context(generate()),
-
         mimetype="text/plain",
-
         headers={"X-Content-Type-Options": "nosniff"},
-
     )
-
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -716,24 +507,16 @@ def run_loader(loader_name: str):
 # ---------------------------------------------------------------------------
 
 
-
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 
 RAW_PAGE_SIZE = 100  # CSVs often have many columns -- fewer rows per page
 
 
-
-
-
 @admin_bp.route("/raw")
-
 def raw_file_list():
-
     """List all downloaded CSV files in data/raw, grouped by directory."""
 
     groups: dict[str, list[dict]] = {}
-
-
 
     for csv_file in sorted(RAW_DIR.rglob("*.csv")):
 
@@ -743,40 +526,26 @@ def raw_file_list():
 
         size_mb = csv_file.stat().st_size / (1024 * 1024)
 
-
-
         # Peek at row count (fast: count newlines)
 
         with open(csv_file, "rb") as f:
 
             row_count = sum(1 for _ in f) - 1  # subtract header
 
-
-
-        groups.setdefault(group, []).append({
-
-            "name": csv_file.name,
-
-            "path": str(rel).replace("\\", "/"),
-
-            "size_mb": round(size_mb, 1),
-
-            "row_count": row_count,
-
-        })
-
-
+        groups.setdefault(group, []).append(
+            {
+                "name": csv_file.name,
+                "path": str(rel).replace("\\", "/"),
+                "size_mb": round(size_mb, 1),
+                "row_count": row_count,
+            }
+        )
 
     return render_template("admin/raw_file_list.html", groups=groups)
 
 
-
-
-
 @admin_bp.route("/raw/<path:file_path>")
-
 def raw_csv_view(file_path: str):
-
     """Paginated, searchable viewer for a single raw CSV file."""
 
     # Security: resolve path and ensure it stays inside RAW_DIR
@@ -791,8 +560,6 @@ def raw_csv_view(file_path: str):
 
         abort(404)
 
-
-
     q = request.args.get("q", "").strip().lower()
 
     try:
@@ -803,8 +570,6 @@ def raw_csv_view(file_path: str):
 
         page = 1
 
-
-
     sort_col = request.args.get("sort", "")
 
     sort_dir = request.args.get("dir", "asc")
@@ -813,15 +578,11 @@ def raw_csv_view(file_path: str):
 
         sort_dir = "asc"
 
-
-
     # Read the CSV -- for large files we stream and filter in one pass
 
     all_rows: list[dict] = []
 
     columns: list[str] = []
-
-
 
     with open(target, newline="", encoding="utf-8-sig") as f:
 
@@ -830,8 +591,6 @@ def raw_csv_view(file_path: str):
         columns = reader.fieldnames or []
 
         search_col = columns[0] if columns else ""
-
-
 
         for row in reader:
 
@@ -843,15 +602,11 @@ def raw_csv_view(file_path: str):
 
             all_rows.append(dict(row))
 
-
-
     # Validate sort column
 
     if sort_col not in columns:
 
         sort_col = columns[0] if columns else ""
-
-
 
     # Sort
 
@@ -861,8 +616,6 @@ def raw_csv_view(file_path: str):
 
         all_rows.sort(key=lambda r: (r.get(sort_col) or "").lower(), reverse=reverse)
 
-
-
     total = len(all_rows)
 
     total_pages = max(1, (total + RAW_PAGE_SIZE - 1) // RAW_PAGE_SIZE)
@@ -871,34 +624,19 @@ def raw_csv_view(file_path: str):
 
     rows = all_rows[(page - 1) * RAW_PAGE_SIZE : page * RAW_PAGE_SIZE]
 
-
-
     return render_template(
-
         "admin/raw_csv_view.html",
-
         file_path=file_path,
-
         file_name=target.name,
-
         columns=columns,
-
         rows=rows,
-
         total=total,
-
         page=page,
-
         total_pages=total_pages,
-
         sort_col=sort_col,
-
         sort_dir=sort_dir,
-
         q=q,
-
         column_labels=IPEDS_COLUMNS,
-
     )
 
 
@@ -914,9 +652,12 @@ def sqlite_table_list():
     """List every table in the SQLite database with row counts."""
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    names = [r[0] for r in cur.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-    ).fetchall()]
+    names = [
+        r[0]
+        for r in cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+        ).fetchall()
+    ]
     tables = []
     for name in names:
         try:
@@ -953,7 +694,9 @@ def sqlite_table_view(table):
     if q:
         where = " OR ".join(f'LOWER(CAST("{c}" AS TEXT)) LIKE ?' for c in columns)
         lp = [f"%{q}%"] * len(columns)
-        total = cur.execute(f'SELECT COUNT(*) FROM "{table}" WHERE {where}', lp).fetchone()[0]
+        total = cur.execute(
+            f'SELECT COUNT(*) FROM "{table}" WHERE {where}', lp
+        ).fetchone()[0]
         offset = (page - 1) * SQLITE_PAGE_SIZE
         rows_raw = cur.execute(
             f'SELECT * FROM "{table}" WHERE {where} ORDER BY "{sort_col}" {order} LIMIT ? OFFSET ?',
@@ -971,7 +714,14 @@ def sqlite_table_view(table):
     total_pages = max(1, (total + SQLITE_PAGE_SIZE - 1) // SQLITE_PAGE_SIZE)
     return render_template(
         "admin/sqlite_table_view.html",
-        table=table, columns=columns, rows=rows,
-        total=total, page=min(page, total_pages), total_pages=total_pages,
-        sort_col=sort_col, sort_dir=sort_dir, q=q, column_labels=IPEDS_COLUMNS,
+        table=table,
+        columns=columns,
+        rows=rows,
+        total=total,
+        page=min(page, total_pages),
+        total_pages=total_pages,
+        sort_col=sort_col,
+        sort_dir=sort_dir,
+        q=q,
+        column_labels=IPEDS_COLUMNS,
     )

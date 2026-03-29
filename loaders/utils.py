@@ -76,8 +76,7 @@ def get_kc_county_fips(session, region_slug: str = "kansas-city") -> set[str]:
 
     if not fips_set:
         print(
-            f"[error] Region '{region_slug}' has no counties. "
-            f"Check db/seed.py.",
+            f"[error] Region '{region_slug}' has no counties. " f"Check db/seed.py.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -204,12 +203,21 @@ def _load_cip_titles_from_crosswalk(crosswalk_path: Path) -> dict[str, str]:
         df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
 
         code_col = next(
-            (c for c in df.columns if "cipcode" in c or "cip_code" in c or c.startswith("cip")),
+            (
+                c
+                for c in df.columns
+                if "cipcode" in c or "cip_code" in c or c.startswith("cip")
+            ),
             None,
         )
         title_col = next(
-            (c for c in df.columns if "ciptitle" in c or "cip_title" in c
-             or (c.startswith("cip") and "title" in c)),
+            (
+                c
+                for c in df.columns
+                if "ciptitle" in c
+                or "cip_title" in c
+                or (c.startswith("cip") and "title" in c)
+            ),
             None,
         )
 
@@ -228,11 +236,15 @@ def _load_cip_titles_from_crosswalk(crosswalk_path: Path) -> dict[str, str]:
             if normalized and isinstance(title, str) and title.strip():
                 titles[normalized] = title.strip().title()
 
-        print(f"  Loaded {len(titles)} CIP titles from crosswalk ({crosswalk_path.name})")
+        print(
+            f"  Loaded {len(titles)} CIP titles from crosswalk ({crosswalk_path.name})"
+        )
         return titles
 
     except Exception as e:
-        print(f"[warn] Could not extract CIP titles from crosswalk: {e}", file=sys.stderr)
+        print(
+            f"[warn] Could not extract CIP titles from crosswalk: {e}", file=sys.stderr
+        )
         return {}
 
 
@@ -242,8 +254,12 @@ def _load_cip_titles_from_file(path: Path) -> dict[str, str]:
         df = pd.read_excel(path, dtype=str)
         df.columns = [c.strip().lower() for c in df.columns]
 
-        code_col = next((c for c in df.columns if "cipcode" in c or "cip code" in c), None)
-        title_col = next((c for c in df.columns if "ciptitle" in c or "cip title" in c), None)
+        code_col = next(
+            (c for c in df.columns if "cipcode" in c or "cip code" in c), None
+        )
+        title_col = next(
+            (c for c in df.columns if "ciptitle" in c or "cip title" in c), None
+        )
 
         if not code_col or not title_col:
             print(
@@ -277,7 +293,9 @@ def get_cip_title(cip_code: str, cip_titles: dict[str, str]) -> str:
     return cip_titles.get(cip_code, f"CIP {cip_code}")
 
 
-def make_program_name(cip_code: str, award_level_code: str, cip_titles: dict[str, str]) -> str:
+def make_program_name(
+    cip_code: str, award_level_code: str, cip_titles: dict[str, str]
+) -> str:
     """
     Compose a human-readable program name from CIP code and award level.
 
@@ -287,7 +305,9 @@ def make_program_name(cip_code: str, award_level_code: str, cip_titles: dict[str
     title = get_cip_title(cip_code, cip_titles)
     level = AWARD_LEVEL_NAMES.get(
         str(award_level_code),
-        AWARD_LEVEL_NAMES_LEGACY.get(str(award_level_code), f"Level {award_level_code}"),
+        AWARD_LEVEL_NAMES_LEGACY.get(
+            str(award_level_code), f"Level {award_level_code}"
+        ),
     )
     return f"{title} — {level}"
 

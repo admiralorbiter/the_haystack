@@ -20,18 +20,18 @@ from flask import abort, current_app, render_template, request
 from sqlalchemy import func, text
 from sqlalchemy.orm import aliased
 
-from models import (
-    DatasetSource, Occupation, OrgAlias, Organization,
-    Program, ProgramOccupation, RegionCounty, Relationship, db,
-)
+from models import (DatasetSource, Occupation, OrgAlias, Organization, Program,
+                    ProgramOccupation, RegionCounty, Relationship, db)
 
 from . import root_bp
 
 # Standard UUID pattern (IPEDS-sourced providers)
-_UUID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I
+)
 # Broader safe org_id pattern — allows standard UUIDs, WIOA-prefixed IDs (wioa_xxxxxxxx),
 # and any future source-prefixed IDs. Prevents path traversal / SQL injection attempts.
-_ORG_ID_RE = re.compile(r'^[0-9a-zA-Z_\-]{4,45}$')
+_ORG_ID_RE = re.compile(r"^[0-9a-zA-Z_\-]{4,45}$")
 
 
 def _valid_unitid(unitid: str | None) -> bool:
@@ -47,6 +47,7 @@ def _valid_unitid(unitid: str | None) -> bool:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _get_provider_or_404(org_id: str) -> Organization:
     """Fetch a training provider by org_id. Aborts 404 if missing or wrong type."""
     org = (
@@ -61,19 +62,45 @@ def _get_provider_or_404(org_id: str) -> Organization:
 
 # Top-level CIP 2-digit family names (NCES official)
 _CIP_FAMILY_NAMES = {
-    "01": "Agriculture", "03": "Natural Resources", "04": "Architecture",
-    "05": "Area & Cultural Studies", "09": "Communication", "10": "Communications Tech",
-    "11": "Computer Science", "12": "Personal Services", "13": "Education",
-    "14": "Engineering", "15": "Engineering Tech", "16": "Foreign Languages",
-    "19": "Family Sciences", "22": "Legal", "23": "English",
-    "24": "Liberal Arts", "25": "Library Science", "26": "Biology",
-    "27": "Mathematics", "28": "Military", "29": "Military Tech",
-    "30": "Interdisciplinary", "31": "Parks & Recreation", "38": "Philosophy",
-    "39": "Theology", "40": "Physical Sciences", "41": "Science Tech",
-    "42": "Psychology", "43": "Homeland Security", "44": "Public Admin",
-    "45": "Social Sciences", "46": "Construction", "47": "Mechanic & Repair",
-    "48": "Precision Production", "49": "Transportation", "50": "Visual & Performing Arts",
-    "51": "Health Professions", "52": "Business", "54": "History",
+    "01": "Agriculture",
+    "03": "Natural Resources",
+    "04": "Architecture",
+    "05": "Area & Cultural Studies",
+    "09": "Communication",
+    "10": "Communications Tech",
+    "11": "Computer Science",
+    "12": "Personal Services",
+    "13": "Education",
+    "14": "Engineering",
+    "15": "Engineering Tech",
+    "16": "Foreign Languages",
+    "19": "Family Sciences",
+    "22": "Legal",
+    "23": "English",
+    "24": "Liberal Arts",
+    "25": "Library Science",
+    "26": "Biology",
+    "27": "Mathematics",
+    "28": "Military",
+    "29": "Military Tech",
+    "30": "Interdisciplinary",
+    "31": "Parks & Recreation",
+    "38": "Philosophy",
+    "39": "Theology",
+    "40": "Physical Sciences",
+    "41": "Science Tech",
+    "42": "Psychology",
+    "43": "Homeland Security",
+    "44": "Public Admin",
+    "45": "Social Sciences",
+    "46": "Construction",
+    "47": "Mechanic & Repair",
+    "48": "Precision Production",
+    "49": "Transportation",
+    "50": "Visual & Performing Arts",
+    "51": "Health Professions",
+    "52": "Business",
+    "54": "History",
     "60": "Residency Programs",
 }
 
@@ -109,7 +136,8 @@ def _provider_snapshot(org_id: str) -> dict:
         occ_count = (
             db.session.query(func.count(func.distinct(ProgramOccupation.soc)))
             .filter(ProgramOccupation.program_id.in_(program_ids))
-            .scalar() or 0
+            .scalar()
+            or 0
         )
 
     # Dataset source parsing
@@ -119,11 +147,26 @@ def _provider_snapshot(org_id: str) -> dict:
 
     # Fetch the most "core" dataset for the freshness date
     if is_wioa:
-        ds = db.session.query(DatasetSource).filter(DatasetSource.source_id.like("wioa_%")).order_by(DatasetSource.loaded_at.desc()).first()
+        ds = (
+            db.session.query(DatasetSource)
+            .filter(DatasetSource.source_id.like("wioa_%"))
+            .order_by(DatasetSource.loaded_at.desc())
+            .first()
+        )
     elif is_appr and not org.unitid:
-        ds = db.session.query(DatasetSource).filter(DatasetSource.source_id == "apprenticeship_partner_finder").order_by(DatasetSource.loaded_at.desc()).first()
+        ds = (
+            db.session.query(DatasetSource)
+            .filter(DatasetSource.source_id == "apprenticeship_partner_finder")
+            .order_by(DatasetSource.loaded_at.desc())
+            .first()
+        )
     else:
-        ds = db.session.query(DatasetSource).filter(DatasetSource.source_id.like("ipeds_hd_%")).order_by(DatasetSource.loaded_at.desc()).first()
+        ds = (
+            db.session.query(DatasetSource)
+            .filter(DatasetSource.source_id.like("ipeds_hd_%"))
+            .order_by(DatasetSource.loaded_at.desc())
+            .first()
+        )
 
     # Build multi-source string (e.g., "IPEDS + Apprenticeships")
     source_labels = []
@@ -144,7 +187,11 @@ def _provider_snapshot(org_id: str) -> dict:
         om_data = _ipeds_outcome_measures(org.unitid)
         if om_data:
             total_cohort = sum(r["cohort_n"] for r in om_data if r["cohort_n"])
-            weighed_sum = sum((r["pct_8yr"] / 100.0 * r["cohort_n"]) for r in om_data if r["pct_8yr"] is not None and r["cohort_n"])
+            weighed_sum = sum(
+                (r["pct_8yr"] / 100.0 * r["cohort_n"])
+                for r in om_data
+                if r["pct_8yr"] is not None and r["cohort_n"]
+            )
             if total_cohort > 0:
                 om_8yr_rate = round((weighed_sum / total_cohort) * 100)
 
@@ -156,8 +203,14 @@ def _provider_snapshot(org_id: str) -> dict:
         "top_cip_family": top_cip_family,
         "top_cip_label": top_cip_label,
         "linked_occupations": occ_count,
-        "data_source": " + ".join(source_labels) if source_labels else (ds.name if ds else "Unknown"),
-        "data_as_of": ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown",
+        "data_source": (
+            " + ".join(source_labels)
+            if source_labels
+            else (ds.name if ds else "Unknown")
+        ),
+        "data_as_of": (
+            ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown"
+        ),
         "sc_earn_median_6yr": sc_summary.get("earn_median_6yr"),
         "scorecard_coverage": sc_summary.get("has_data", False),
         "om_8yr_rate": om_8yr_rate,
@@ -165,7 +218,15 @@ def _provider_snapshot(org_id: str) -> dict:
 
 
 # IPEDS lookup codes -> human-readable labels
-_CALSYS = {"1": "Semester", "2": "Quarter", "3": "Trimester", "4": "4-1-4", "5": "Other", "6": "Varies", "7": "Continuous"}
+_CALSYS = {
+    "1": "Semester",
+    "2": "Quarter",
+    "3": "Trimester",
+    "4": "4-1-4",
+    "5": "Other",
+    "6": "Varies",
+    "7": "Continuous",
+}
 _OPENADMP = {"1": "Open Admission", "2": "Selective Admission"}
 
 
@@ -176,61 +237,61 @@ def _empty_ipeds() -> dict:
     """
     return {
         # Institutional characteristics
-        "calendar":            None,
-        "open_admissions":     None,
-        "ft_undergrad":        None,
-        "pt_undergrad":        None,
+        "calendar": None,
+        "open_admissions": None,
+        "ft_undergrad": None,
+        "pt_undergrad": None,
         # Tuition / cost
-        "instate_tuition":     None,
-        "outstate_tuition":    None,
-        "room_board":          None,
-        "tuition_varies":      None,
-        "net_price":           None,
-        "commuter_sticker":    None,
+        "instate_tuition": None,
+        "outstate_tuition": None,
+        "room_board": None,
+        "tuition_varies": None,
+        "net_price": None,
+        "commuter_sticker": None,
         # Admissions
-        "acceptance_rate":     None,
-        "sat_reading_75":      None,
-        "sat_math_75":         None,
-        "act_composite_75":    None,
+        "acceptance_rate": None,
+        "sat_reading_75": None,
+        "sat_math_75": None,
+        "act_composite_75": None,
         # Graduation rates (4yr / standard)
-        "grad_rate_150":       None,
-        "grad_rate_150_cohort":None,
-        "grad_rate_pell":      None,
-        "grad_rate_200":       None,
-        "grad_rate_200_cohort":None,
+        "grad_rate_150": None,
+        "grad_rate_150_cohort": None,
+        "grad_rate_pell": None,
+        "grad_rate_200": None,
+        "grad_rate_200_cohort": None,
         # Graduation rates (2yr / less-than-4yr institutions)
-        "grad_rate_150_l2":    None,
+        "grad_rate_150_l2": None,
         "grad_rate_l2_cohort": None,
-        "grad_rate_pell_l2":   None,
+        "grad_rate_pell_l2": None,
         # Enrollment
-        "enrollment_total":    None,
-        "enrollment_male":     None,
-        "enrollment_female":   None,
-        "distance_ed_pct":     None,
-        "distance_ed_n":       None,
+        "enrollment_total": None,
+        "enrollment_male": None,
+        "enrollment_female": None,
+        "distance_ed_pct": None,
+        "distance_ed_n": None,
         # Retention
-        "retention_ft":        None,
-        "retention_pt":        None,
-        "student_faculty_ratio":None,
+        "retention_ft": None,
+        "retention_pt": None,
+        "student_faculty_ratio": None,
         # Financial aid
-        "aid_any_grant_pct":   None,
-        "aid_any_grant_avg":   None,
-        "aid_pell_pct":        None,
-        "aid_pell_avg":        None,
-        "aid_loan_pct":        None,
-        "aid_loan_avg":        None,
+        "aid_any_grant_pct": None,
+        "aid_any_grant_avg": None,
+        "aid_pell_pct": None,
+        "aid_pell_avg": None,
+        "aid_loan_pct": None,
+        "aid_loan_avg": None,
         # Veterans / GI Bill
-        "vet_gi_bill_n":       None,
-        "vet_gi_bill_avg":     None,
+        "vet_gi_bill_n": None,
+        "vet_gi_bill_avg": None,
         # Faculty
-        "faculty_count":       None,
-        "faculty_avg_salary":  None,
+        "faculty_count": None,
+        "faculty_avg_salary": None,
         # Expenditures
-        "exp_instruction":     None,
-        "exp_academic_support":None,
-        "exp_student_services":None,
-        "exp_total":           None,
-        "exp_finance_type":    None,  # 'public' | 'private_nonprofit' | 'forprofit'
+        "exp_instruction": None,
+        "exp_academic_support": None,
+        "exp_student_services": None,
+        "exp_total": None,
+        "exp_finance_type": None,  # 'public' | 'private_nonprofit' | 'forprofit'
     }
 
 
@@ -238,11 +299,12 @@ def _empty_ipeds() -> dict:
 @lru_cache(maxsize=256)
 def _get_ipeds_enrichment(unitid: str) -> dict:
     """Fetch IC, cost, admissions, enrollment, retention, graduation, financial aid,
-    200% graduation rate, faculty/staff counts, and expenditure data from IPEDS tables."""
+    200% graduation rate, faculty/staff counts, and expenditure data from IPEDS tables.
+    """
     if not unitid:
         return _empty_ipeds()
-    
-    query = '''
+
+    query = """
     SELECT
         ic.CALSYS, ic.OPENADMP, ic.FT_UG, ic.PT_UG,
         cost.CHG1AT0, cost.CHG2AT0, cost.CHG4AY0, cost.CHG5AY0, cost.CHG5AY1, cost.CHG7AY0, cost.TUITVARY,
@@ -310,8 +372,8 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
         FROM ipeds_f2223_f3
     ) fin ON ic.UNITID = fin.UNITID
     WHERE ic.UNITID = :unitid
-    '''
-    
+    """
+
     try:
         with db.engine.connect() as conn:
             _row = conn.execute(text(query), {"unitid": str(unitid)}).mappings().first()
@@ -320,105 +382,118 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
             return _empty_ipeds()
     except Exception as e:
         import sys
+
         print(f"IPEDS DB Error for {unitid}: {e}", file=sys.stderr)
         return _empty_ipeds()
 
     def _int(r, key):
-        try: return int(r[key]) if r and r.get(key) and str(r[key]) not in ('-1', '-2', 'None', '') else None
-        except (ValueError, TypeError): return None
+        try:
+            return (
+                int(r[key])
+                if r and r.get(key) and str(r[key]) not in ("-1", "-2", "None", "")
+                else None
+            )
+        except (ValueError, TypeError):
+            return None
 
     def _float(r, key):
-        try: return float(r[key]) if r and r.get(key) and str(r[key]) not in ('-1', '-2', 'None', '') else None
-        except (ValueError, TypeError): return None
+        try:
+            return (
+                float(r[key])
+                if r and r.get(key) and str(r[key]) not in ("-1", "-2", "None", "")
+                else None
+            )
+        except (ValueError, TypeError):
+            return None
 
     result = _empty_ipeds()
 
-    result["calendar"]        = _CALSYS.get(str(row.get("CALSYS", "")), None)
+    result["calendar"] = _CALSYS.get(str(row.get("CALSYS", "")), None)
     result["open_admissions"] = _OPENADMP.get(str(row.get("OPENADMP", "")), None)
-    result["ft_undergrad"]    = str(row.get("FT_UG", "0")) == "1"
-    result["pt_undergrad"]    = str(row.get("PT_UG", "0")) == "1"
+    result["ft_undergrad"] = str(row.get("FT_UG", "0")) == "1"
+    result["pt_undergrad"] = str(row.get("PT_UG", "0")) == "1"
 
     in_tuit = _int(row, "CHG1AT0")
-    result["instate_tuition"]  = in_tuit
+    result["instate_tuition"] = in_tuit
     result["outstate_tuition"] = _int(row, "CHG2AT0")
-    result["room_board"]       = _int(row, "CHG5AY0") or _int(row, "CHG5AY1")
-    result["tuition_varies"]   = str(row.get("TUITVARY", "0")) == "1"
-    result["net_price"]        = _int(row, "NPIST2")
+    result["room_board"] = _int(row, "CHG5AY0") or _int(row, "CHG5AY1")
+    result["tuition_varies"] = str(row.get("TUITVARY", "0")) == "1"
+    result["net_price"] = _int(row, "NPIST2")
 
     books = _int(row, "CHG4AY0")
     if in_tuit is not None and books is not None:
         result["commuter_sticker"] = in_tuit + books
 
-    apps   = _int(row, "APPLCN")
+    apps = _int(row, "APPLCN")
     admits = _int(row, "ADMSSN")
     if apps and admits and apps > 0:
         result["acceptance_rate"] = round(admits / apps * 100, 1)
-    result["sat_reading_75"]   = _int(row, "SATVR75")
-    result["sat_math_75"]      = _int(row, "SATMT75")
+    result["sat_reading_75"] = _int(row, "SATVR75")
+    result["sat_math_75"] = _int(row, "SATMT75")
     result["act_composite_75"] = _int(row, "ACTCM75")
 
-    result["enrollment_total"]  = _int(row, "EFYTOTLT")
-    result["enrollment_male"]   = _int(row, "EFYTOTLM")
+    result["enrollment_total"] = _int(row, "EFYTOTLT")
+    result["enrollment_male"] = _int(row, "EFYTOTLM")
     result["enrollment_female"] = _int(row, "EFYTOTLW")
 
     de_total = _int(row, "EFYDEEXC")
     en_total = _int(row, "EFYTOTLT")
     if de_total is not None and en_total and en_total > 0:
         result["distance_ed_pct"] = round(de_total / en_total * 100, 1)
-        result["distance_ed_n"]   = de_total
+        result["distance_ed_n"] = de_total
 
-    result["retention_ft"]         = _int(row, "RET_PCF")
-    result["retention_pt"]         = _int(row, "RET_NMP")
+    result["retention_ft"] = _int(row, "RET_PCF")
+    result["retention_pt"] = _int(row, "RET_NMP")
     sf = _float(row, "STUFACR")
     result["student_faculty_ratio"] = round(sf, 1) if sf else None
 
     gr_150 = _int(row, "gr_150")
-    gr_co  = _int(row, "gr_150_cohort")
+    gr_co = _int(row, "gr_150_cohort")
     if gr_150 is not None and gr_co and gr_co > 0:
-        result["grad_rate_150"]        = round(gr_150 / gr_co * 100)
+        result["grad_rate_150"] = round(gr_150 / gr_co * 100)
         result["grad_rate_150_cohort"] = gr_co
 
     pg_comp = _int(row, "gr_pell_comp")
-    pg_adj  = _int(row, "gr_pell_adj")
+    pg_adj = _int(row, "gr_pell_adj")
     if pg_comp is not None and pg_adj and pg_adj > 0:
         result["grad_rate_pell"] = round(pg_comp / pg_adj * 100)
 
     # 200% graduation rate (completion within twice the normal time)
-    gr200_co   = _int(row, "gr200_cohort")
+    gr200_co = _int(row, "gr200_cohort")
     gr200_comp = _int(row, "gr200_comp")
     if gr200_co and gr200_comp is not None and gr200_co > 0:
-        result["grad_rate_200"]        = round(gr200_comp / gr200_co * 100)
+        result["grad_rate_200"] = round(gr200_comp / gr200_co * 100)
         result["grad_rate_200_cohort"] = gr200_co
 
     # 2-year institution graduation rates (gr2024_l2)
     # LINE_10 = cohort, LINE_50 = completers within 150% of time
-    grl2_co   = _int(row, "grl2_cohort")
+    grl2_co = _int(row, "grl2_cohort")
     grl2_comp = _int(row, "grl2_comp")
     if grl2_co and grl2_comp is not None and grl2_co > 0:
-        result["grad_rate_150_l2"]  = round(grl2_comp / grl2_co * 100)
+        result["grad_rate_150_l2"] = round(grl2_comp / grl2_co * 100)
         result["grad_rate_l2_cohort"] = grl2_co
-    grl2_pell_co   = _int(row, "grl2_pell_cohort")
+    grl2_pell_co = _int(row, "grl2_pell_cohort")
     grl2_pell_comp = _int(row, "grl2_pell_comp")
     if grl2_pell_co and grl2_pell_comp is not None and grl2_pell_co > 0:
         result["grad_rate_pell_l2"] = round(grl2_pell_comp / grl2_pell_co * 100)
 
     # Financial aid — 2023-24 (sfa2324)
-    result["aid_any_grant_pct"]  = _int(row, "sfa24_any_grant_pct")
-    result["aid_any_grant_avg"]  = _int(row, "sfa24_any_grant_avg")
-    result["aid_pell_pct"]       = _int(row, "sfa24_pell_pct")
-    result["aid_pell_avg"]       = _int(row, "sfa24_pell_avg")
-    result["aid_loan_pct"]       = _int(row, "sfa24_loan_pct")
-    result["aid_loan_avg"]       = _int(row, "sfa24_loan_avg")
+    result["aid_any_grant_pct"] = _int(row, "sfa24_any_grant_pct")
+    result["aid_any_grant_avg"] = _int(row, "sfa24_any_grant_avg")
+    result["aid_pell_pct"] = _int(row, "sfa24_pell_pct")
+    result["aid_pell_avg"] = _int(row, "sfa24_pell_avg")
+    result["aid_loan_pct"] = _int(row, "sfa24_loan_pct")
+    result["aid_loan_avg"] = _int(row, "sfa24_loan_avg")
 
     # Veterans / GI Bill (sfav2223)
-    vet_n   = _int(row, "vet_gi_n")
+    vet_n = _int(row, "vet_gi_n")
     vet_avg = _int(row, "vet_gi_avg")
     if vet_n and vet_n > 0:
-        result["vet_gi_bill_n"]   = vet_n
+        result["vet_gi_bill_n"] = vet_n
         result["vet_gi_bill_avg"] = vet_avg
 
     # Faculty & Staff — instructional head count (eap2024, OCCUPCAT 2100+2200)
-    result["faculty_count"]      = _int(row, "faculty_total")
+    result["faculty_count"] = _int(row, "faculty_total")
 
     # Faculty average 9-month salary (sal2023_is, ARANK=7 = all ranks)
     _sal = _int(row, "faculty_avg_salary")
@@ -431,15 +506,25 @@ def _get_ipeds_enrichment(unitid: str) -> dict:
         v = _int(r, key)
         return v if v and v > 0 else None
 
-    _exp_instruction      = _pos_int(row, "exp_instruction")
+    _exp_instruction = _pos_int(row, "exp_instruction")
     _exp_academic_support = _pos_int(row, "exp_academic_support")
     _exp_student_services = _pos_int(row, "exp_student_services")
-    result["exp_instruction"]      = round(_exp_instruction / 1000)      if _exp_instruction      else None
-    result["exp_academic_support"] = round(_exp_academic_support / 1000) if _exp_academic_support else None
-    result["exp_student_services"] = round(_exp_student_services / 1000) if _exp_student_services else None
-    result["exp_finance_type"]     = str(row.get("exp_finance_type") or "") or None
+    result["exp_instruction"] = (
+        round(_exp_instruction / 1000) if _exp_instruction else None
+    )
+    result["exp_academic_support"] = (
+        round(_exp_academic_support / 1000) if _exp_academic_support else None
+    )
+    result["exp_student_services"] = (
+        round(_exp_student_services / 1000) if _exp_student_services else None
+    )
+    result["exp_finance_type"] = str(row.get("exp_finance_type") or "") or None
     # Total for percentage calculations
-    _exp_vals = [result["exp_instruction"], result["exp_academic_support"], result["exp_student_services"]]
+    _exp_vals = [
+        result["exp_instruction"],
+        result["exp_academic_support"],
+        result["exp_student_services"],
+    ]
     result["exp_total"] = sum(v for v in _exp_vals if v) or None
 
     return result
@@ -463,19 +548,25 @@ def _get_scorecard_institution(unitid: str) -> dict | None:
         return None
     try:
         with db.engine.connect() as conn:
-            row = conn.execute(
-                text("SELECT * FROM scorecard_institution WHERE UNITID = :uid LIMIT 1"),
-                {"uid": str(unitid)},
-            ).mappings().first()
+            row = (
+                conn.execute(
+                    text(
+                        "SELECT * FROM scorecard_institution WHERE UNITID = :uid LIMIT 1"
+                    ),
+                    {"uid": str(unitid)},
+                )
+                .mappings()
+                .first()
+            )
         if not row:
             return None
         # Return dict, converting suppressed values to None
         return {
-            k: (None if str(v) in _SC_SUPPRESS else v)
-            for k, v in dict(row).items()
+            k: (None if str(v) in _SC_SUPPRESS else v) for k, v in dict(row).items()
         }
     except Exception as e:
         import sys
+
         print(f"Scorecard institution DB error for {unitid}: {e}", file=sys.stderr)
         return None
 
@@ -492,7 +583,8 @@ def _get_scorecard_fos(unitid: str) -> list[dict]:
     try:
         with db.engine.connect() as conn:
             rows = conn.execute(
-                text("""
+                text(
+                    """
                     SELECT CIPCODE_NORM, CIPCODE, CIPDESC, CREDLEV, CREDDESC,
                            EARN_MDN_HI_1YR, EARN_MDN_HI_2YR, EARN_COUNT_WNE_HI_2YR,
                            EARN_MDN_4YR_NAT, EARN_COUNT_WNE_4YR_NAT,
@@ -501,7 +593,8 @@ def _get_scorecard_fos(unitid: str) -> list[dict]:
                     FROM scorecard_field_of_study
                     WHERE UNITID = :uid
                     ORDER BY CIPCODE_NORM, CREDLEV
-                """),
+                """
+                ),
                 {"uid": str(unitid)},
             ).fetchall()
 
@@ -515,25 +608,28 @@ def _get_scorecard_fos(unitid: str) -> list[dict]:
 
         result = []
         for r in rows:
-            result.append({
-                "cip_norm":       r[0],
-                "cip_raw":        r[1],
-                "cip_desc":       r[2],
-                "credlev":        r[3],
-                "creddesc":       r[4],
-                "earn_1yr":       _sc_int(r[5]),
-                "earn_2yr":       _sc_int(r[6]),
-                "earn_count_2yr": _sc_int(r[7]),
-                "earn_nat_4yr":   _sc_int(r[8]),
-                "earn_nat_count": _sc_int(r[9]),
-                "debt_stgp_mdn":  _sc_int(r[10]),
-                "debt_pp_mdn":    _sc_int(r[11]),
-                "ipeds_count1":   _sc_int(r[12]),
-                "ipeds_count2":   _sc_int(r[13]),
-            })
+            result.append(
+                {
+                    "cip_norm": r[0],
+                    "cip_raw": r[1],
+                    "cip_desc": r[2],
+                    "credlev": r[3],
+                    "creddesc": r[4],
+                    "earn_1yr": _sc_int(r[5]),
+                    "earn_2yr": _sc_int(r[6]),
+                    "earn_count_2yr": _sc_int(r[7]),
+                    "earn_nat_4yr": _sc_int(r[8]),
+                    "earn_nat_count": _sc_int(r[9]),
+                    "debt_stgp_mdn": _sc_int(r[10]),
+                    "debt_pp_mdn": _sc_int(r[11]),
+                    "ipeds_count1": _sc_int(r[12]),
+                    "ipeds_count2": _sc_int(r[13]),
+                }
+            )
         return result
     except Exception as e:
         import sys
+
         print(f"Scorecard FoS DB error for {unitid}: {e}", file=sys.stderr)
         return []
 
@@ -569,30 +665,31 @@ def _scorecard_summary(unitid: str | None) -> dict:
             return None
 
     return {
-        "has_data":            True,
+        "has_data": True,
         # Earnings
-        "earn_median_6yr":     _int(sc.get("MD_EARN_WNE_P6")),
-        "earn_median_10yr":    _int(sc.get("MD_EARN_WNE_P10")),
+        "earn_median_6yr": _int(sc.get("MD_EARN_WNE_P6")),
+        "earn_median_10yr": _int(sc.get("MD_EARN_WNE_P10")),
         # Completion
         "completion_rate_4yr": _pct(sc.get("C150_4")),
         "completion_rate_2yr": _pct(sc.get("C150_L4")),
         # Debt
-        "grad_debt_median":    _int(sc.get("GRAD_DEBT_MDN")),
-        "wdraw_debt_median":   _int(sc.get("WDRAW_DEBT_MDN")),
+        "grad_debt_median": _int(sc.get("GRAD_DEBT_MDN")),
+        "wdraw_debt_median": _int(sc.get("WDRAW_DEBT_MDN")),
         # Aid access
-        "pct_pell":            _pct(sc.get("PCTPELL")),
-        "pct_federal_loan":    _pct(sc.get("PCTFLOAN")),
+        "pct_pell": _pct(sc.get("PCTPELL")),
+        "pct_federal_loan": _pct(sc.get("PCTFLOAN")),
         # Repayment
-        "repay_rate_3yr":      _pct(sc.get("RPY_3YR_RT")),
-        "repay_completers_3yr":_pct(sc.get("COMPL_RPY_3YR_RT")),
+        "repay_rate_3yr": _pct(sc.get("RPY_3YR_RT")),
+        "repay_completers_3yr": _pct(sc.get("COMPL_RPY_3YR_RT")),
         # Cost
-        "avg_cost":            _int(sc.get("COSTT4_A")) or _int(sc.get("COSTT4_P")),
+        "avg_cost": _int(sc.get("COSTT4_A")) or _int(sc.get("COSTT4_P")),
     }
 
 
 # ---------------------------------------------------------------------------
 # /providers/mock — DEV ONLY (guarded)
 # ---------------------------------------------------------------------------
+
 
 @root_bp.route("/providers/mock")
 def provider_detail_mock():
@@ -607,17 +704,20 @@ def provider_detail_mock():
         "providers/detail.html",
         org=type("O", (), MOCK_PROVIDER)(),
         snapshot={
-            "total_programs": 5, "total_completions": 120,
-            "suppressed_count": 0, "top_credential": "Bachelor's degree",
-            "top_cip_family": "51", "linked_occupations": 12,
-            "data_source": "IPEDS Mock", "data_as_of": "2024-01-01",
+            "total_programs": 5,
+            "total_completions": 120,
+            "suppressed_count": 0,
+            "top_credential": "Bachelor's degree",
+            "top_cip_family": "51",
+            "linked_occupations": 12,
+            "data_source": "IPEDS Mock",
+            "data_as_of": "2024-01-01",
         },
         top_programs=[],
         cred_mix=[],
         active_tab="overview",
         inst_type="4-year",
     )
-
 
 
 @lru_cache(maxsize=256)
@@ -633,27 +733,33 @@ def _ipeds_outcome_measures(unitid: str) -> list[dict]:
     try:
         with db.engine.connect() as conn:
             rows = conn.execute(
-                text("""SELECT OMCHRT, OMACHRT, OMAWDP4, OMAWDP6, OMAWDP8
-                       FROM ipeds_om2024 WHERE UNITID=:uid AND OMCHRT IN ('10','11')"""),
+                text(
+                    """SELECT OMCHRT, OMACHRT, OMAWDP4, OMAWDP6, OMAWDP8
+                       FROM ipeds_om2024 WHERE UNITID=:uid AND OMCHRT IN ('10','11')"""
+                ),
                 {"uid": str(unitid)},
             ).fetchall()
 
         def _iv(v):
-            try: return int(v) if v and v not in ('-1','-2','') else None
-            except: return None
+            try:
+                return int(v) if v and v not in ("-1", "-2", "") else None
+            except:
+                return None
 
         result = []
         for r in rows:
             cohort_n = _iv(r[1])
             if not cohort_n:
                 continue
-            result.append({
-                "label":    _OMCHRT.get(str(r[0]), str(r[0])),
-                "cohort_n": cohort_n,
-                "pct_4yr":  _iv(r[2]),
-                "pct_6yr":  _iv(r[3]),
-                "pct_8yr":  _iv(r[4]),
-            })
+            result.append(
+                {
+                    "label": _OMCHRT.get(str(r[0]), str(r[0])),
+                    "cohort_n": cohort_n,
+                    "pct_4yr": _iv(r[2]),
+                    "pct_6yr": _iv(r[3]),
+                    "pct_8yr": _iv(r[4]),
+                }
+            )
         return result
     except Exception:
         return []
@@ -671,36 +777,40 @@ def _ipeds_enrollment_demographics(unitid: str) -> dict | None:
     try:
         with db.engine.connect() as conn:
             row = conn.execute(
-                text("""SELECT EFTOTLT, EFTOTLM, EFTOTLW,
+                text(
+                    """SELECT EFTOTLT, EFTOTLM, EFTOTLW,
                               EFAIANT, EFASIAT, EFBKAAT, EFHISPT, EFWHITT, EF2MORT,
                               EFNRALT, EFUNKNT
                        FROM ipeds_ef2024a
                        WHERE UNITID=:uid AND EFALEVEL='1'
-                       LIMIT 1"""),
+                       LIMIT 1"""
+                ),
                 {"uid": str(unitid)},
             ).fetchone()
         if not row:
             return None
 
         def _iv(v):
-            try: return int(v) if v and v not in ('-1','-2','') else None
-            except: return None
+            try:
+                return int(v) if v and v not in ("-1", "-2", "") else None
+            except:
+                return None
 
         total = _iv(row[0])
         if not total:
             return None
         return {
-            "total":       total,
-            "male":        _iv(row[1]),
-            "female":      _iv(row[2]),
-            "aian":        _iv(row[3]),
-            "asian":       _iv(row[4]),
-            "black":       _iv(row[5]),
-            "hispanic":    _iv(row[6]),
-            "white":       _iv(row[7]),
+            "total": total,
+            "male": _iv(row[1]),
+            "female": _iv(row[2]),
+            "aian": _iv(row[3]),
+            "asian": _iv(row[4]),
+            "black": _iv(row[5]),
+            "hispanic": _iv(row[6]),
+            "white": _iv(row[7]),
             "two_or_more": _iv(row[8]),
             "nonresident": _iv(row[9]),
-            "unknown":     _iv(row[10]),
+            "unknown": _iv(row[10]),
         }
     except Exception:
         return None
@@ -709,6 +819,7 @@ def _ipeds_enrollment_demographics(unitid: str) -> dict | None:
 # ---------------------------------------------------------------------------
 # Directory — GET /providers
 # ---------------------------------------------------------------------------
+
 
 @root_bp.route("/providers")
 def providers_directory():
@@ -726,7 +837,11 @@ def providers_directory():
     comparing_id = request.args.get("comparing", "").strip()
     comparing_name = None
     if comparing_id:
-        cmp_org = db.session.query(Organization).filter_by(org_id=comparing_id, org_type="training").first()
+        cmp_org = (
+            db.session.query(Organization)
+            .filter_by(org_id=comparing_id, org_type="training")
+            .first()
+        )
         comparing_name = cmp_org.name if cmp_org else None
         if not comparing_name:
             comparing_id = ""  # invalid id, clear it
@@ -757,8 +872,16 @@ def providers_directory():
             ParentOrg.org_id.label("parent_org_id"),
         )
         .outerjoin(Program, Program.org_id == Organization.org_id)
-        .outerjoin(ProgramOccupation, ProgramOccupation.program_id == Program.program_id)
-        .outerjoin(Relationship, db.and_(Relationship.from_entity_id == Organization.org_id, Relationship.rel_type == "parent_org"))
+        .outerjoin(
+            ProgramOccupation, ProgramOccupation.program_id == Program.program_id
+        )
+        .outerjoin(
+            Relationship,
+            db.and_(
+                Relationship.from_entity_id == Organization.org_id,
+                Relationship.rel_type == "parent_org",
+            ),
+        )
         .outerjoin(ParentOrg, ParentOrg.org_id == Relationship.to_entity_id)
         .filter(Organization.org_type == "training")
         .filter(Organization.is_active == True)
@@ -800,20 +923,26 @@ def providers_directory():
     rows = q.offset((page - 1) * per_page).limit(per_page).all()
 
     all_counties = (
-        db.session.query(RegionCounty.county_fips, RegionCounty.county_name, RegionCounty.state)
-        .filter(RegionCounty.county_fips.in_(
-            db.session.query(Organization.county_fips)
-            .filter_by(org_type="training", is_active=True)
-            .filter(Organization.county_fips.isnot(None))
-        ))
+        db.session.query(
+            RegionCounty.county_fips, RegionCounty.county_name, RegionCounty.state
+        )
+        .filter(
+            RegionCounty.county_fips.in_(
+                db.session.query(Organization.county_fips)
+                .filter_by(org_type="training", is_active=True)
+                .filter(Organization.county_fips.isnot(None))
+            )
+        )
         .order_by(RegionCounty.county_name)
         .all()
     )
     all_creds = (
         db.session.query(Program.credential_type)
-        .filter(Program.org_id.in_(
-            db.session.query(Organization.org_id).filter_by(org_type="training")
-        ))
+        .filter(
+            Program.org_id.in_(
+                db.session.query(Organization.org_id).filter_by(org_type="training")
+            )
+        )
         .distinct()
         .order_by(Program.credential_type)
         .all()
@@ -823,7 +952,9 @@ def providers_directory():
         {
             "org": row.Organization,
             "program_count": row.program_count or 0,
-            "total_completions": int(row.total_completions) if row.total_completions else None,
+            "total_completions": (
+                int(row.total_completions) if row.total_completions else None
+            ),
             "occ_count": row.occ_count or 0,
             "parent_name": row.parent_name,
             "parent_org_id": row.parent_org_id,
@@ -851,10 +982,10 @@ def providers_directory():
     )
 
 
-
 # ---------------------------------------------------------------------------
 # Detail page — GET /providers/<org_id>
 # ---------------------------------------------------------------------------
+
 
 @root_bp.route("/providers/<org_id>")
 def provider_detail(org_id: str):
@@ -865,13 +996,13 @@ def provider_detail(org_id: str):
     snapshot = _provider_snapshot(org_id)
 
     # Derive institution type badge from top credential (aligns with IPEDS program data)
-    _cred = (snapshot.get('top_credential') or '').lower()
-    if any(k in _cred for k in ('bachelor', 'master', 'doctor', 'first-prof')):
-        inst_type = '\U0001f393 4-year'
-    elif 'associate' in _cred:
-        inst_type = '\U0001f4cb 2-year'
+    _cred = (snapshot.get("top_credential") or "").lower()
+    if any(k in _cred for k in ("bachelor", "master", "doctor", "first-prof")):
+        inst_type = "\U0001f393 4-year"
+    elif "associate" in _cred:
+        inst_type = "\U0001f4cb 2-year"
     else:
-        inst_type = '\U0001f4dc Certificate'
+        inst_type = "\U0001f4dc Certificate"
 
     top_programs = (
         db.session.query(Program)
@@ -882,7 +1013,9 @@ def provider_detail(org_id: str):
     )
 
     cred_mix = (
-        db.session.query(Program.credential_type, func.count(Program.program_id).label("cnt"))
+        db.session.query(
+            Program.credential_type, func.count(Program.program_id).label("cnt")
+        )
         .filter_by(org_id=org_id)
         .group_by(Program.credential_type)
         .order_by(func.count(Program.program_id).desc())
@@ -910,7 +1043,8 @@ def provider_detail(org_id: str):
     )
     parent_org = (
         db.session.query(Organization).filter_by(org_id=parent_rel.to_entity_id).first()
-        if parent_rel else None
+        if parent_rel
+        else None
     )
 
     # Child orgs (if this is an IPEDS college with linked WIOA satellites)
@@ -924,7 +1058,8 @@ def provider_detail(org_id: str):
         .filter(Organization.org_id.in_([r.from_entity_id for r in child_rels]))
         .order_by(Organization.name)
         .all()
-        if child_rels else []
+        if child_rels
+        else []
     )
 
     return render_template(
@@ -944,6 +1079,7 @@ def provider_detail(org_id: str):
 # ---------------------------------------------------------------------------
 # HTMX tab fragments
 # ---------------------------------------------------------------------------
+
 
 @root_bp.route("/providers/<org_id>/tab/connections")
 def provider_tab_connections(org_id: str):
@@ -973,9 +1109,7 @@ def provider_tab_connections(org_id: str):
         .filter(
             Organization.org_type == "training",
             Organization.org_id != org_id,
-            Program.cip.in_(
-                db.session.query(Program.cip).filter_by(org_id=org_id)
-            ),
+            Program.cip.in_(db.session.query(Program.cip).filter_by(org_id=org_id)),
         )
         .group_by(Organization.org_id)
         .order_by(func.count(func.distinct(Program.cip)).desc())
@@ -1000,9 +1134,7 @@ def provider_tab_connections(org_id: str):
 def provider_tab_geography(org_id: str):
     org = _get_provider_or_404(org_id)
     county = (
-        db.session.query(RegionCounty)
-        .filter_by(county_fips=org.county_fips)
-        .first()
+        db.session.query(RegionCounty).filter_by(county_fips=org.county_fips).first()
     )
     return render_template(
         "providers/partials/tab_geography.html",
@@ -1034,6 +1166,7 @@ def provider_tab_outcomes(org_id: str):
         enrollment_demo=_ipeds_enrollment_demographics(org.unitid),
     )
 
+
 @root_bp.route("/providers/<org_id>/tab/demographics")
 def provider_tab_demographics(org_id: str):
     org = _get_provider_or_404(org_id)
@@ -1041,8 +1174,9 @@ def provider_tab_demographics(org_id: str):
         "providers/partials/tab_demographics.html",
         org=org,
         demographics=org.demographics,
-        completions=org.completions_demo
+        completions=org.completions_demo,
     )
+
 
 @root_bp.route("/providers/<org_id>/tab/scorecard")
 def provider_tab_scorecard(org_id: str):
@@ -1059,20 +1193,43 @@ def provider_tab_scorecard(org_id: str):
 def provider_tab_evidence(org_id: str):
     org = _get_provider_or_404(org_id)
     alias = db.session.query(OrgAlias).filter_by(org_id=org_id, source="ipeds").first()
-    
+
     ds_hd = None
     ds_c = None
     if org.unitid:
-        ds_hd = db.session.query(DatasetSource).filter(DatasetSource.source_id.like("ipeds_hd_%")).order_by(DatasetSource.loaded_at.desc()).first()
-        ds_c = db.session.query(DatasetSource).filter(DatasetSource.source_id.like("ipeds_c_%")).order_by(DatasetSource.loaded_at.desc()).first()
+        ds_hd = (
+            db.session.query(DatasetSource)
+            .filter(DatasetSource.source_id.like("ipeds_hd_%"))
+            .order_by(DatasetSource.loaded_at.desc())
+            .first()
+        )
+        ds_c = (
+            db.session.query(DatasetSource)
+            .filter(DatasetSource.source_id.like("ipeds_c_%"))
+            .order_by(DatasetSource.loaded_at.desc())
+            .first()
+        )
 
     ds_wioa = None
-    if org_id.startswith("wioa_") or db.session.query(OrgAlias).filter_by(org_id=org_id, source="wioa").first():
-        ds_wioa = db.session.query(DatasetSource).filter(DatasetSource.source_id.like("wioa_%")).order_by(DatasetSource.loaded_at.desc()).first()
+    if (
+        org_id.startswith("wioa_")
+        or db.session.query(OrgAlias).filter_by(org_id=org_id, source="wioa").first()
+    ):
+        ds_wioa = (
+            db.session.query(DatasetSource)
+            .filter(DatasetSource.source_id.like("wioa_%"))
+            .order_by(DatasetSource.loaded_at.desc())
+            .first()
+        )
 
     ds_appr = None
     if org.is_apprenticeship_partner:
-        ds_appr = db.session.query(DatasetSource).filter(DatasetSource.source_id == "apprenticeship_partner_finder").order_by(DatasetSource.loaded_at.desc()).first()
+        ds_appr = (
+            db.session.query(DatasetSource)
+            .filter(DatasetSource.source_id == "apprenticeship_partner_finder")
+            .order_by(DatasetSource.loaded_at.desc())
+            .first()
+        )
 
     return render_template(
         "providers/partials/tab_evidence.html",

@@ -77,30 +77,7 @@
 </div>
 
 {# Top occupation links (preview — full list on Occupations tab) #}
-{% if top_occupations %}
-<div class="tab-section">
-  <h3 class="section-title">Top Linked Occupations
-    <span style="font-weight:normal; font-size:0.85rem; color:var(--text-muted);">(via CIP→SOC crosswalk)</span>
-  </h3>
-  <ul class="occ-list">
-    {% for occ, confidence in top_occupations %}
-    <li class="occ-item">
-      <span class="occ-title">{{ occ.title }}</span>
-      <span class="occ-soc" style="font-family:monospace; font-size:0.8rem; color:var(--text-muted);">{{ occ.soc }}</span>
-    </li>
-    {% endfor %}
-  </ul>
-  <p style="font-size:0.85rem; color:var(--text-muted); margin-top:var(--spacing-sm);">
-    <a href="#" onclick="document.getElementById('tab-btn-occupations').click(); return false;">
-      View all linked occupations &rarr;
-    </a>
-  </p>
-</div>
-{% else %}
-<div class="tab-section">
-  {{ components.empty_state('No occupation links found for this program\'s CIP code.', 'The CIP→SOC crosswalk may not have a mapping for CIP ' ~ prog.cip ~ '.') }}
-</div>
-{% endif %}
+{% include "programs/partials/widget_career_trajectory.html" %}
 
 {# Peer programs — exact match #}
 {% if peer_programs %}

@@ -12,6 +12,12 @@
     share this occupation link — a proxy for structural breadth of connection.
   </p>
 
+  {% if cip_family == '24' %}
+  <div style="background-color: var(--bg-secondary); border-left: 4px solid #d97706; padding: var(--spacing-md); margin-bottom: var(--spacing-md); font-size: 0.9rem;">
+    <strong style="color:var(--text-primary);">Data Limitation:</strong> As a foundational/transfer field, Liberal Arts &amp; General Studies maps structurally to very few vocational occupations in the federal government's crosswalk (typically exclusively teaching). In reality, graduates probabilistically enter a wide variety of white-collar fields, management, and communications roles. Actual career outcomes will be mapped via Census LEHD data in Phase 4.
+  </div>
+  {% endif %}
+
   {% if occ_links %}
   <div class="table-wrapper">
     <table class="data-table">
@@ -20,7 +26,7 @@
           <th data-sort="text">Occupation <span class="sort-ind">↕</span></th>
           <th style="font-family:monospace; font-size:0.85rem;" data-sort="text">SOC Code <span class="sort-ind">↕</span></th>
           <th class="num-col" title="Number of programs in this field that link to this occupation" data-sort="num">Programs <span class="sort-ind">↕</span></th>
-          <th class="num-col" title="Median annual wage — coming in Phase 2">Median Wage</th>
+          <th class="num-col" title="Median annual wage in the KC MSA (BLS)">Median Wage <span class="sort-ind">↕</span></th>
         </tr>
       </thead>
       <tbody>
@@ -29,7 +35,20 @@
           <td data-sort-val="{{ row.occ.title | lower }}">{{ row.occ.title }}</td>
           <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);" data-sort-val="{{ row.occ.soc }}">{{ row.occ.soc }}</td>
           <td class="num-col" data-sort-val="{{ row.prog_count }}">{{ row.prog_count }}</td>
-          <td class="num-col" style="color:var(--text-muted); font-size:0.85rem;" title="Wage data coming in Phase 2">&mdash;</td>
+          {% set ns = namespace(kc_wage=none) %}
+          {% for w in row.occ.wages %}
+            {% if w.area_type == 'msa' and 'Kansas City' in w.area_name %}
+                {% set ns.kc_wage = w %}
+            {% endif %}
+          {% endfor %}
+          {% set kc_wage = ns.kc_wage %}
+          <td class="num-col" data-sort-val="{{ kc_wage.median_wage if kc_wage and kc_wage.median_wage else 0 }}">
+            {% if kc_wage and kc_wage.median_wage %}
+                <span style="font-weight: 500;">${{ '{:,.0f}'.format(kc_wage.median_wage) }}</span>
+            {% else %}
+                <span style="color:var(--text-muted); font-size:0.85rem;" title="Regional wage data not available">—</span>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -37,7 +56,7 @@
   </div>
   <p class="methods-note" style="margin-top:var(--spacing-md);">
     These links are structural mappings, not guaranteed employment outcomes.
-    SOC major group codes shown. Wage data will be added when the OEWS dataset is integrated in Phase 2.
+    Wages reflect median estimates for the Kansas City MSA from the May 2024 BLS OEWS survey.
   </p>
   {% else %}
   {{ components.empty_state(

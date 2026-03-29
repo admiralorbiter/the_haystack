@@ -1,7 +1,10 @@
-from flask import request, render_template
+from flask import render_template, request
+
+from models import Occupation, Program, db
+from routes.guided_search import _fts_program_ids, _fts_search_enabled
+
 from . import api_v1_bp
-from models import db, Occupation, Program
-from routes.guided_search import _fts_search_enabled, _fts_program_ids
+
 
 @api_v1_bp.route("/search/occupations")
 def search_occupations():
@@ -9,7 +12,7 @@ def search_occupations():
     query = request.args.get("q", "").strip()
     if not query or len(query) < 2:
         return ""
-        
+
     like_query = f"%{query}%"
     results = (
         db.session.query(Occupation)
@@ -18,7 +21,9 @@ def search_occupations():
         .limit(10)
         .all()
     )
-    return render_template("search/partials/typeahead_occupations.html", occupations=results)
+    return render_template(
+        "search/partials/typeahead_occupations.html", occupations=results
+    )
 
 
 @api_v1_bp.route("/search/programs")
@@ -27,12 +32,16 @@ def search_programs():
     query = request.args.get("q", "").strip()
     if not query or len(query) < 2:
         return ""
-        
+
     if _fts_search_enabled():
         matched_ids = _fts_program_ids(query)
         if matched_ids:
             # Maintain rank order
-            programs = db.session.query(Program).filter(Program.program_id.in_(matched_ids)).all()
+            programs = (
+                db.session.query(Program)
+                .filter(Program.program_id.in_(matched_ids))
+                .all()
+            )
             id_map = {p.program_id: p for p in programs}
             results = [id_map[mid] for mid in matched_ids if mid in id_map][:10]
         else:
@@ -45,5 +54,5 @@ def search_programs():
             .limit(10)
             .all()
         )
-        
+
     return render_template("search/partials/typeahead_programs.html", programs=results)
