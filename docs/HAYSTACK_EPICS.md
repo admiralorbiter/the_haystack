@@ -19,11 +19,37 @@
 | **7 Directory UI** | Dropdown filters + sortable columns across all directories | ✅ Shipped 2026-03-27 |
 | **10 Non-Title IV Training Base** | WIOA ETPL + Apprenticeships ingested, Hubs + Employers shipped | ✅ Shipped 2026-03-28 |
 | **6.5 Program Compare** | Head-to-head program-level side-by-side | ✅ Shipped 2026-03-29 |
-| **11 Workforce Connections** | BLS OEWS wage & O*NET demand integration | 🔲 Next Up |
+| **2.9 Pre-Phase-3 Hardening** | org_fact table, soft-delete, API namespace, search spec, analytics | 🔲 Next Up |
+| **11 Workforce Connections** | BLS OEWS wage & O*NET demand integration | 🔲 Planned |
 | **12 Ecosystem & Network View** | Force-directed graph of provider relationships | 🔲 Planned |
 | **13 Briefing Builder** | Collect stats/entities and generate printable one-pager | 🔲 Planned |
 | **14 Stepping Stones** | Sequenced credential pathways + ROI break-even calculator | 🔬 Research Spike |
 | **15 Hidden Gems Engine** | Algorithmic surfacing of high-ROI programs | 🔬 Research Spike |
+
+---
+
+## Epic 2.9 — Pre-Phase-3 Hardening
+**Goal:** Close structural gaps identified in architecture review before Phase 3 (org enrichment) begins. These are cheap now and expensive to retrofit later.
+
+**Why do this before Epic 11?** Three of these items (soft-delete, org_fact, API namespace) become harder to add correctly once Phase 3 sources start attaching data to the Organization model.
+
+### Task list
+
+| # | Task | Effort | Priority | Notes |
+|---|------|--------|----------|-------|
+| H-1 | Add `is_active` + `last_seen_in_source` to Organization model | ~2 hrs | 🔴 P1 | When IPEDS drops a unitid next year, stale data stays live without this. Loader post-sweep marks unseen records inactive. UI shows banner on inactive pages. |
+| H-2 | Add `org_fact` EAV table `(org_id, fact_type, value_num, value_text, source, as_of_date)` | ~30 min | 🔴 P1 | Prevents Phase 3 column sprawl on Organization. Enables the Evidence tab to be a single query across all sources. Fact types tracked as Python constants. |
+| H-3 | Add `/api/v1/` Blueprint with 3 seed endpoints: provider detail, program detail, search | ~2 hrs | 🔴 P1 | Epic 12 already specs `GET /api/network/providers.json`. Establish the namespace now so it is not retrofitted under pressure. No auth or pagination required yet. |
+| H-4 | Write `HAYSTACK_SEARCH_SPEC.md` — document scoring model: FTS5 rank × entity-type boost | ~1 hr | 🟡 P2 | Search becomes chaotic as entity types grow without a spec. Ordering: providers > programs > occupations > employers. Freshness decay added when 311 data lands. |
+| H-5 | Add `page_view` table + `@app.before_request` logger | ~30 min | 🟡 P2 | Log `(path, query_params, session_id, timestamp)`. Exclude `/static/` and `/admin/`. Queryable via `/admin/sqlite`. |
+| H-6 | Add `search_event` table `(query_text, result_count, timestamp)` | ~30 min | 🟡 P2 | Failed searches (result_count = 0) are the most actionable UX signal for a research tool. |
+| H-7 | Build `/admin/freshness` route — traffic-light grid from `dataset_source` table | ~45 min | 🟢 P3 | `record_dataset_source()` already called in every loader. Green < 30 days, Yellow 30–90, Red 90+. |
+| H-8 | Add "Who Else Trains For This?" peer programs widget on program detail pages | ~1 hr | 🟡 P2 | SQL query against programs with matching CIP in same MSA. No new data needed. Transforms program detail from a data page into a decision tool. |
+| H-9 | Elevate `ipeds_om2024` 8-year outcomes on provider detail pages | ~1 hr | 🟡 P2 | Table already loaded. 8-year outcomes capture part-time/transfer students that 150% grad rates miss. Zero ingestion cost. |
+| H-10 | Add relative time formatting to freshness badges | ~15 min | 🟢 P3 | "3 weeks ago" is more meaningful than "2026-03-08". |
+| H-11 | Add permalink/share button on entity pages | ~30 min | 🟢 P3 | Copy-URL affordance so researchers can share a specific provider or program page. |
+
+**Exit criteria:** All P1 items (H-1, H-2, H-3) complete before Phase 3 data sources begin ingestion. P2 items complete before public launch.
 
 ---
 

@@ -57,6 +57,20 @@ This ladder describes **what to add and why**, in a sequence that maximizes valu
    - Primary entities: Organization
    - UI surfaces: detail cards, filters, collections, compare
 
+6. **Census ACS 5-Year Estimates (via Census API)**
+   - Why: the "denominator" that makes every other stat meaningful. Median household income, poverty rate, educational attainment, commute time, and internet access by tract/ZIP. Without it you cannot answer "is this program accessible to the people who need it most?"
+   - Primary entities: Geography, Organization (neighborhood context)
+   - UI surfaces: geography detail pages, provider context panels, neighborhood equity overlays
+   - Phase target: Phase 4 — required before neighborhood intelligence layer
+   - *KC-specific: pull tracts and ZIPs within the KC MSA FIPS set*
+
+7. **Missouri & Kansas State Licensing Board Data**
+   - Why: for healthcare, education, and trades, licensing pass rates (e.g. NCLEX for nursing) are the most persuasive program ROI signal available — far more compelling than generic Scorecard earnings
+   - Primary entities: Program, Organization
+   - UI surfaces: program detail ROI card, provider outcome comparison
+   - Phase target: Phase 3 research spike — availability varies by board; some are public PDFs, some have APIs
+   - *KC-specific: Missouri Division of Professional Registration, Kansas Professional Licensing*
+
 ---
 
 ## Tier 3 — Add civic signal layers
@@ -98,6 +112,18 @@ This ladder describes **what to add and why**, in a sequence that maximizes valu
 12. **OpenCorporates API**
     - Why: tracks business ownership and corporate subsidiaries for tracking ultimate employer power
     - Primary entities: Organization, Relationship
+
+13. **Census LEHD LODES (Longitudinal Employer-Household Dynamics)**
+    - Why: origin-destination commute flows at the Census block level. Enables "how many workers pass within 5 miles of this training provider on their daily commute" — a differentiating metric no other workforce platform surfaces
+    - Primary entities: Geography, Organization
+    - UI surfaces: provider access map layer, neighborhood commute-shed overlays
+    - Phase target: Phase 5 — requires Census ACS + provider geolocation layer first
+
+14. **FAFSA Completion Rates by High School (Federal Student Aid)**
+    - Why: identifies which KC high schools have low FAFSA completion, creating a pipeline gap view — low-completion school + nearby high-ROI provider = actionable insight for a workforce navigator
+    - Primary entities: Organization (K-12 school), Geography
+    - UI surfaces: geography detail, pipeline gap analysis
+    - Phase target: Phase 5 research spike
 
 ---
 

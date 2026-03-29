@@ -383,6 +383,13 @@ Add:
 
 Expose them as reusable “organization evidence blocks,” not one-off pages.
 
+### Architecture prerequisite (complete before any Phase 3 source is ingested)
+Two structural additions to the Organization model are cheap now and expensive to retrofit after Phase 3 data begins attaching:
+
+1. **org_fact evidence table** — A key-value store keyed by (org_id, fact_type, source, as_of_date) that lets any source attach arbitrary structured facts (revenue from 990, H-1B petition count, employee count) without adding columns to organization each time. This also makes the “Evidence” tab on org detail pages a single query rather than a join across N tables. Fact types are tracked as Python constants to prevent the table from becoming an unstructured blob.
+
+2. **Soft-delete / archival pattern** — Add is_active (boolean) and last_seen_in_source (date) to Organization. Loaders mark every record they touch. A post-pipeline sweep marks anything not seen in the latest run as is_active = False. The UI shows a “This provider may no longer be active” banner. Without this, closed institutions stay live indefinitely — a real credibility risk for a research tool.
+
 ---
 
 ## Phase 4 — Civic signal layer
@@ -487,6 +494,8 @@ But shift the product framing from “many routes” to “few durable shells.�
 5. **No dataset-specific color systems.**
 6. **No chart without a one-sentence takeaway.**
 7. **No metric added without a display label, unit, and caveat.**
+8. **No entity is ever hard-deleted.** Use is_active = False + last_seen_in_source. Stale data must be labeled, not silently removed or silently kept.
+9. **No JSON endpoint outside /api/v1/.** All machine-readable responses live in the versioned namespace established before Epic 12.
 
 ### Good defaults
 - chip filters before dropdown forests
