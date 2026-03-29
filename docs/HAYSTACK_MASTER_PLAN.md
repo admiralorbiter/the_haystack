@@ -350,17 +350,24 @@ It is ideal for proving the Haystack pattern.
 
 ---
 
-## Phase 2 — Scorecard and workforce connection
-**Goal:** turn IPEDS into pathways intelligence.
+## Phase 2 — Training ecosystem expansion ✅ Substantially Complete (2026-03-28)
+**Goal:** Expand beyond Title IV colleges into the full KC training ecosystem and make provider/program data deeply comparable.
 
-Add:
-- OEWS wage data by SOC
-- SOC/CIP crosswalk surfaces
-- occupation detail links to programs
-- provider-to-sector and provider-to-occupation views
-- compare program outcomes vs occupation wages
+Shipped:
+- WIOA ETPL ingestion (Missouri & Kansas eligible training providers)
+- Apprenticeship Partner Finder ingestion (DOL RAPIDS listings)
+- Employers directory with KC MSA geofencing and contact data
+- Hubs engine (curatable thematic portals: Apprenticeships, Tech/Training)
+- Parent–satellite organization linking (`link_org_parents.py`)
+- Provider Compare (side-by-side across up to 3 providers)
+- Directory UI modernization (dropdown filters + sortable columns)
+- Program-level Equity in Completions demographics tab
+- Provider-level Student Demographics tab (enrollment + completions stacked)
+- College Scorecard outcomes fully wired on provider and program detail pages
 
-This is where Haystack becomes more than a directory.
+Next in Phase 2:
+- **Epic 6.5:** Program-to-Program Head-to-Head Compare
+- **Epic 11:** BLS OEWS + O*NET wage integration (unlocks ROI narrative)
 
 ---
 
@@ -412,21 +419,31 @@ This is where Haystack becomes distinctly local and hard to replicate.
 
 ---
 
-## Phase 6 — Network and relationship layer
-**Goal:** map the connections between entities, not just the entities themselves.
+## Phase 5.5 — Discovery & Intelligence Features
+**Goal:** Transform Haystack from a search directory into an active discovery and pathways intelligence engine.
 
 Add:
-- `relationship` table to track directional entity links with type, weight, source
-- Supply chain mapping (USAS spending, USASpending contracts, BEA input-output tables)
-- Funding flows (IRS 990 grants-out, USASpending awards)
-- Board and leadership networks (ProPublica Nonprofit Explorer, OpenCorporates)
-- Employer-to-training partnerships (apprenticeship registrations, MOU datasets)
-- Alumni pathways (aggregate, anonymized Scorecard fields-of-study data)
+- **Stepping Stones (Epic 14):** Sequenced credential pathways with interactive ROI Break-Even calculator. Users trace from their current situation to their goal — seeing the exact steps, costs, and wages at each credential rung. *Requires: Epic 11 (BLS OEWS) + Credential Engine Registry.*
+- **Hidden Gems Engine (Epic 15):** Algorithmic surface of high-ROI, low-cost programs that are structurally buried under dominant institutions. Changes the UX from "search" to "discover." *Requires: minimum completions threshold tuning + Epic 11 wages.*
+- **Briefing Builder (Epic 13):** ★ collection tray → printable/exportable one-pager for counselors, grant writers, and analysts.
+
+---
+
+## Phase 6 — Network and relationship layer
+**Goal:** Map the connections between entities, not just the entities themselves. This is the layer that turns a directory into a network intelligence tool.
+
+Data sources needed:
+- `relationship` table (schema already designed) to track directional entity links with type, weight, source
+- **IRS 990 filings** (via ProPublica API / AWS Public Data): board member cross-pollination, philanthropic funding flows
+- **USASpending / federal contracts and grants:** maps funding to local training orgs
+- **BEA Input-Output tables:** supply chain relationships between industries
+- **OpenCorporates API:** business ownership and corporate subsidiaries
+- **Employer-to-training partnerships** (MOU datasets, apprenticeship registrations)
 
 UI surfaces:
-- Network graph view for an organization's connections
+- Force-directed Network graph view for an organization's connections (Cytoscape.js)
 - "Who funds this?" and "Who does this fund?" panels on org detail pages
-- Supply chain context panel on employer pages
+- "Shared Board Members" panel showing cross-org leadership networks
 - Pathway tracer: from program → occupation → employer cluster
 
 This is where Haystack becomes irreplaceable.

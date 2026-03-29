@@ -20,10 +20,17 @@ This ladder describes **what to add and why**, in a sequence that maximizes valu
    - Primary entities: Provider, Program/Field
    - First UI surfaces: earnings cards, outcome compare, methods notes
 
-3. **Occupation / workforce linkage**
-   - Why third: turns education inventory into pathways intelligence
+3. **Occupation / workforce linkage (O*NET & BLS OEWS)**
+   - Why third: turns education inventory into pathways intelligence and ROI (Return on Investment)
+   - Datasets: O*NET Occupational Taxonomy, May 2024 State Occupational Employment and Wage Estimates (BLS OEWS)
    - Primary entities: Occupation, Program, Provider
-   - First UI surfaces: occupation links, sector links, compare context
+   - First UI surfaces: occupation links, sector links, median local wages, "Time to Payoff" ROI calculators
+
+3.5 **Pathway & Credential Sequencing (Credential Engine & Census LEHD)**
+   - Why: required to map "Stepping Stones" (how certificates stack into associate degrees, and how workers flow between industries)
+   - Datasets: Credential Registry (CTDL), Census LEHD Job-to-Job Flows
+   - Primary entities: Program, Occupation, Relationship
+   - First UI surfaces: graphical pathway tracers, career progression maps
 
 4. **WIOA ETPL (Workforce Innovation and Opportunity Act)**
    - Why fourth: maps alternative training and non-Title-IV credential providers outside strictly collegiate pathways
@@ -74,19 +81,23 @@ This ladder describes **what to add and why**, in a sequence that maximizes valu
 
 ## Tier 4 — Network and relationship layer
 9. **USASpending / federal contracts and grants**
-   - Why: maps funding flows between the federal government and local organizations
+   - Why: maps funding flows between the federal government and local training organizations
    - Primary entities: Organization, Relationship
    - UI surfaces: org evidence block ("receives X in federal awards"), funding network panel
 
-10. **BEA Input-Output tables**
+10. **BEA Input-Output tables & Census Business Dynamics**
     - Why: supply chain relationships between industries at the regional level
     - Primary entities: Occupation/Industry, Relationship
     - UI surfaces: supply chain context panel, "this sector buys from / sells to" view
 
-11. **IRS 990 grants-out data**
-    - Why: maps philanthropic funding flows between nonprofits
+11. **IRS 990 filings (via ProPublica API / AWS Public Data)**
+    - Why: maps philanthropic funding flows between nonprofits and identifies Board of Directors cross-pollination
+    - Primary entities: Organization, Person, Relationship
+    - UI surfaces: "Who funds this?" and "Shared Board Members" network graph on org detail pages
+
+12. **OpenCorporates API**
+    - Why: tracks business ownership and corporate subsidiaries for tracking ultimate employer power
     - Primary entities: Organization, Relationship
-    - UI surfaces: "Who funds this?" and "Who does this fund?" on org detail pages
 
 ---
 
