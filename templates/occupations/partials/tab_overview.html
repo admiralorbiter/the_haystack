@@ -1,0 +1,84 @@
+{% import "partials/components.html" as components %}
+
+<div class="content-panel">
+  <div class="panel-section">
+    <h3>Profile Overview</h3>
+    <table class="data-table" style="width:100%; max-width:600px;">
+      <tbody>
+        <tr>
+          <td style="font-weight:600; width:150px;">O*NET Job Zone</td>
+          <td>
+            {{ components.job_zone_badge(occ.job_zone) }}
+          </td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">SOC Major Group</td>
+          <td>
+            <span style="font-family:monospace; margin-right:4px;">{{ occ.soc_major or '—' }}</span>
+            {% if occ.soc_major %}
+            <span style="color:var(--text-muted); font-size:0.9rem;">— {{ occ.soc_major_title }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">SOC Minor Group</td>
+          <td>
+            <span style="font-family:monospace; margin-right:4px;">{{ occ.soc_minor or '—' }}</span> 
+            <span style="color:var(--text-muted); font-size:0.9rem;">(Broad category)</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel-section" style="margin-top:2rem;">
+    <h3>Regional Earnings Profile</h3>
+    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">
+      Actual wages earned by workers in the Kansas City MSA based on BLS May 2024 employer survey data.
+    </p>
+
+    {% if kc_wage and (kc_wage.pct_25_wage or kc_wage.median_wage or kc_wage.pct_75_wage) %}
+    <div style="background:var(--color-bg); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1.5rem; max-width:800px; display:flex; gap:2rem; align-items:center;">
+      
+      {# KC Salary Card #}
+      <div style="flex:1; text-align:center;">
+        {% set kc_lbl = "Mean*" if (kc_wage and not kc_wage.median_wage and kc_wage.annual_mean_wage) else "Median" %}
+        <div style="font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; font-weight:600; margin-bottom:0.5rem;">Kansas City MSA {{ kc_lbl }}</div>
+        <div style="font-size:2.5rem; font-weight:700; color:var(--color-primary); margin-bottom:0.25rem;">
+          {% set kc_val = (kc_wage.median_wage or kc_wage.annual_mean_wage) if kc_wage else None %}
+          ${{ '{:,.0f}'.format(kc_val) if kc_val else '—' }}
+        </div>
+        <div style="font-size:0.85rem; color:var(--text-muted);">
+          Range: 
+          ${{ '{:,.0f}'.format(kc_wage.pct_25_wage) if kc_wage.pct_25_wage else '—' }} – 
+          ${{ '{:,.0f}'.format(kc_wage.pct_75_wage) if kc_wage.pct_75_wage else '—' }}
+        </div>
+      </div>
+
+      {# VS indicator #}
+      <div style="font-weight:600; color:var(--text-muted); font-size:1.2rem;">vs</div>
+
+      {# National Salary Card #}
+      <div style="flex:1; text-align:center; opacity:0.8;">
+        {% set nat_lbl = "Mean*" if (nat_wage and not nat_wage.median_wage and nat_wage.annual_mean_wage) else "Median" %}
+        <div style="font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; font-weight:600; margin-bottom:0.5rem;">National {{ nat_lbl }}</div>
+        <div style="font-size:2rem; font-weight:700; color:var(--text-muted); margin-bottom:0.25rem;">
+          {% set nat_val = (nat_wage.median_wage or nat_wage.annual_mean_wage) if nat_wage else None %}
+          ${{ '{:,.0f}'.format(nat_val) if nat_val else '—' }}
+        </div>
+        <div style="font-size:0.85rem; color:var(--text-muted);">
+          Range: 
+          ${{ '{:,.0f}'.format(nat_wage.pct_25_wage) if nat_wage and nat_wage.pct_25_wage else '—' }} – 
+          ${{ '{:,.0f}'.format(nat_wage.pct_75_wage) if nat_wage and nat_wage.pct_75_wage else '—' }}
+        </div>
+      </div>
+
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:1rem; min-height:100px;">
+      <p>Wage data for this occupation is withheld by the BLS for the Kansas City MSA.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>

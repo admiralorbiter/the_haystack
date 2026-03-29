@@ -26,7 +26,7 @@
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--spacing-sm);">
             <div>
                 <div class="stat-label" style="color:var(--text-primary); font-weight:600; font-size:1.05rem;">
-                    {{ occ.title }}
+                    <a href="{{ url_for('root.occupation_detail', soc=occ.soc) }}" style="color:inherit; text-decoration:none;">{{ occ.title }}</a>
                 </div>
                 <div style="font-family:monospace; font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
                     SOC: {{ occ.soc }}

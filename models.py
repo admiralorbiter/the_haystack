@@ -13,6 +13,32 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Integer, Float, Boolean, ForeignKey, DateTime, Index
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+SOC_MAJOR_GROUPS = {
+    "11": "Management Occupations",
+    "13": "Business and Financial Operations Occupations",
+    "15": "Computer and Mathematical Occupations",
+    "17": "Architecture and Engineering Occupations",
+    "19": "Life, Physical, and Social Science Occupations",
+    "21": "Community and Social Service Occupations",
+    "23": "Legal Occupations",
+    "25": "Educational Instruction and Library Occupations",
+    "27": "Arts, Design, Entertainment, Sports, and Media Occupations",
+    "29": "Healthcare Practitioners and Technical Occupations",
+    "31": "Healthcare Support Occupations",
+    "33": "Protective Service Occupations",
+    "35": "Food Preparation and Serving Related Occupations",
+    "37": "Building and Grounds Cleaning and Maintenance Occupations",
+    "39": "Personal Care and Service Occupations",
+    "41": "Sales and Related Occupations",
+    "43": "Office and Administrative Support Occupations",
+    "45": "Farming, Fishing, and Forestry Occupations",
+    "47": "Construction and Extraction Occupations",
+    "49": "Installation, Maintenance, and Repair Occupations",
+    "51": "Production Occupations",
+    "53": "Transportation and Material Moving Occupations",
+    "55": "Military Specific Occupations",
+}
+
 class Base(DeclarativeBase):
     pass
 
@@ -190,6 +216,10 @@ class Occupation(db.Model):
     bright_outlook: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     
     wages = relationship("OccupationWage", back_populates="occupation", cascade="all, delete-orphan")
+
+    @property
+    def soc_major_title(self) -> str:
+        return SOC_MAJOR_GROUPS.get(self.soc_major, "Unknown Major Group") if self.soc_major else "Unknown Major Group"
 
 
 class OccupationWage(db.Model):

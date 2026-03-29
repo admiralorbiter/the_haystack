@@ -22,13 +22,13 @@
           <th data-sort="text">Occupation <span class="sort-ind">↕</span></th>
           <th style="font-family:monospace; font-size:0.85rem;" data-sort="text">SOC Code <span class="sort-ind">↕</span></th>
           <th class="num-col" title="Structural mapping confidence from the CIP→SOC crosswalk" data-sort="num">Confidence <span class="sort-ind">↕</span></th>
-          <th class="num-col" title="Median annual wage in the KC MSA (BLS)">Median Wage <span class="sort-ind">↕</span></th>
+          <th class="num-col" title="Median or Mean annual wage. Local KC MSA preferred, falls back to National." data-sort="num">Wage (Prefer Local) <span class="sort-ind">↕</span></th>
         </tr>
       </thead>
       <tbody>
         {% for occ, confidence in occ_links %}
         <tr>
-          <td data-sort-val="{{ occ.title | lower }}">{{ occ.title }}</td>
+          <td data-sort-val="{{ occ.title | lower }}"><a href="{{ url_for('root.occupation_detail', soc=occ.soc) }}" class="provider-name-link">{{ occ.title }}</a></td>
           <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);" data-sort-val="{{ occ.soc }}">{{ occ.soc }}</td>
           <td class="num-col" data-sort-val="{{ confidence if confidence is not none else -1 }}">
             {% if confidence is not none %}
@@ -39,18 +39,30 @@
               &mdash;
             {% endif %}
           </td>
-          {% set ns = namespace(kc_wage=none) %}
+          {% set ns = namespace(kc=none, nat=none) %}
           {% for w in occ.wages %}
-            {% if w.area_type == 'msa' and 'Kansas City' in w.area_name %}
-                {% set ns.kc_wage = w %}
+            {% if w.area_type == 'msa' and w.area_name and 'Kansas City' in w.area_name %}
+                {% set ns.kc = w %}
+            {% elif w.area_type == 'national' %}
+                {% set ns.nat = w %}
             {% endif %}
           {% endfor %}
-          {% set kc_wage = ns.kc_wage %}
-          <td class="num-col" data-sort-val="{{ kc_wage.median_wage if kc_wage and kc_wage.median_wage else 0 }}">
-            {% if kc_wage and kc_wage.median_wage %}
-                <span style="font-weight: 500;">${{ '{:,.0f}'.format(kc_wage.median_wage) }}</span>
+          {% set kc = ns.kc %}
+          {% set nat = ns.nat %}
+          {% set kc_val = (kc.median_wage or kc.annual_mean_wage) if kc else None %}
+          {% set nat_val = (nat.median_wage or nat.annual_mean_wage) if nat else None %}
+          
+          <td class="num-col" data-sort-val="{{ kc_val if kc_val else (nat_val if nat_val else 0) }}">
+            {% if kc_val %}
+                <span style="font-weight: 500;" title="Kansas City MSA">
+                  ${{ '{:,.0f}'.format(kc_val) }}{% if kc and not kc.median_wage and kc.annual_mean_wage %}*{% endif %}
+                </span>
+            {% elif nat_val %}
+                <span style="color:var(--text-muted);" title="Local data withheld. Displaying National.">
+                  <span style="font-size:0.85rem; margin-right:4px;">(Nat.)</span>${{ '{:,.0f}'.format(nat_val) }}{% if nat and not nat.median_wage and nat.annual_mean_wage %}*{% endif %}
+                </span>
             {% else %}
-                <span style="color:var(--text-muted); font-size:0.85rem;" title="Regional wage data not available">—</span>
+                <span style="color:var(--text-muted); font-size:0.85rem;" title="Data withheld by BLS">—</span>
             {% endif %}
           </td>
         </tr>

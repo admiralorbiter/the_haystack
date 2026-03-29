@@ -26,4 +26,30 @@
     <p>{{ suggestion | safe }}</p>
     {% endif %}
 </div>
+</div>
+{% endmacro %}
+
+{% macro job_zone_badge(zone) %}
+  {% set names = {
+    1: 'Little/No Prep (~HS)',
+    2: 'Some Prep (Certificate)',
+    3: 'Medium Prep (Associate\'s)',
+    4: 'Considerable Prep (Bachelor\'s)',
+    5: 'Extensive Prep (Post-Grad)'
+  } %}
+  {% set colors = {
+    1: '#94a3b8',
+    2: '#38bdf8',
+    3: '#3b82f6',
+    4: '#4f46e5',
+    5: '#7c3aed'
+  } %}
+  {% if zone and zone in names %}
+    <span class="badge" style="background-color: {{ colors[zone] }}; color: white;" title="{{ names[zone] }}">
+      Zone {{ zone }}
+    </span>
+    <span style="font-size: 0.8rem; color: var(--text-muted); margin-left:6px; white-space:nowrap;">{{ names[zone] }}</span>
+  {% else %}
+    <span style="color:var(--text-muted); font-size:0.85rem;" title="Unclassified by O*NET">—</span>
+  {% endif %}
 {% endmacro %}

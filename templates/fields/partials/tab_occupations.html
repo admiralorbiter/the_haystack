@@ -32,7 +32,7 @@
       <tbody>
         {% for row in occ_links %}
         <tr>
-          <td data-sort-val="{{ row.occ.title | lower }}">{{ row.occ.title }}</td>
+          <td data-sort-val="{{ row.occ.title | lower }}"><a href="{{ url_for('root.occupation_detail', soc=row.occ.soc) }}" class="provider-name-link">{{ row.occ.title }}</a></td>
           <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);" data-sort-val="{{ row.occ.soc }}">{{ row.occ.soc }}</td>
           <td class="num-col" data-sort-val="{{ row.prog_count }}">{{ row.prog_count }}</td>
           {% set ns = namespace(kc_wage=none) %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}Occupations | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('root.index') }}">Home</a> &rsaquo; Occupations</div>
+
+<header class="page-header">
+  <div class="title-row">
+    <h1 class="m-0">Occupations & Careers</h1>
+    {{ components.entity_badge('occupation', 'KC MSA') }}
+  </div>
+  <p style="color:var(--text-muted); margin:0;">
+    Browse local wages and demand across the Kansas City region, mapped back to training pathways.
+  </p>
+</header>
+
+<div class="filter-bar">
+  <form id="filter-form" action="{{ url_for('root.occupations_directory') }}" method="get" class="filter-form">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <div class="filter-group">
+      <label for="zone-select">O*NET Job Zone (Required Prep)</label>
+      <select id="zone-select" name="zone" onchange="document.getElementById('filter-form').submit();">
+        <option value="">All Zones</option>
+        <option value="1" {% if zone_filter == '1' %}selected{% endif %}>Zone 1: Little or No Prep (~HS Diploma)</option>
+        <option value="2" {% if zone_filter == '2' %}selected{% endif %}>Zone 2: Some Prep (HS + Certificate)</option>
+        <option value="3" {% if zone_filter == '3' %}selected{% endif %}>Zone 3: Medium Prep (Vocational / Associate's)</option>
+        <option value="4" {% if zone_filter == '4' %}selected{% endif %}>Zone 4: Considerable Prep (Bachelor's)</option>
+        <option value="5" {% if zone_filter == '5' %}selected{% endif %}>Zone 5: Extensive Prep (Master's / Ph.D.)</option>
+      </select>
+    </div>
+  </form>
+</div>
+
+{# ── Results count ───────────────────────────────────────────────────────── #}
+<div class="results-header">
+  <span class="results-count">
+    {{ '{:,}'.format(total_count) }} occupation{{ 's' if total_count != 1 else '' }}
+  </span>
+</div>
+
+{# ── Occupations table ──────────────────────────────────────────────────── #}
+{% if occupations %}
+<div class="table-wrapper">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th class="sortable-th text-col {% if sort == 'name' %}sort-desc{% endif %}" data-sort="text">
+          <a href="{{ url_for('root.occupations_directory', sort='name', zone=zone_filter) }}">
+            Occupation <span class="{% if sort == 'name' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'name' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="text-col">Job Zone</th>
+        <th class="num-col sortable-th {% if sort == 'wage' %}sort-desc{% endif %}" data-sort="num">
+          <a href="{{ url_for('root.occupations_directory', sort='wage', zone=zone_filter) }}">
+            Median Wage (KC) <span class="{% if sort == 'wage' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'wage' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th class="num-col">National Wage</th>
+        <th class="num-col sortable-th {% if sort == 'employment' %}sort-desc{% endif %}" data-sort="num">
+          <a href="{{ url_for('root.occupations_directory', sort='employment', zone=zone_filter) }}">
+            Total Employed (KC) <span class="{% if sort == 'employment' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'employment' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in occupations %}
+      {% set o = item.occ %}
+      {% set w = item.kc_wage %}
+      {% set detail_url = url_for('root.occupation_detail', soc=o.soc) %}
+      <tr class="field-row" data-href="{{ detail_url }}">
+        <td data-sort-val="{{ o.title | lower }}">
+          <a href="{{ detail_url }}" class="provider-name-link">{{ o.title }}</a>
+          <span style="font-family:monospace; font-size:0.85rem; color:var(--text-muted); display:block;">{{ o.soc }}</span>
+        </td>
+        <td class="text-col" data-sort-val="{{ o.job_zone or 0 }}">
+          {{ components.job_zone_badge(o.job_zone) }}
+        </td>
+        <td class="num-col" data-sort-val="{{ w.median_wage if w and w.median_wage else (w.annual_mean_wage if w and w.annual_mean_wage else 0) }}">
+          {% if w %}
+            {% if w.median_wage %}
+              <span style="font-weight: 500;">${{ '{:,.0f}'.format(w.median_wage) }}</span>
+            {% elif w.annual_mean_wage %}
+              <span style="font-weight: 500;" title="Median withheld. Displaying annual mean.">${{ '{:,.0f}'.format(w.annual_mean_wage) }}*</span>
+            {% else %}
+              <span style="color:var(--text-muted); font-size:0.85rem;" title="Data withheld by BLS">—</span>
+            {% endif %}
+          {% else %}
+            <span style="color:var(--text-muted); font-size:0.85rem;" title="Data withheld by BLS">—</span>
+          {% endif %}
+        </td>
+        <td class="num-col">
+          {% set nw = item.nat_wage %}
+          {% if nw %}
+            {% if nw.median_wage %}
+             <span style="color:var(--text-muted);">${{ '{:,.0f}'.format(nw.median_wage) }}</span>
+            {% elif nw.annual_mean_wage %}
+             <span style="color:var(--text-muted);" title="Median withheld. Displaying annual mean.">${{ '{:,.0f}'.format(nw.annual_mean_wage) }}*</span>
+            {% else %}
+             <span style="color:var(--text-muted); font-size:0.85rem;">—</span>
+            {% endif %}
+          {% else %}
+            <span style="color:var(--text-muted); font-size:0.85rem;">—</span>
+          {% endif %}
+        </td>
+        <td class="num-col" data-sort-val="{{ w.employment_count if w and w.employment_count else 0 }}">
+          {% if w and w.employment_count %}
+            {{ '{:,}'.format(w.employment_count) }}
+          {% else %}
+            <span style="color:var(--text-muted); font-size:0.85rem;" title="Data withheld by BLS">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Pagination ──────────────────────────────────────────────────────────── #}
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a href="{{ url_for('root.occupations_directory', sort=sort, zone=zone_filter, page=page-1) }}" class="page-btn">&laquo; Prev</a>
+  {% endif %}
+  <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a href="{{ url_for('root.occupations_directory', sort=sort, zone=zone_filter, page=page+1) }}" class="page-btn">Next &raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">💼</div>
+  <h3>No occupations found</h3>
+  <p>Your filter settings returned zero results.</p>
+</div>
+{% endif %}
+
+{# ── Methods footer ──────────────────────────────────────────────────────── #}
+<div class="methods-footer">
+  <strong>Data:</strong> BLS OEWS May 2024 (Regional Wages & Employment); O*NET 29.0 (Job Zones). Local data corresponds to the Kansas City MSA. Suppressed values (—) are withheld by federal agencies to protect anonymity or due to sample size.
+</div>
+
+{% endblock %}

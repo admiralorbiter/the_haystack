@@ -182,6 +182,37 @@
             </tbody>
           </table>
 
+        {% elif tab.id == 'occupations' %}
+        
+          <table class="hub-table">
+            <thead>
+              <tr>
+                <th>TARGET CAREER</th>
+                <th>METRICS</th>
+                <th>PROFILE</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for occ in tab.data %}
+                <tr data-href="{{ url_for('root.occupation_detail', soc=occ.program_id) }}">
+                  <td>
+                    <div style="font-weight:600; color:var(--text-main);">
+                      {{ occ.name }}
+                      {% if occ.bright_outlook %}
+                        <span title="O*NET Bright Outlook" style="margin-left:4px; font-size:1.1rem; line-height:1; vertical-align:-2px;">☀️</span>
+                      {% endif %}
+                    </div>
+                    <div style="font-family:monospace; font-size:0.8rem; color:var(--text-muted);">SOC: {{ occ.program_id }}</div>
+                  </td>
+                  <td>
+                    <span class="badge badge-sm badge-blue">{{ occ.cip_title }}</span>
+                  </td>
+                  <td style="color:var(--text-muted);">&rarr;</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
         {% elif tab.id == 'training' %}
         
           <table class="hub-table">
@@ -190,6 +221,7 @@
                 <th>PROGRAM</th>
                 <th>PROVIDER</th>
                 <th>CREDENTIAL</th>
+                <th>GRADUATES</th>
               </tr>
             </thead>
             <tbody>
@@ -201,6 +233,13 @@
                   </td>
                   <td>{{ prog.org_name }}</td>
                   <td style="color:var(--text-muted);">{{ prog.cred }}</td>
+                  <td style="color:var(--text-muted); font-weight:600;">
+                    {% if prog.completions is not none %}
+                       {{ prog.completions }}
+                    {% else %}
+                       <span style="font-size:0.85rem;" title="Data withheld">—</span>
+                    {% endif %}
+                  </td>
                 </tr>
               {% endfor %}
             </tbody>

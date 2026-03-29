@@ -1,0 +1,81 @@
+{% import "partials/components.html" as components %}
+
+<div class="content-panel">
+  <div class="panel-section">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:1rem;">
+      <h3 style="margin:0;">Training Providers</h3>
+      <span class="results-count">{{ '{:,}'.format(total_count) }} programs found</span>
+    </div>
+
+    {% if programs %}
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="text-col">Program / Field</th>
+            <th class="text-col">Credential</th>
+            <th class="text-col">Institution</th>
+            <th class="num-col" title="Annual completions reported to IPEDS">Completions</th>
+            <th class="num-col" title="Confidence of the CIP to SOC mapping link">Mapping Match</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in programs %}
+          {% set prog = p.program %}
+          {% set detail_url = url_for('root.program_detail', program_id=prog.program_id) %}
+          <tr data-href="{{ detail_url }}">
+            <td>
+              <a href="{{ detail_url }}" class="provider-name-link">{{ prog.name }}</a>
+              <span class="cip-family-code" style="display:block; margin-top:2px;" title="{{ p.cip_title }}">{{ p.cip_title }} (CIP {{ prog.cip }})</span>
+            </td>
+            <td class="text-col">{{ prog.credential_type }}</td>
+            <td class="text-col">
+              <a href="{{ url_for('root.provider_detail', org_id=p.org_id) }}" style="color:var(--text); text-decoration:none;">
+                {{ p.org_name }}
+              </a>
+            </td>
+            <td class="num-col">
+              {% if prog.completions is not none %}
+                {{ prog.completions }}
+              {% elif prog.is_wioa_eligible %}
+                <span class="suppressed-label">N/A (WIOA)</span>
+              {% else %}
+                <span class="suppressed-label" title="Data suppressed">&mdash;</span>
+              {% endif %}
+            </td>
+            <td class="num-col">
+              {% if p.confidence is not none %}
+                <span class="badge badge-sm badge-green">High</span>
+              {% else %}
+                <span class="badge badge-sm" style="background:#e0e0e0; color:#333;">Mapped</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# ── Pagination ──────────────────────────────────────────────────────────── #}
+    {% if total_pages > 1 %}
+    <div class="pagination">
+      {% if page > 1 %}
+      <a href="#" hx-get="{{ url_for('root.occupation_tab_programs', soc=occ.soc, page=page-1) }}" hx-target="#tab-content" class="page-btn">&laquo; Prev</a>
+      {% endif %}
+      <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+      {% if page < total_pages %}
+      <a href="#" hx-get="{{ url_for('root.occupation_tab_programs', soc=occ.soc, page=page+1) }}" hx-target="#tab-content" class="page-btn">Next &raquo;</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">🎓</div>
+      <h3>No Training Programs Found</h3>
+      <p>There are no programs in the dataset successfully mapped to this occupation.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>

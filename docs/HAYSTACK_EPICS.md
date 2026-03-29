@@ -119,6 +119,9 @@
 - **BLS OEWS Integration**: `loaders/load_bls_oews.py` populates the new `OccupationWage` table with 25th, Median, and 75th percentile wage bands plus regional demand metrics (specifically KC MSA).
 - **Career Trajectory Widget**: The `widget_career_trajectory.html` surfaces regional entry, median, and experienced wages natively on Program Detail pages.
 - **Data Completeness**: "Linked Occupations" tables on Program and Field pages now render KC MSA Median Wages directly inline.
+- **Intelligent Wage Fallback**: Implemented application-wide logic for high-earning occupations where the BLS caps and suppresses the median wage (e.g., >$239k). The UI gracefully falls back to the `annual_mean_wage` badged with an explanatory asterisk (`*`).
+- **Cross-Geography Fallback**: Program profile "Linked Occupations" tables now fallback to National median/mean wages (badged with `(Nat.)`) when local KC MSA data is completely missing or suppressed for hyper-specialized roles.
+- **Hubs Enrichment**: Quick Payoff Careers portal now aggressively surfaces O*NET Bright Outlook (`☀️`) badges, total local employment (`Local Jobs`), and IPEDS pipeline flow (`Graduates`) natively on the list view.
 - **Graceful Rendering**: Created explicit Jinja scope handling across loops, and "Data Suppressed" tooltips for highly specialized federal records lacking top-percentile wage brackets. Added foundational/transfer crosswalk alerts for Liberal Arts (CIP 24) mappings.
 
 ---
@@ -175,9 +178,9 @@
 ## Epic 14 — Stepping Stones & ROI Break-Even Pathways
 **Goal:** Shift from static occupation endpoints to sequenced, connected career pathways — helping users trace the journey from entry-level to their ultimate goal, with every step costing real money and paying real wages.
 
-**Design principle:** Education is not a single leap. A CNA cert leads to LPN leads to RN. Haystack should make that ladder visible, cost it out, and show the payoff at every rung.
+**Design principle:** Education is not a single leap. A CNA cert leads to LPN leads to RN. Haystack should make that ladder visible, cost it out, and show the payoff at every rung. We will build UI views that natively stack related careers (e.g. Nursing Assistant [Job Zone 2] -> LPN [Job Zone 3] -> RN [Job Zone 5]), graphing wage jumps visually with a "Find Training for Next Step" affordance.
 
-**Status:** 🔬 Research Spike — requires Epic 11 (BLS OEWS) first.
+**Status:** 🔬 Research Spike — requires Labor-First primitives (Occupations directory) first.
 
 **Research Spike:**
 - Evaluate O*NET job zone links vs Census LEHD Job-to-Job transition grids for "likely next occupation" data.
@@ -191,17 +194,17 @@
 
 ---
 
-## Epic 15 — The "Hidden Gems" Discovery Engine
-**Goal:** Intercept users who don't know what to search for by algorithmically surfacing high-ROI, low-cost programs that are structurally buried by dominant institutions in standard search directories.
+## Epic 15 — The "Hidden Gems" Discovery Engine & Search Intercept
+**Goal:** Intercept users who don't know what to search for by algorithmically surfacing high-ROI, low-cost programs, and redirecting labor-centric searches (e.g. "Welding") directly to occupation profiles.
 
-**Design principle:** Change the platform from a pure search engine into an active discovery engine. Highlight community colleges, technical schools, and union apprenticeships with exceptional outcomes.
+**Design principle:** Change the platform from a pure search engine into an active discovery engine. Highlight community colleges, technical schools, and union apprenticeships with exceptional outcomes. Intercept semantic queries: if a user searches for a job, show them an "Occupation Card" summarizing local median wages and program counts alongside standard directory hits.
 
-**Status:** 🔬 Research Spike — benefits significantly from Epic 11 (BLS OEWS) wage data.
+**Status:** 🔬 Research Spike — benefits significantly from BLS OEWS wage data.
 
 **Research Spike:**
 - Construct a weighted SQL scoring heuristic using: `grad_rate_150 > 60%` + `avg_cost < 10000` + `median_earnings_6yr > 45000`.
 - Evaluate algorithm fragility: Does it surface statistically anomalous programs with tiny N-counts? Design a minimum completions threshold (e.g., N ≥ 25) to suppress noise.
-- Consider a "Surprise Me" entry point on the homepage vs an embedded "Staff Picks" carousel.
+- Prototype Search Interception: parse `SearchEvent` queries against FTS5 `occupation_fts` to inject a high-priority "Career Match" card above the fold.
 
 ---
 
