@@ -1,6 +1,12 @@
 {% import "partials/components.html" as components %}
 
 <div class="content-panel">
+  {% if occ.description %}
+  <div class="panel-section" style="margin-bottom:2rem; font-size:1.1rem; color:var(--text-main); line-height:1.6; max-width:800px;">
+    {{ occ.description }}
+  </div>
+  {% endif %}
+
   <div class="panel-section">
     <h3>Profile Overview</h3>
     <table class="data-table" style="width:100%; max-width:600px;">
@@ -31,7 +37,38 @@
     </table>
   </div>
 
-  <div class="panel-section" style="margin-top:2rem;">
+  {% if occ.tasks or occ.tech_skills %}
+  <div class="panel-section" style="margin-top:2.5rem; display:grid; grid-template-columns:1fr 1fr; gap:2rem;">
+    {% if occ.tasks %}
+    <div>
+      <h3>Typical Tasks</h3>
+      <ul style="padding-left:1.5rem; color:var(--text-muted); line-height:1.5;">
+        {% for task in occ.tasks[:5] %}
+          <li style="margin-bottom:0.75rem;">{{ task.task_statement }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if occ.tech_skills %}
+    <div>
+      <h3>Software & Technologies</h3>
+      <ul style="padding-left:1.5rem; color:var(--text-muted); line-height:1.5; list-style-type:square;">
+        {% for skill in occ.tech_skills[:6] %}
+          <li style="margin-bottom:0.5rem;">
+            {{ skill.example }}
+            {% if skill.hot_technology %}
+              <span title="O*NET Hot Technology" style="font-size:1rem; margin-left:4px;">🔥</span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="panel-section" style="margin-top:2.5rem;">
     <h3>Regional Earnings Profile</h3>
     <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">
       Actual wages earned by workers in the Kansas City MSA based on BLS May 2024 employer survey data.
@@ -81,4 +118,36 @@
     {% endif %}
 
   </div>
+
+  {% if occ.related|length > 0 %}
+  <div class="panel-section" style="margin-top:2.5rem; padding-top:2.5rem; border-top:1px solid var(--color-border);">
+    <h3 style="margin-bottom:0.25rem;">Similar Careers</h3>
+    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">
+      Other occupations requiring similar skills and environments, structurally aligned via O*NET.
+    </p>
+    <div style="display:flex; flex-wrap:wrap; gap:1rem;">
+      {% for rel in occ.related|sort(attribute='index_score', reverse=True) %}
+        {% if loop.index <= 5 %}
+          {% if rel.related_occupation %}
+            <a href="{{ url_for('root.occupation_detail', soc=rel.related_soc) }}" 
+               class="related-occ-card"
+               style="display:flex; flex-direction:column; padding:1.2rem; background:white; border:1px solid var(--color-border); border-radius:var(--radius-md); text-decoration:none; color:inherit; width:280px; transition:border-color 0.2s, box-shadow 0.2s;">
+              <span style="font-weight:600; color:var(--color-primary); margin-bottom:0.35rem; font-size:0.95rem; line-height:1.3;">{{ rel.related_occupation.title }}</span>
+              <span style="font-size:0.8rem; font-family:monospace; color:var(--text-muted); display:flex; align-items:center; justify-content:space-between;">
+                {{ rel.related_soc }}
+                <span style="font-family:-apple-system, sans-serif;">&rarr;</span>
+              </span>
+            </a>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  <style>
+    .related-occ-card:hover {
+      border-color: var(--color-primary) !important;
+      box-shadow: 0 4px 12px rgba(135,0,88,0.08); /* slight primary tint */
+    }
+  </style>
+  {% endif %}
 </div>

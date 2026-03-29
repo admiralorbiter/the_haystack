@@ -210,12 +210,16 @@ class Occupation(db.Model):
     
     soc: Mapped[str] = mapped_column(String(20), primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=True)
     soc_major: Mapped[str] = mapped_column(String(10), nullable=True)
     soc_minor: Mapped[str] = mapped_column(String(10), nullable=True)
     job_zone: Mapped[int] = mapped_column(Integer, nullable=True)
     bright_outlook: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     
     wages = relationship("OccupationWage", back_populates="occupation", cascade="all, delete-orphan")
+    tasks = relationship("OccupationTask", back_populates="occupation", cascade="all, delete-orphan")
+    tech_skills = relationship("OccupationTechSkill", back_populates="occupation", cascade="all, delete-orphan")
+    related = relationship("RelatedOccupation", back_populates="occupation", foreign_keys="RelatedOccupation.soc", cascade="all, delete-orphan")
 
     @property
     def soc_major_title(self) -> str:
@@ -241,6 +245,41 @@ class OccupationWage(db.Model):
 
 Index("ix_occupation_wage_soc", OccupationWage.soc)
 Index("ix_occupation_wage_area", OccupationWage.area_type, OccupationWage.area_code)
+
+
+class OccupationTask(db.Model):
+    __tablename__ = "occupation_task"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    soc: Mapped[str] = mapped_column(ForeignKey("occupation.soc"), nullable=False, index=True)
+    task_statement: Mapped[str] = mapped_column(String, nullable=False)
+    task_type: Mapped[str] = mapped_column(String(50), nullable=True)
+    
+    occupation = relationship("Occupation", back_populates="tasks", foreign_keys=[soc])
+
+
+class OccupationTechSkill(db.Model):
+    __tablename__ = "occupation_tech_skill"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    soc: Mapped[str] = mapped_column(ForeignKey("occupation.soc"), nullable=False, index=True)
+    example: Mapped[str] = mapped_column(String, nullable=False)
+    hot_technology: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    
+    occupation = relationship("Occupation", back_populates="tech_skills", foreign_keys=[soc])
+
+
+class RelatedOccupation(db.Model):
+    __tablename__ = "related_occupation"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    soc: Mapped[str] = mapped_column(ForeignKey("occupation.soc"), nullable=False, index=True)
+    related_soc: Mapped[str] = mapped_column(ForeignKey("occupation.soc"), nullable=False, index=True)
+    relatedness_tier: Mapped[str] = mapped_column(String(50), nullable=True)
+    index_score: Mapped[float] = mapped_column(Float, nullable=True)
+    
+    occupation = relationship("Occupation", back_populates="related", foreign_keys=[soc])
+    related_occupation = relationship("Occupation", foreign_keys=[related_soc])
 
 
 class ProgramOccupation(db.Model):
