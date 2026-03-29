@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}Industries Directory | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('root.index') }}">Home</a> &rsaquo; Industries
+</div>
+
+<header class="page-header">
+  <div class="title-row">
+    <h1 class="m-0">KC Industries</h1>
+    {{ components.entity_badge('occupation', 'KC Metro') }}
+  </div>
+  <p style="color:var(--text-muted); margin:0;">
+    Kansas City area employment by industry sector, sourced from BLS QCEW quarterly data as of <strong>{{ latest_quarter }}</strong>.
+    Employment totals are aggregated across all KC area counties.
+  </p>
+</header>
+
+{% if not industries %}
+<div class="empty-state">
+  <div class="empty-icon">🏭</div>
+  <h3>No industry data found</h3>
+  <p>Run <code>python loaders/load_bls_qcew.py</code> to populate industry data.</p>
+</div>
+{% else %}
+
+<div class="results-header">
+  <span class="results-count">{{ '{:,}'.format(industries|length) }} industries tracked</span>
+</div>
+
+<div class="table-wrapper">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th class="text-col" style="padding:1rem;">Industry</th>
+        <th class="num-col" style="padding:1rem;">KC Employment</th>
+        <th class="num-col" style="padding:1rem;">Establishments</th>
+        <th class="num-col" style="padding:1rem;">Avg Weekly Wage</th>
+        <th class="num-col" style="padding:1rem;">YoY Momentum</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ind in industries %}
+      <tr class="field-row" data-href="{{ url_for('root.industry_detail', naics=ind.naics) }}" style="cursor:pointer;">
+        <td class="text-col" style="padding:1rem;">
+          <a href="{{ url_for('root.industry_detail', naics=ind.naics) }}" class="provider-name-link">{{ ind.title }}</a>
+          <span style="font-family:monospace; font-size:0.8rem; color:var(--text-muted); display:block;">NAICS {{ ind.naics }}</span>
+        </td>
+        <td class="num-col" style="padding:1rem; font-weight:600;">{{ '{:,}'.format(ind.employment) }}</td>
+        <td class="num-col" style="padding:1rem; color:var(--text-muted);">{{ '{:,}'.format(ind.establishments) }}</td>
+        <td class="num-col" style="padding:1rem; color:var(--color-success, #16a34a);">
+          {% if ind.wage %} ${{ '{:,.0f}'.format(ind.wage) }} {% else %} — {% endif %}
+        </td>
+        <td class="num-col" style="padding:1rem;">
+          {% if ind.pct_change is not none %}
+            {% if ind.direction == "UP" %}
+              <span style="color:#16a34a; font-weight:600;">▲ {{ '{:.1f}'.format(ind.pct_change) }}%</span>
+            {% elif ind.direction == "DOWN" %}
+              <span style="color:#dc2626; font-weight:600;">▼ {{ '{:.1f}'.format(ind.pct_change|abs) }}%</span>
+            {% else %}
+              <span style="color:var(--text-muted);">Flat</span>
+            {% endif %}
+          {% else %}
+            <span style="color:var(--text-muted); font-size:0.85rem;">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="methods-footer">
+  <strong>Data:</strong> BLS QCEW {{ latest_quarter }} — county-level employment for Kansas City MSA counties. Includes Federal, State, Local government, and Private sector workers. Suppressed rows (BLS confidentiality rules) are excluded. YoY compares same quarter to prior year.
+</div>
+
+{% endif %}
+{% endblock %}

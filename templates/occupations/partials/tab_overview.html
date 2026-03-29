@@ -181,15 +181,29 @@
               </td>
               <td class="num-col" style="padding:1rem;">
                 {% if local_trends and ind.naics in local_trends %}
-                  {% set trend = local_trends[ind.naics] %}
-                  {% if trend.direction == "UP" %}
-                    <span style="color:var(--color-success, #16a34a); font-weight:600;">▲ {{ '{:.1f}'.format(trend.pct_change) }}%</span>
-                  {% elif trend.direction == "DOWN" %}
-                    <span style="color:var(--color-danger, #dc2626); font-weight:600;">▼ {{ '{:.1f}'.format(trend.pct_change|abs) }}%</span>
+                  {% set t = local_trends[ind.naics] %}
+                  {# Primary: YoY badge #}
+                  {% if t.yoy_pct is not none %}
+                    {% if t.direction == "UP" %}
+                      <span style="color:#16a34a; font-weight:600;">▲ {{ '{:.1f}'.format(t.yoy_pct) }}%</span>
+                    {% elif t.direction == "DOWN" %}
+                      <span style="color:#dc2626; font-weight:600;">▼ {{ '{:.1f}'.format(t.yoy_pct|abs) }}%</span>
+                    {% else %}
+                      <span style="color:var(--text-muted);">Flat</span>
+                    {% endif %}
+                    <div style="font-size:0.78rem; color:var(--text-muted); margin-top:1px;">
+                      YoY ({{ t.ref_quarter }}){% if not t.is_complete %} <span title="Q3 2025 data may be preliminary; showing last confirmed quarter.">⚠️</span>{% endif %}
+                    </div>
                   {% else %}
-                    <span style="color:var(--text-muted);">Flat</span>
+                    <span style="color:var(--text-muted); font-size:0.85rem;">—</span>
                   {% endif %}
-                  <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">YoY ({{ trend.latest_quarter }})</div>
+                  {# Secondary: linear trend slope #}
+                  {% if t.trend_slope_pct is not none %}
+                    <div style="font-size:0.78rem; margin-top:4px; color:{% if t.trend_direction == 'UP' %}#16a34a{% elif t.trend_direction == 'DOWN' %}#dc2626{% else %}var(--text-muted){% endif %};" title="Annualised linear trend across all available quarters">
+                      {% if t.trend_direction == 'UP' %}↗{% elif t.trend_direction == 'DOWN' %}↘{% else %}→{% endif %}
+                      {{ '{:+.1f}'.format(t.trend_slope_pct) }}%/yr trend
+                    </div>
+                  {% endif %}
                 {% else %}
                   <span style="color:var(--text-muted);">Data withheld</span>
                 {% endif %}

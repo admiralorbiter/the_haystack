@@ -13,6 +13,7 @@ from sqlalchemy.orm import joinedload
 from models import (
     DatasetSource,
     Occupation,
+    OccupationIndustry,
     OccupationProjection,
     OccupationWage,
     Organization,
@@ -23,6 +24,7 @@ from models import (
 )
 from . import root_bp
 from .cip_utils import cip_title
+from .qcew_utils import get_qcew_trends
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -62,64 +64,8 @@ def _get_nat_wage(soc: str) -> OccupationWage | None:
 
 
 def _get_industry_trends(naics_list: list[str]) -> dict:
-    """
-    Returns a dict mapping NAICS -> {'pct_change': float, 'direction': str, 'latest_emp': int}
-    based on YoY KC employment (latest quarter vs same quarter last year).
-    """
-    if not naics_list:
-        return {}
-
-    rows = (
-        db.session.query(
-            IndustryQCEW.naics,
-            IndustryQCEW.year,
-            IndustryQCEW.quarter,
-            func.sum(IndustryQCEW.employment).label('total_emp')
-        )
-        .filter(IndustryQCEW.naics.in_(naics_list))
-        .group_by(IndustryQCEW.naics, IndustryQCEW.year, IndustryQCEW.quarter)
-        .order_by(IndustryQCEW.year.desc(), IndustryQCEW.quarter.desc())
-        .all()
-    )
-
-    data = {}
-    for r in rows:
-        data.setdefault(r.naics, {}).setdefault(r.year, {})[r.quarter] = r.total_emp or 0
-
-    results = {}
-    for naics in naics_list:
-        if naics not in data:
-            continue
-            
-        years = sorted(data[naics].keys(), reverse=True)
-        if not years:
-            continue
-            
-        latest_year = years[0]
-        quarters = sorted(data[naics][latest_year].keys(), reverse=True)
-        latest_quarter = quarters[0]
-        
-        latest_emp = data[naics][latest_year][latest_quarter]
-        prev_year = latest_year - 1
-        pct_change = None
-        direction = "FLAT"
-        
-        if prev_year in data[naics] and latest_quarter in data[naics][prev_year]:
-            prev_emp = data[naics][prev_year][latest_quarter]
-            if prev_emp and prev_emp > 0:
-                pct_change = ((latest_emp - prev_emp) / prev_emp) * 100.0
-                if pct_change > 0.5:
-                    direction = "UP"
-                elif pct_change < -0.5:
-                    direction = "DOWN"
-                
-        results[naics] = {
-            "latest_emp": latest_emp,
-            "pct_change": pct_change,
-            "direction": direction,
-            "latest_quarter": f"Q{latest_quarter} {latest_year}"
-        }
-    return results
+    """Thin wrapper around shared get_qcew_trends utility."""
+    return get_qcew_trends(naics_list, db.session)
 
 
 # ---------------------------------------------------------------------------
@@ -173,6 +119,34 @@ def occupations_directory():
             "nat_wage": nat_wage,
         })
 
+    # Compute KC momentum per SOC via NAICS crosswalk
+    # For each occupation, aggregate its top industries' QCEW trends
+    all_socs = [o.soc for o in rows]
+    # Get all NAICS codes for these SOCs
+    matrix_rows = (
+        db.session.query(OccupationIndustry.soc, OccupationIndustry.naics)
+        .filter(OccupationIndustry.soc.in_(all_socs))
+        .all()
+    )
+    soc_to_naics: dict[str, list[str]] = {}
+    for mr in matrix_rows:
+        soc_to_naics.setdefault(mr.soc, []).append(mr.naics)
+
+    all_naics = list({n for ns in soc_to_naics.values() for n in ns})
+    naics_trends = _get_industry_trends(all_naics)
+
+    # For each SOC, find the dominant industry trend (largest absolute pct_change with data)
+    occ_trends = {}
+    for soc in all_socs:
+        best = None
+        for naics in soc_to_naics.get(soc, []):
+            t = naics_trends.get(naics)
+            if t and t["pct_change"] is not None:
+                if best is None or abs(t["pct_change"]) > abs(best["pct_change"]):
+                    best = t
+        if best:
+            occ_trends[soc] = best
+
     total_pages = max(1, -(-total_count // per_page))
 
     return render_template(
@@ -183,6 +157,7 @@ def occupations_directory():
         zone_filter=zone_filter,
         page=page,
         total_pages=total_pages,
+        occ_trends=occ_trends,
     )
 
 

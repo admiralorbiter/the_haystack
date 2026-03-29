@@ -23,9 +23,9 @@
 | **11 Workforce Connections** | BLS OEWS wage & O*NET demand integration | ✅ Shipped 2026-03-29 |
 | **11b O*NET Depth** | Alternate Titles (search), Skills, Education Level, Work Values | ✅ Shipped 2026-03-29 |
 | **16 BLS Expansion** | Employment Projections (growth) + NAICS-to-SOC Industry Matrix | ✅ Shipped 2026-03-29 |
-| **16-C Regional Projections** | MERIC MO-level projections + QCEW local trend signals | 🟡 Partial (QCEW Shipped) |
+| **16-C Regional Projections** | MERIC MO-level projections + QCEW local trend signals | ✅ Shipped 2026-03-29 |
 | **17 Employer-Occupation Link** | Apprenticeship SOC direct links + NAICS inferred employer matching | 🔲 Planned |
-| **18 Industry (NAICS) Profiles** | Industry detail pages + LEHD J2J talent flow intelligence | 🔲 Planned |
+| **18 Industry (NAICS) Profiles** | Industry detail pages + LEHD J2J talent flow intelligence | ✅ Shipped 2026-03-29 |
 | **12 Ecosystem & Network View** | Force-directed graph of provider relationships | 🔲 Planned |
 | **13 Briefing Builder** | Collect stats/entities and generate printable one-pager | 🔲 Planned |
 | **14 Stepping Stones** | Sequenced credential pathways + ROI break-even calculator | 🔬 Research Spike |
@@ -33,6 +33,19 @@
 | **Data Research Spike** | Proactive discovery of new regional/local datasets to fill data gaps | 🔬 Research Spike |
 
 ---
+
+---
+
+## ✅ Epic 16-C & 18 — Regional QCEW Integration & Industry Profiles (Shipped 2026-03-29)
+**Goal:** Shift the platform from a national/state lens to a hyper-local KC-metro focus for economic signals.
+
+**What Shipped:**
+- **Comprehensive KC Data:** Re-engineered the `load_bls_qcew.py` pipeline to ingest all ownership types (Federal, State, Local, Private), covering ~174,000 regional records instead of just the private sector.
+- **Data Quality Protections:** Implemented `qcew_utils.py` that automatically detects and rejects preliminary, incomplete quarterly reporting from the BLS, rolling back to the last confirmed complete quarter. 
+- **Long-Run Trends:** Built a linear regression utility to calculate an annualized structural trend slope across 3 years of data, immune to single-quarter noise.
+- **Home Page Pulse:** Built the "KC Labor Market Pulse" widget surfacing the top 4 growing and top 4 declining local industries (automatically ignoring statistical noise from tiny sub-500 job sectors).
+- **Occupations Integration:** Replaced the generic "National Wage" column in the Occupations Directory with a highly actionable **"KC Momentum"** metric, derived via a crosswalk to the occupation's primary hiring industries.
+- **Industry Directory & Profiles:** Deployed `/industries` and `/industries/<naics>` endpoints. Profile pages include 3-year bar charts, YoY momentum calculations, wage data, and explanatory breakdown panels detailing the structural trend vs. snapshot YoY logic.
 
 ## ✅ Epic 2.9 — Pre-Phase-3 Hardening (Shipped 2026-03-29)
 **Goal:** Closed structural gaps identified in architecture review before Phase 3 (org enrichment) begins.

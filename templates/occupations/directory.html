@@ -57,7 +57,7 @@
             Median Wage (KC) <span class="{% if sort == 'wage' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'wage' %}↓{% else %}↕{% endif %}</span>
           </a>
         </th>
-        <th class="num-col">National Wage</th>
+        <th class="num-col">KC Momentum</th>
         <th class="num-col sortable-th {% if sort == 'employment' %}sort-desc{% endif %}" data-sort="num">
           <a href="{{ url_for('root.occupations_directory', sort='employment', zone=zone_filter) }}">
             Total Employed (KC) <span class="{% if sort == 'employment' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'employment' %}↓{% else %}↕{% endif %}</span>
@@ -97,15 +97,16 @@
           {% endif %}
         </td>
         <td class="num-col">
-          {% set nw = item.nat_wage %}
-          {% if nw %}
-            {% if nw.median_wage %}
-             <span style="color:var(--text-muted);">${{ '{:,.0f}'.format(nw.median_wage) }}</span>
-            {% elif nw.annual_mean_wage %}
-             <span style="color:var(--text-muted);" title="Median withheld. Displaying annual mean.">${{ '{:,.0f}'.format(nw.annual_mean_wage) }}*</span>
+          {% set t = occ_trends.get(o.soc) %}
+          {% if t %}
+            {% if t.direction == "UP" %}
+              <span style="color:#16a34a; font-weight:600;">▲ {{ '{:.1f}'.format(t.pct_change) }}%</span>
+            {% elif t.direction == "DOWN" %}
+              <span style="color:#dc2626; font-weight:600;">▼ {{ '{:.1f}'.format(t.pct_change|abs) }}%</span>
             {% else %}
-             <span style="color:var(--text-muted); font-size:0.85rem;">—</span>
+              <span style="color:var(--text-muted);">Flat</span>
             {% endif %}
+            <div style="font-size:0.75rem; color:var(--text-muted);">YoY ({{ t.latest_quarter }})</div>
           {% else %}
             <span style="color:var(--text-muted); font-size:0.85rem;">—</span>
           {% endif %}

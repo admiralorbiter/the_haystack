@@ -37,6 +37,44 @@
     </div>
 </section>
 
+{# KC Labor Market Pulse #}
+{% if pulse_industries %}
+<section style="padding: var(--spacing-xl) 0; border-bottom: 1px solid var(--color-surface);">
+  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--spacing-lg);">
+    <div>
+      <h2 style="margin: 0; font-size: 1.5rem;">KC Labor Market Pulse</h2>
+      <p style="color: var(--text-muted); margin: 0.25rem 0 0 0; font-size: 0.95rem;">Year-over-year employment momentum across KC area industries — {{ pulse_industries[0].quarter if pulse_industries else '' }}</p>
+    </div>
+    <a href="{{ url_for('root.industries_directory') }}" style="color: var(--color-primary); font-size: 0.9rem; font-weight: 600; text-decoration: none;">View all industries →</a>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+    {% for ind in pulse_industries %}
+    <a href="{{ url_for('root.industry_detail', naics=ind.naics) }}" style="text-decoration: none;">
+      <div style="background: var(--bg-surface, var(--color-surface)); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; transition: box-shadow 0.15s, transform 0.15s;" 
+           onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'; this.style.transform='translateY(-1px)'"
+           onmouseout="this.style.boxShadow=''; this.style.transform=''">
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ ind.title }}</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; font-family: monospace;">NAICS {{ ind.naics }} · {{ '{:,}'.format(ind.employment) }} jobs</div>
+        </div>
+        <div style="text-align: right; flex-shrink: 0;">
+          {% if ind.direction == "UP" %}
+            <div style="font-size: 1.4rem; font-weight: 700; color: #16a34a;">▲ {{ '{:.1f}'.format(ind.pct_change) }}%</div>
+          {% elif ind.direction == "DOWN" %}
+            <div style="font-size: 1.4rem; font-weight: 700; color: #dc2626;">▼ {{ '{:.1f}'.format(ind.pct_change|abs) }}%</div>
+          {% else %}
+            <div style="font-size: 1.4rem; font-weight: 700; color: var(--text-muted);">— Flat</div>
+          {% endif %}
+          <div style="font-size: 0.75rem; color: var(--text-muted);">YoY ({{ ind.quarter }})</div>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 {# Entity gateway — what can you explore? #}
 <section style="padding: var(--spacing-xl) 0;">
     <h2 style="margin-bottom: var(--spacing-lg);">Explore the Region</h2>
@@ -71,6 +109,14 @@
                 <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm);">🗺️</div>
                 <div style="font-weight: bold; color: var(--color-primary); margin-bottom: var(--spacing-xs);">Map</div>
                 <div class="stat-caveat">Explore providers by location across the KC metro.</div>
+            </div>
+        </a>
+
+        <a href="{{ url_for('root.industries_directory') }}" style="text-decoration: none;">
+            <div class="stat-card" style="cursor: pointer; transition: box-shadow 0.15s;">
+                <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm);">🏭</div>
+                <div style="font-weight: bold; color: var(--color-primary); margin-bottom: var(--spacing-xs);">Industries</div>
+                <div class="stat-caveat">Browse KC employment trends by NAICS sector — who's hiring and who's contracting.</div>
             </div>
         </a>
 

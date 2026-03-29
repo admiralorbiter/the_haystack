@@ -7,7 +7,8 @@ root_bp = Blueprint("root", __name__)
 
 @root_bp.route("/")
 def index():
-    from models import Organization, Program, ProgramOccupation, db
+    from models import Organization, Program, ProgramOccupation, IndustryQCEW, OccupationIndustry, db
+    from sqlalchemy import func
 
     # ── Regional summary stats ────────────────────────────────────────────
     provider_count = db.session.query(func.count(Organization.org_id)).scalar() or 0
@@ -22,12 +23,43 @@ def index():
         db.session.query(func.count(func.distinct(ProgramOccupation.soc))).scalar() or 0
     )
 
+    # ── KC Labor Market Pulse via shared qcew_utils ─────────────────────────
+    from .qcew_utils import get_qcew_trends
+    title_map = {
+        r.naics: r.industry_title
+        for r in db.session.query(OccupationIndustry.naics, OccupationIndustry.industry_title).all()
+    }
+    named_naics = list(title_map.keys())
+    pulse_industries = []
+    if named_naics:
+        all_trends = get_qcew_trends(named_naics, db.session)
+        changes = []
+        for naics, t in all_trends.items():
+            if t["yoy_pct"] is None or t["latest_emp"] < 500:
+                continue
+            if abs(t["yoy_pct"]) > 200:
+                continue
+            title = title_map.get(naics)
+            if not title:
+                continue
+            changes.append({
+                "naics": naics,
+                "title": title,
+                "pct_change": t["yoy_pct"],
+                "employment": t["latest_emp"],
+                "direction": t["direction"],
+                "quarter": t["ref_quarter"],
+            })
+        changes.sort(key=lambda x: x["pct_change"], reverse=True)
+        pulse_industries = changes[:4] + changes[-4:][::-1]
+
     return render_template(
         "home.html",
         provider_count=provider_count,
         program_count=program_count,
         total_completions=total_completions,
         occ_count=occ_count,
+        pulse_industries=pulse_industries,
     )
 
 
