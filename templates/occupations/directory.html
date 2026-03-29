@@ -17,8 +17,15 @@
 </header>
 
 <div class="filter-bar">
-  <form id="filter-form" action="{{ url_for('root.occupations_directory') }}" method="get" class="filter-form">
+  <form id="filter-form" action="{{ url_for('root.occupations_directory') }}" method="get" class="filter-form" style="display: flex; gap: var(--spacing-lg); align-items: flex-end; flex-wrap: wrap;">
     <input type="hidden" name="sort" value="{{ sort }}">
+    <div class="filter-group">
+      <label for="search-input">Search Title or SOC Code</label>
+      <div style="display: flex; gap: var(--spacing-xs);">
+        <input type="text" id="search-input" name="q" placeholder="e.g. Registered Nurse" value="{{ search_query }}" style="padding: 6px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); min-width: 250px;">
+        <button type="submit" class="btn btn-secondary" style="padding: 6px 12px;">Search</button>
+      </div>
+    </div>
     <div class="filter-group">
       <label for="zone-select">O*NET Job Zone (Required Prep)</label>
       <select id="zone-select" name="zone" onchange="document.getElementById('filter-form').submit();">
@@ -47,24 +54,24 @@
     <thead>
       <tr>
         <th class="sortable-th text-col {% if sort == 'name' %}sort-desc{% endif %}" data-sort="text">
-          <a href="{{ url_for('root.occupations_directory', sort='name', zone=zone_filter) }}">
+          <a href="{{ url_for('root.occupations_directory', sort='name', zone=zone_filter, q=search_query) }}">
             Occupation <span class="{% if sort == 'name' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'name' %}↓{% else %}↕{% endif %}</span>
           </a>
         </th>
         <th class="text-col">Job Zone</th>
         <th class="num-col sortable-th {% if sort == 'wage' %}sort-desc{% endif %}" data-sort="num">
-          <a href="{{ url_for('root.occupations_directory', sort='wage', zone=zone_filter) }}">
+          <a href="{{ url_for('root.occupations_directory', sort='wage', zone=zone_filter, q=search_query) }}">
             Median Wage (KC) <span class="{% if sort == 'wage' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'wage' %}↓{% else %}↕{% endif %}</span>
           </a>
         </th>
         <th class="num-col">KC Momentum</th>
         <th class="num-col sortable-th {% if sort == 'employment' %}sort-desc{% endif %}" data-sort="num">
-          <a href="{{ url_for('root.occupations_directory', sort='employment', zone=zone_filter) }}">
+          <a href="{{ url_for('root.occupations_directory', sort='employment', zone=zone_filter, q=search_query) }}">
             Total Employed (KC) <span class="{% if sort == 'employment' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'employment' %}↓{% else %}↕{% endif %}</span>
           </a>
         </th>
         <th class="num-col sortable-th {% if sort == 'growth' %}sort-desc{% endif %}" data-sort="num">
-          <a href="{{ url_for('root.occupations_directory', sort='growth', zone=zone_filter) }}">
+          <a href="{{ url_for('root.occupations_directory', sort='growth', zone=zone_filter, q=search_query) }}">
             10-Yr Growth (Nat.) <span class="{% if sort == 'growth' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'growth' %}↓{% else %}↕{% endif %}</span>
           </a>
         </th>
@@ -152,11 +159,11 @@
 {% if total_pages > 1 %}
 <div class="pagination">
   {% if page > 1 %}
-  <a href="{{ url_for('root.occupations_directory', sort=sort, zone=zone_filter, page=page-1) }}" class="page-btn">&laquo; Prev</a>
+  <a href="{{ url_for('root.occupations_directory', sort=sort, zone=zone_filter, q=search_query, page=page-1) }}" class="page-btn">&laquo; Prev</a>
   {% endif %}
   <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
   {% if page < total_pages %}
-  <a href="{{ url_for('root.occupations_directory', sort=sort, zone=zone_filter, page=page+1) }}" class="page-btn">Next &raquo;</a>
+  <a href="{{ url_for('root.occupations_directory', sort=sort, zone=zone_filter, q=search_query, page=page+1) }}" class="page-btn">Next &raquo;</a>
   {% endif %}
 </div>
 {% endif %}

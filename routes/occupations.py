@@ -84,6 +84,7 @@ def _get_industry_trends(naics_list: list[str]) -> dict:
 def occupations_directory():
     sort = request.args.get("sort", "wage")
     zone_filter = request.args.get("zone", None)
+    search_query = request.args.get("q", "").strip()
     
     page = max(1, int(request.args.get("page", 1) or 1))
     per_page = 50
@@ -99,6 +100,14 @@ def occupations_directory():
         .outerjoin(OccupationProjection)
         .options(joinedload(Occupation.wages), joinedload(Occupation.projection))
     )
+
+    if search_query:
+        q = q.filter(
+            db.or_(
+                Occupation.title.ilike(f"%{search_query}%"),
+                Occupation.soc.ilike(f"%{search_query}%")
+            )
+        )
 
     if zone_filter and zone_filter.isdigit():
         q = q.filter(Occupation.job_zone == int(zone_filter))
@@ -161,6 +170,7 @@ def occupations_directory():
         total_count=total_count,
         sort=sort,
         zone_filter=zone_filter,
+        search_query=search_query,
         page=page,
         total_pages=total_pages,
         occ_trends=occ_trends,
