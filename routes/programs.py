@@ -416,6 +416,31 @@ def program_detail(program_id: str):
         .all()
     )
 
+    # Peer programs — EXACT same CIP and credential_type in the region
+    peer_programs = []
+    if prog.cip and prog.credential_type:
+        peer_rows = (
+            db.session.query(Program, Organization.name.label("org_name"))
+            .join(Organization, Organization.org_id == Program.org_id)
+            .filter(
+                Program.cip == prog.cip,
+                Program.credential_type == prog.credential_type,
+                Program.program_id != program_id,
+                Organization.org_type == "training",
+            )
+            .order_by(Program.completions.desc().nulls_last())
+            .limit(5)
+            .all()
+        )
+        peer_programs = [
+            {
+                "program": r.Program,
+                "cip_title": cip_title(r.Program.name),
+                "org_name": r.org_name,
+            }
+            for r in peer_rows
+        ]
+
     # Similar programs — same CIP family, different programs, sorted by completions
     cip_family = prog.cip.split(".")[0] if prog.cip and "." in prog.cip else None
     similar_programs = []
@@ -448,6 +473,7 @@ def program_detail(program_id: str):
             org=org,
             snapshot=snapshot,
             top_occupations=top_occupations,
+            peer_programs=peer_programs,
             similar_programs=similar_programs,
             cip_family_label=cip_family_label(prog.cip),
         )
@@ -458,6 +484,7 @@ def program_detail(program_id: str):
         org=org,
         snapshot=snapshot,
         top_occupations=top_occupations,
+        peer_programs=peer_programs,
         similar_programs=similar_programs,
         cip_family_label=cip_family_label(prog.cip),
         active_tab="overview",
@@ -481,6 +508,30 @@ def program_tab_overview(program_id: str):
         .limit(5)
         .all()
     )
+
+    peer_programs = []
+    if prog.cip and prog.credential_type:
+        peer_rows = (
+            db.session.query(Program, Organization.name.label("org_name"))
+            .join(Organization, Organization.org_id == Program.org_id)
+            .filter(
+                Program.cip == prog.cip,
+                Program.credential_type == prog.credential_type,
+                Program.program_id != program_id,
+                Organization.org_type == "training",
+            )
+            .order_by(Program.completions.desc().nulls_last())
+            .limit(5)
+            .all()
+        )
+        peer_programs = [
+            {
+                "program": r.Program,
+                "cip_title": cip_title(r.Program.name),
+                "org_name": r.org_name,
+            }
+            for r in peer_rows
+        ]
 
     cip_family = prog.cip.split(".")[0] if prog.cip and "." in prog.cip else None
     similar_programs = []
@@ -512,6 +563,7 @@ def program_tab_overview(program_id: str):
         org=org,
         snapshot=_program_snapshot(prog, org),
         top_occupations=top_occupations,
+        peer_programs=peer_programs,
         similar_programs=similar_programs,
         cip_family_label=cip_family_label(prog.cip),
     )

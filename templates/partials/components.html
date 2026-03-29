@@ -13,7 +13,7 @@
 {% endmacro %}
 
 {% macro data_freshness_badge(date, source) %}
-<span class="badge badge-freshness">Data as of {{ date }} from {{ source }}</span>
+<span class="badge badge-freshness">Updated {{ date | timeago }} via {{ source }}</span>
 {% endmacro %}
 
 {% macro empty_state(message, suggestion, icon='') %}

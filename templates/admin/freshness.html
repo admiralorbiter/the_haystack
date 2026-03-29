@@ -1,0 +1,50 @@
+{% extends "admin/dashboard.html" %}
+
+{% block content %}
+<div class="breadcrumb" style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+  <a href="{{ url_for('admin.dashboard') }}" style="color: var(--accent); text-decoration: none;">Admin Dashboard</a> &rsaquo; Freshness
+</div>
+
+<h1 style="margin-bottom: 0.5rem;">Data Freshness Tracker</h1>
+<p style="color:var(--text-muted); margin-bottom: 2rem;">
+  Monitors dataset sources to ensure the platform isn't serving stale intelligence. <br>
+  🟢 &lt; 30 days &mdash; 🟡 30–90 days &mdash; 🔴 90+ days
+</p>
+
+<table class="data-table" style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px;">
+  <thead>
+    <tr style="border-bottom: 2px solid var(--border-color); background: var(--bg-surface);">
+      <th style="padding: 1rem; text-align: left; width: 80px;">Status</th>
+      <th style="padding: 1rem; text-align: left;">Dataset</th>
+      <th style="padding: 1rem; text-align: left;">Records</th>
+      <th style="padding: 1rem; text-align: left;">Last Refreshed</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in statuses %}
+    <tr style="border-bottom: 1px solid var(--border-color);">
+      <td style="padding: 1rem; font-size: 1.5rem; text-align: center;">
+        {% if item.status == 'green' %}🟢
+        {% elif item.status == 'yellow' %}🟡
+        {% else %}🔴{% endif %}
+      </td>
+      <td style="padding: 1rem;">
+        <strong>{{ item.source.name }}</strong><br>
+        <span style="font-size: 0.85rem; color: var(--text-muted); font-family: monospace;">{{ item.source.source_id }}</span>
+      </td>
+      <td style="padding: 1rem;">
+        {{ '{:,}'.format(item.source.record_count) if item.source.record_count else '—' }}
+      </td>
+      <td style="padding: 1rem;">
+        {% if item.source.loaded_at %}
+        {{ item.source.loaded_at.strftime('%Y-%m-%d') }} 
+        <br><span style="font-size: 0.85rem; color: var(--text-muted);">({{ item.days_old }} days ago)</span>
+        {% else %}
+        Never
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

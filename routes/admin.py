@@ -371,6 +371,31 @@ def dashboard():
     )
 
 
+@admin_bp.route("/freshness")
+def freshness_dashboard():
+    from datetime import datetime, timezone
+    sources = DatasetSource.query.order_by(DatasetSource.loaded_at.desc()).all()
+    now = datetime.now(timezone.utc)
+    
+    status_list = []
+    for s in sources:
+        # Some timestamps might be naive depending on sqlite driver, enforce timezone awareness
+        loaded = s.loaded_at.replace(tzinfo=timezone.utc) if s.loaded_at.tzinfo is None else s.loaded_at
+        days_old = (now - loaded).days if s.loaded_at else 999
+        if days_old < 30:
+            status = "green"
+        elif days_old <= 90:
+            status = "yellow"
+        else:
+            status = "red"
+            
+        status_list.append({
+            "source": s,
+            "days_old": days_old,
+            "status": status
+        })
+        
+    return render_template("admin/freshness.html", statuses=status_list)
 
 
 

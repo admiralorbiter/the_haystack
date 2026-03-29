@@ -19,6 +19,25 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(model_class=Base)
 
 
+class PageView(db.Model):
+    __tablename__ = "page_view"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    path: Mapped[str] = mapped_column(String(500), nullable=False)
+    query_params: Mapped[str] = mapped_column(String(1000), nullable=True)
+    session_id: Mapped[str] = mapped_column(String(100), nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+
+
+class SearchEvent(db.Model):
+    __tablename__ = "search_event"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    query_text: Mapped[str] = mapped_column(String(500), nullable=False)
+    result_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+
+
 class DatasetSource(db.Model):
     __tablename__ = "dataset_source"
     

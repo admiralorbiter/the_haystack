@@ -139,6 +139,15 @@ def _provider_snapshot(org_id: str) -> dict:
 
     sc_summary = _scorecard_summary(org.unitid)
 
+    om_8yr_rate = None
+    if org.unitid:
+        om_data = _ipeds_outcome_measures(org.unitid)
+        if om_data:
+            total_cohort = sum(r["cohort_n"] for r in om_data if r["cohort_n"])
+            weighed_sum = sum((r["pct_8yr"] / 100.0 * r["cohort_n"]) for r in om_data if r["pct_8yr"] is not None and r["cohort_n"])
+            if total_cohort > 0:
+                om_8yr_rate = round((weighed_sum / total_cohort) * 100)
+
     return {
         "total_programs": total_programs,
         "total_completions": total_completions,
@@ -151,6 +160,7 @@ def _provider_snapshot(org_id: str) -> dict:
         "data_as_of": ds.loaded_at.strftime("%Y-%m-%d") if ds and ds.loaded_at else "Unknown",
         "sc_earn_median_6yr": sc_summary.get("earn_median_6yr"),
         "scorecard_coverage": sc_summary.get("has_data", False),
+        "om_8yr_rate": om_8yr_rate,
     }
 
 

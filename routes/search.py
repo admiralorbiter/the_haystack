@@ -120,6 +120,15 @@ def search_view():
             if len(field_results) >= 5:
                 break
                 
+    try:
+        from models import SearchEvent
+        total = len(org_results) + len(prog_results) + len(field_results)
+        se = SearchEvent(query_text=q[:500], result_count=total)
+        db.session.add(se)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        
     return render_template(
         "search/results.html",
         q=q,

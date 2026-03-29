@@ -75,7 +75,7 @@
 {% endif %}
 
 {# ── Snapshot strip (5-column forced grid) ────────────────────────────── #}
-<div class="snapshot-strip" style="grid-template-columns: repeat(5, 1fr);">
+<div class="snapshot-strip" style="grid-template-columns: repeat(6, 1fr);">
   {{ components.stat_card('Programs', snapshot.total_programs) }}
 
   {% if snapshot.total_completions is not none %}
@@ -89,9 +89,18 @@
   {{ components.stat_card('Top Credential', snapshot.top_credential) }}
   {{ components.stat_card('Top CIP Family', snapshot.top_cip_label) }}
 
+  {% if snapshot.om_8yr_rate is not none %}
+    {{ components.stat_card('Graduation (8yr)', snapshot.om_8yr_rate ~ '%', caveat='Inc. Part-Time & Transfer') }}
+  {% elif snapshot.grad_rate_150 %}
+    {# fallback if om2024 is missing but gr2024 exists #}
+    {{ components.stat_card('Graduation (150%)', snapshot.grad_rate_150 ~ '%', caveat='Full-Time First-Time') }}
+  {% else %}
+    {{ components.stat_card('Linked Occupations', snapshot.linked_occupations) }}
+  {% endif %}
+
   {% if snapshot.sc_earn_median_6yr %}
     {{ components.stat_card('Median Earnings (6yr)', '$' + '{:,}'.format(snapshot.sc_earn_median_6yr), caveat='Scorecard 2024–25') }}
-  {% else %}
+  {% elif snapshot.om_8yr_rate is not none %}
     {{ components.stat_card('Linked Occupations', snapshot.linked_occupations) }}
   {% endif %}
 </div>
