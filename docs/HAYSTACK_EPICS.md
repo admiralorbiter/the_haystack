@@ -31,8 +31,7 @@
 | **14 Stepping Stones** | Sequenced credential pathways + ROI break-even calculator | 🔬 Research Spike |
 | **15 Hidden Gems Engine** | Algorithmic surfacing of high-ROI programs | 🔬 Research Spike |
 | **Data Research Spike** | Proactive discovery of new regional/local datasets to fill data gaps | 🔬 Research Spike |
-
----
+| **19 KC Career Intelligence** | `/outlook` dashboard — Career Grades (A+→F), Now/Next/Later tiers, top jobs by tier | 🟡 Data Downloads Pending |
 
 ---
 
