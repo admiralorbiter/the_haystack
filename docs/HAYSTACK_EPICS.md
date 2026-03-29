@@ -21,6 +21,9 @@
 | **2.9 Pre-Phase-3 Hardening** | org_fact table, soft-delete, API namespace, search spec, analytics | ✅ Shipped 2026-03-29 |
 | **6.5 Program Compare** | Head-to-head program-level side-by-side | ✅ Shipped 2026-03-29 |
 | **11 Workforce Connections** | BLS OEWS wage & O*NET demand integration | ✅ Shipped 2026-03-29 |
+| **11b O*NET Depth** | Alternate Titles (search), Skills, Education Level, Work Values | 🔲 Planned |
+| **16 BLS Expansion** | Employment Projections (growth) + NAICS-to-SOC Industry Matrix | 🔲 Planned |
+| **17 Employer-Occupation Link** | Apprenticeship SOC direct links + NAICS inferred employer matching | 🔲 Planned |
 | **12 Ecosystem & Network View** | Force-directed graph of provider relationships | 🔲 Planned |
 | **13 Briefing Builder** | Collect stats/entities and generate printable one-pager | 🔲 Planned |
 | **14 Stepping Stones** | Sequenced credential pathways + ROI break-even calculator | 🔬 Research Spike |
@@ -126,6 +129,103 @@
 
 ---
 
+## Epic 11b — O*NET Depth (Planned)
+**Goal:** Surface the remaining high-value datasets from our existing O*NET `db_29_0_text` bundle to turn Occupation profiles from wage-tables into genuine career exploration profiles.
+
+### Priority 1 — Ship Next
+
+**Alternate Titles (Search Power-Up)**
+- **File:** `Alternate Titles.txt`
+- **What it does:** Maps colloquial job titles ("Welder", "Cashier") to structured SOC codes. Ingested into `OccupationAlias` table and wired into SQLite FTS5 search. Users searching everyday terms will land on the correct occupation profile. Also powers the Epic 15 Search Intercept.
+- **Models:** New `OccupationAlias` (`soc`, `alias_title`, `short_title`)
+- **UI:** Powers search results. No visible surface change but massive search UX impact.
+
+**Core Skills**
+- **File:** `Skills.txt` (filter: `Scale ID = 'IM'` for Importance ratings)
+- **What it does:** Maps universal competencies (Active Listening, Critical Thinking, Service Orientation) to every occupation with an importance score. Surface top 5 as compact pill-tags on the Overview tab.
+- **Models:** New `OccupationSkill` (`soc`, `element_name`, `importance_score`)
+- **UI:** Compact pill-tag row in `tab_overview.html` above the wage section.
+
+**Education & Training Requirements**
+- **File:** `Education, Training, and Experience.txt` (filter: `Element Name = 'Required Level of Education'`)
+- **What it does:** Shows percentage of current workers holding each credential level (High School, Associate's, Bachelor's, etc.). Directly answers "Do I really need a degree for this?" — renders as a single callout like "68% of workers have an Associate's or less."
+- **Models:** New `OccupationEducation` (`soc`, `ed_level_code`, `ed_level_label`, `pct_workers`)
+- **UI:** Single-row callout in the "Profile Overview" table on `tab_overview.html`.
+
+### Priority 2 — Nice to Have
+
+**Work Values**
+- **File:** `Work Values.txt` (filter: `Scale ID = 'EX'` for Extent)
+- **What it does:** Maps occupation-level drivers of job satisfaction (Achievement, Independence, Recognition, Working Conditions). Surface top 2–3 as contextual chips for career fit explorers.
+- **Models:** New `OccupationWorkValue` (`soc`, `element_name`, `extent_score`)
+- **UI:** Small icon-paired tag row near the description block.
+
+---
+
+## Epic 16 — BLS Expansion: Projections & Industry Matrix (Planned)
+**Goal:** Fill the gap between "what jobs pay today" (OEWS) and "what jobs will grow" (EP) while establishing the NAICS-to-SOC crosswalk that unlocks the Employer-to-Occupation link in Epic 17.
+
+### Dataset A: BLS Employment Projections 2023–2033
+- **Source:** https://www.bls.gov/emp/data/occupational-data.htm (`ep_table_1.xlsx`)
+- **Fields:** SOC code, 2023 employment, 2033 employment, `% change`, annual job openings
+- **Geographic scope:** National only (BLS does not publish metro-level 10-year projections — badge clearly as `(Nat.)`)
+- **Models:** New `OccupationProjection` (`soc`, `emp_2023`, `emp_2033`, `pct_change`, `annual_openings`)
+- **Loader:** `loaders/load_bls_projections.py`
+- **UI surfaces:**
+  - Occupation Detail snapshot strip: replace placeholder `☀️` Bright Outlook with real `+14% Projected Growth` card
+  - Occupations Directory: new "Growth" sort option alongside Wage and Employment
+  - Hubs: replace static bright outlook badge with projected growth data
+
+### Dataset B: BLS NAICS-to-SOC Industry-Occupation Matrix
+- **Source:** https://www.bls.gov/emp/tables/industry-occupation-matrix-occupation.htm
+- **Fields:** SOC code, NAICS code, NAICS title, employment share in that industry
+- **Models:** New `OccupationIndustry` (`soc`, `naics_code`, `naics_title`, `pct_employment`)
+- **Loader:** `loaders/load_bls_naics_soc.py`
+- **UI surfaces:**
+  - New "Who Hires This" section on Occupation Detail (top 5 industries as a simple table or bar visual)
+  - Powers inferred employer matching in Epic 17-B
+
+### Dataset C (Research Spike): Census LEHD Job-to-Job Flows (J2J)
+- **Source:** https://lehd.ces.census.gov/data/#j2j
+- **Fields:** Origin SOC, destination SOC, transition rate (probability)
+- **What it does:** Shows the statistical probability that a worker in Occupation A will transition to Occupation B over a 3-year window. Directly powers the Epic 14 "Stepping Stones" career pathway widget with real transition data rather than just O*NET structural similarity.
+- **Status:** Research spike — evaluate schema and decide if we store transition probabilities or compute them at query time.
+
+---
+
+## Epic 17 — Employer-to-Occupation Linking (Planned)
+**Goal:** Close the final gap in the workforce intelligence map. Current map: `Provider → Program → Occupation`. Target map: `Employer → Occupation ← Program ← Provider`.
+
+**Design principle:** Two strategies in parallel — deterministic (high confidence, small coverage) and inferred (lower confidence, broad coverage). Both must be clearly labeled in the UI so users know the provenance of each link.
+
+### Strategy A: Apprenticeship Direct Links (Deterministic)
+**Coverage:** ~50 KC apprenticeship sponsors currently in DB  
+**Confidence:** High — these employers signed a federal DOL contract to train workers in a specific SOC code.
+
+- Re-examine `data/raw/apprenticeship/partner-finder-listings.csv` for SOC/RAPIDS occupation code fields
+- Update `loaders/load_apprenticeships.py` to parse occupation codes and create `ProgramOccupation` links for apprenticeship programs
+- **UI surface (Occupation Detail):** New "Apprenticeship Sponsors in KC" section — employer names as clickable org links. Badged `Registered Apprenticeship`.
+
+### Strategy B: NAICS Inferred Employer Matching (Probabilistic)
+**Coverage:** All KC employers in DB once tagged with NAICS code  
+**Confidence:** Inferred — "employers in this industry *likely* hire this occupation."
+
+**Schema prerequisite:** Add `naics_code: Mapped[str]` to `Organization` (nullable). NAICS code sourcing options (ranked by preference):
+1. Parse from apprenticeship listing CSV if industry field exists (free, immediate)
+2. Manual tag for top ~50 active KC employers in the DB (quick, high accuracy)
+3. Defer to Phase 3 IRS 990 ingestion which maps NTEE → NAICS automatically
+
+**Matching logic:**
+1. For a given SOC, query `OccupationIndustry` → get top industries that employ this role
+2. Query `Organization` WHERE `naics_code IN (...)` AND `org_type = 'employer'` AND KC-scoped
+3. Return as "Likely Employers in KC" with clear `(Inferred via industry)` badge and tooltip
+
+**UI surface (Occupation Detail):** New collapsible "Employers in KC" section showing both Strategy A results (labeled `Registered Apprenticeship`) and Strategy B results (labeled `Inferred — employer in related industry`) in the same panel with clear visual differentiation.
+
+**Critical rule:** Never display inferred employer links without the `(Inferred)` disclaimer. The Haystack's credibility depends on users understanding how data was derived.
+
+---
+
 ## Epic 12 — Ecosystem / Network View
 **Goal:** Render a living, force-directed graph of KC's training ecosystem — making relationships between providers, programs, employers, and occupations visually navigable.
 
@@ -183,14 +283,15 @@
 **Status:** 🔬 Research Spike — requires Labor-First primitives (Occupations directory) first.
 
 **Research Spike:**
-- Evaluate O*NET job zone links vs Census LEHD Job-to-Job transition grids for "likely next occupation" data.
+- **Census LEHD Job-to-Job (J2J) Flows** (see Epic 16 Dataset C) are the primary data engine for probabilistic "next step" transition probabilities. Evaluate whether we store J2J origin→destination pairs or compute at query time.
+- Evaluate O*NET `RelatedOccupation` data (already ingested in Epic 11) as a structural fallback when J2J data is unavailable for a specific SOC.
 - Investigate Credential Engine Registry (CTDL) for structured credential stacking schemas showing how certs roll up into degrees.
 - Prototype the "Interactive ROI Slider" math: cost of credential ÷ (BLS median wage − current wage) = break-even years.
 
 **Data dependencies:**
-- Epic 11 (BLS OEWS wages) must ship first.
+- Epic 11 (BLS OEWS wages) — ✅ Shipped
+- Epic 16 (BLS Employment Projections + J2J Flows) — prerequisite for accurate trajectory step sizing
 - Credential Engine Registry (future external ingestion).
-- Census LEHD Job-to-Job Flows (for probabilistic "next step" career transitions).
 
 ---
 

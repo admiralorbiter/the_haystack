@@ -421,3 +421,87 @@ Copy-paste this into the Epic ticket when starting a new data integration.
 - [ ] HAYSTACK_AI_COLLAB_GUIDE.md updated with any process lessons
 - [ ] This playbook updated with new patterns discovered
 ```
+
+---
+
+## Part 11 — Occupation Intelligence Extension Pattern
+
+When adding supplemental O*NET datasets to enrich the `Occupation` model, follow these rules to avoid UI clutter and schema sprawl.
+
+### "Hub-and-spoke" model design
+The core `Occupation` model is the hub. Each supplemental dataset is a spoke — a **separate, dedicated table** with a FK to `occupation.soc`. Never add new columns to `Occupation` itself for scored or multi-value data. Only scalar flags (like `bright_outlook: bool`) or short strings (like `description: str`) belong on the parent model.
+
+Planned spokes (Epics 11b & 16):
+
+| Table | Content | Max rows per SOC |
+|---|---|---|
+| `occupation_alias` | Alternate/colloquial job titles | Uncapped (used by search only) |
+| `occupation_skill` | Universal skill importance scores | 5 (top 5 by importance) |
+| `occupation_education` | Credential distribution among workers | ~8 (one per education level) |
+| `occupation_work_value` | Job satisfaction drivers | Top 3 by extent score |
+| `occupation_projection` | BLS 10-year growth + annual openings | 1 (national only) |
+| `occupation_industry` | NAICS industries that employ this SOC | Top 10 by share |
+
+### Loader cap rule
+Always cap rows per SOC in the loader (not in the query). The UI should never be responsible for truncating lists.
+
+```python
+if soc not in rows_per_soc:
+    rows_per_soc[soc] = 0
+if rows_per_soc[soc] >= MAX_PER_SOC:
+    continue
+rows_per_soc[soc] += 1
+db.session.add(NewSpokeModel(soc=soc, ...))
+```
+
+### UI placement guide for Occupation Detail `tab_overview.html`
+Keep this order to maintain scannability:
+
+1. `occ.description` (full-width intro prose)
+2. Profile Overview table (Job Zone, Major Group, Minor Group)
+3. Education Requirements callout ("X% of workers have Y or less")
+4. Two-column grid: Typical Tasks | Software & Technologies
+5. Core Skills pill-tags (compact row)
+6. Work Values chips (small, optional)
+7. Regional Earnings Profile (wage comparison)
+8. Similar Careers cards (linked, max 5)
+9. *(Future: Employers in KC — collapsible)*
+
+---
+
+## Part 12 — Inferred Data Transparency Rule
+
+**This rule is non-negotiable.** The Haystack's credibility as a research tool depends on users understanding how each data point was derived.
+
+### The three data confidence tiers
+
+| Tier | Label | Badge style | Example |
+|---|---|---|---|
+| **Direct** | No label needed | — | BLS OEWS median wage |
+| **Inferred** | `(Inferred)` badge + tooltip | `.badge-inferred` (amber) | NAICS → employer occupation match |
+| **Estimated** | `(Est.)` badge + tooltip | `.badge-estimated` (gray) | National projection applied to local context |
+
+### When to apply the Inferred rule
+Anytime a data point is produced by a crosswalk, a probability/transition rate, or a fuzzy/algorithmic merge — rather than a direct source record lookup — it **must carry an Inferred badge** in the UI and a tooltip: *"This [link] is inferred from [dataset]. It does not confirm an active hiring relationship."*
+
+### Implementation pattern
+
+```python
+# routes/occupations.py (future Epic 17)
+inferred_employers = [
+    {
+        "org": org,
+        "confidence_source": "NAICS-to-SOC matrix (BLS)",
+        "badge_label": "Inferred — employer in related industry",
+    }
+    for org in matched_orgs
+]
+```
+
+```html
+{# In templates — render badge BEFORE the value #}
+{% if item.confidence_source %}
+  <span class="badge-inferred" title="Inferred from: {{ item.confidence_source }}">Inferred</span>
+{% endif %}
+{{ item.org.name }}
+```
