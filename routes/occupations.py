@@ -122,10 +122,11 @@ def occupations_directory():
     # Compute KC momentum per SOC via NAICS crosswalk
     # For each occupation, aggregate its top industries' QCEW trends
     all_socs = [o.soc for o in rows]
-    # Get all NAICS codes for these SOCs
+    # Get all NAICS codes for these SOCs, ordered by their proportion of the occupation
     matrix_rows = (
         db.session.query(OccupationIndustry.soc, OccupationIndustry.naics)
         .filter(OccupationIndustry.soc.in_(all_socs))
+        .order_by(OccupationIndustry.soc, OccupationIndustry.pct_of_occupation.desc())
         .all()
     )
     soc_to_naics: dict[str, list[str]] = {}
@@ -135,17 +136,14 @@ def occupations_directory():
     all_naics = list({n for ns in soc_to_naics.values() for n in ns})
     naics_trends = _get_industry_trends(all_naics)
 
-    # For each SOC, find the dominant industry trend (largest absolute pct_change with data)
+    # For each SOC, find the trend of its primary employing industry
     occ_trends = {}
     for soc in all_socs:
-        best = None
         for naics in soc_to_naics.get(soc, []):
             t = naics_trends.get(naics)
-            if t and t["pct_change"] is not None:
-                if best is None or abs(t["pct_change"]) > abs(best["pct_change"]):
-                    best = t
-        if best:
-            occ_trends[soc] = best
+            if t and t["yoy_pct"] is not None:
+                occ_trends[soc] = t
+                break  # we take the first one with data (since they are ordered by pct_of_occupation)
 
     total_pages = max(1, -(-total_count // per_page))
 

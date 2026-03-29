@@ -55,11 +55,11 @@
           {% if ind.wage %} ${{ '{:,.0f}'.format(ind.wage) }} {% else %} — {% endif %}
         </td>
         <td class="num-col" style="padding:1rem;">
-          {% if ind.pct_change is not none %}
+          {% if ind.yoy_pct is not none %}
             {% if ind.direction == "UP" %}
-              <span style="color:#16a34a; font-weight:600;">▲ {{ '{:.1f}'.format(ind.pct_change) }}%</span>
+              <span style="color:#16a34a; font-weight:600;">▲ {{ '{:.1f}'.format(ind.yoy_pct) }}%</span>
             {% elif ind.direction == "DOWN" %}
-              <span style="color:#dc2626; font-weight:600;">▼ {{ '{:.1f}'.format(ind.pct_change|abs) }}%</span>
+              <span style="color:#dc2626; font-weight:600;">▼ {{ '{:.1f}'.format(ind.yoy_pct|abs) }}%</span>
             {% else %}
               <span style="color:var(--text-muted);">Flat</span>
             {% endif %}

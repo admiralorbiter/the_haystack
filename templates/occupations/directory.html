@@ -98,15 +98,15 @@
         </td>
         <td class="num-col">
           {% set t = occ_trends.get(o.soc) %}
-          {% if t %}
+          {% if t and t.yoy_pct is not none %}
             {% if t.direction == "UP" %}
-              <span style="color:#16a34a; font-weight:600;">▲ {{ '{:.1f}'.format(t.pct_change) }}%</span>
+              <span style="color:#16a34a; font-weight:600;">▲ {{ '{:.1f}'.format(t.yoy_pct) }}%</span>
             {% elif t.direction == "DOWN" %}
-              <span style="color:#dc2626; font-weight:600;">▼ {{ '{:.1f}'.format(t.pct_change|abs) }}%</span>
+              <span style="color:#dc2626; font-weight:600;">▼ {{ '{:.1f}'.format(t.yoy_pct|abs) }}%</span>
             {% else %}
               <span style="color:var(--text-muted);">Flat</span>
             {% endif %}
-            <div style="font-size:0.75rem; color:var(--text-muted);">YoY ({{ t.latest_quarter }})</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">YoY ({{ t.ref_quarter }})</div>
           {% else %}
             <span style="color:var(--text-muted); font-size:0.85rem;">—</span>
           {% endif %}
