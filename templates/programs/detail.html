@@ -97,6 +97,14 @@
     hx-push-url="false"
     onclick="setActiveTab(this)">Scorecard</button>
 
+  {% if prog.demographics and prog.demographics.total_completions > 0 %}
+  <button class="tab" id="tab-btn-demographics"
+    hx-get="{{ url_for('root.program_tab_demographics', program_id=prog.program_id) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Equity in Completions</button>
+  {% endif %}
+
   <button class="tab" id="tab-btn-geography"
     hx-get="{{ url_for('root.program_tab_geography', program_id=prog.program_id) }}"
     hx-target="#tab-content"

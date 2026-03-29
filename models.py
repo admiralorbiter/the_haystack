@@ -83,6 +83,8 @@ class Organization(db.Model):
     # Relationships
     programs = relationship("Program", back_populates="organization")
     contacts = relationship("OrgContact", back_populates="organization", cascade="all, delete-orphan")
+    demographics = relationship("OrganizationDemographics", uselist=False, back_populates="organization", cascade="all, delete-orphan")
+    completions_demo = relationship("OrganizationCompletionsDemographics", uselist=False, back_populates="organization", cascade="all, delete-orphan")
 
 Index("ix_organization_county_fips", Organization.county_fips)
 
@@ -125,6 +127,7 @@ class Program(db.Model):
 
     # Relationships
     organization = relationship("Organization", back_populates="programs")
+    demographics = relationship("ProgramDemographics", uselist=False, back_populates="program", cascade="all, delete-orphan")
 
 Index("ix_program_org_id", Program.org_id)
 Index("ix_program_cip", Program.cip)
@@ -178,3 +181,62 @@ class Relationship(db.Model):
     valid_from: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     valid_to: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
+
+class OrganizationDemographics(db.Model):
+    __tablename__ = "organization_demographics"
+    
+    org_id: Mapped[str] = mapped_column(ForeignKey("organization.org_id"), primary_key=True)
+    total_enrollment: Mapped[int] = mapped_column(Integer, nullable=True)
+    pct_men: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_women: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_white: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_black: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_hispanic: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_asian: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_native: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_pacific: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_two_or_more: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_unknown: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_non_resident: Mapped[float] = mapped_column(Float, nullable=True)
+
+    organization = relationship("Organization", back_populates="demographics")
+
+
+class OrganizationCompletionsDemographics(db.Model):
+    __tablename__ = "organization_completions_demo"
+    
+    org_id: Mapped[str] = mapped_column(ForeignKey("organization.org_id"), primary_key=True)
+    total_completions: Mapped[int] = mapped_column(Integer, nullable=True)
+    pct_men: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_women: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_white: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_black: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_hispanic: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_asian: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_native: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_pacific: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_two_or_more: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_unknown: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_non_resident: Mapped[float] = mapped_column(Float, nullable=True)
+
+    organization = relationship("Organization", back_populates="completions_demo")
+
+
+class ProgramDemographics(db.Model):
+    __tablename__ = "program_demographics"
+    
+    program_id: Mapped[str] = mapped_column(ForeignKey("program.program_id"), primary_key=True)
+    total_completions: Mapped[int] = mapped_column(Integer, nullable=True)
+    pct_men: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_women: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_white: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_black: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_hispanic: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_asian: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_native: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_pacific: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_two_or_more: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_unknown: Mapped[float] = mapped_column(Float, nullable=True)
+    pct_non_resident: Mapped[float] = mapped_column(Float, nullable=True)
+
+    program = relationship("Program", back_populates="demographics")

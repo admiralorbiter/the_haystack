@@ -1023,6 +1023,16 @@ def provider_tab_outcomes(org_id: str):
         enrollment_demo=_ipeds_enrollment_demographics(org.unitid),
     )
 
+@root_bp.route("/providers/<org_id>/tab/demographics")
+def provider_tab_demographics(org_id: str):
+    org = _get_provider_or_404(org_id)
+    return render_template(
+        "providers/partials/tab_demographics.html",
+        org=org,
+        demographics=org.demographics,
+        completions=org.completions_demo
+    )
+
 @root_bp.route("/providers/<org_id>/tab/scorecard")
 def provider_tab_scorecard(org_id: str):
     org = _get_provider_or_404(org_id)

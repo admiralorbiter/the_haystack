@@ -141,6 +141,14 @@
     hx-target="#tab-content"
     hx-push-url="false"
     onclick="setActiveTab(this)">Evidence</button>
+  
+  {% if org.demographics %}
+  <button class="tab" id="tab-btn-demographics"
+    hx-get="{{ url_for('root.provider_tab_demographics', org_id=org.org_id) }}"
+    hx-target="#tab-content"
+    hx-push-url="false"
+    onclick="setActiveTab(this)">Student Demographics</button>
+  {% endif %}
   {% endif %}
 
   <button class="tab" id="tab-btn-methods"

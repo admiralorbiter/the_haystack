@@ -9,8 +9,7 @@
   {% if ipeds and ipeds.aid_any_grant_pct is not none %}
   <a href="#section-aid" style="color:var(--color-primary);">Financial Aid</a> ·
   {% endif %}
-  <a href="#section-completions" style="color:var(--color-primary);">Completions</a> ·
-  <a href="#section-demographics" style="color:var(--color-primary);">Demographics</a>
+  <a href="#section-completions" style="color:var(--color-primary);">Completions</a>
   {% if ipeds and ipeds.exp_total %}
   · <a href="#section-investment" style="color:var(--color-primary);">Investment</a>
   {% endif %}
@@ -186,52 +185,6 @@
 </div>
 {% endif %}
 
-{# ── Student Demographics — Race/Ethnicity (ef2024a) ────────────────────── #}
-{% if enrollment_demo %}
-<div class="tab-section">
-  <h3 class="section-title">
-    Fall 2024 Enrollment Demographics
-    <span class="section-hint">(all undergraduates)</span>
-  </h3>
-  {% set total = enrollment_demo.total %}
-  <div style="display:flex;flex-direction:column;gap:0.4rem;max-width:480px;">
-    {% set races = [
-      ('White',                   enrollment_demo.white),
-      ('Hispanic / Latino',       enrollment_demo.hispanic),
-      ('Black / African American',enrollment_demo.black),
-      ('Asian',                   enrollment_demo.asian),
-      ('Two or More Races',       enrollment_demo.two_or_more),
-      ('Am. Indian / Alaska Native', enrollment_demo.aian),
-      ('Nonresident Alien',       enrollment_demo.nonresident),
-      ('Unknown',                 enrollment_demo.unknown),
-    ] %}
-    {% for label, n in races %}
-    {% if n %}
-    {% set pct = (n / total * 100) | round(1) %}
-    <div>
-      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:2px;">
-        <span>{{ label }}</span>
-        <span style="color:var(--text-muted);">{{ "{:,}".format(n) }} ({{ pct }}%)</span>
-      </div>
-      <div style="background:var(--color-surface);border-radius:4px;height:8px;overflow:hidden;">
-        <div style="width:{{ pct }}%;background:var(--color-primary);height:100%;border-radius:4px;transition:width 0.4s;"></div>
-      </div>
-    </div>
-    {% endif %}
-    {% endfor %}
-    <div style="margin-top:0.5rem;">
-      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:2px;">
-        <span>Gender split</span>
-        {% set pct_f = ((enrollment_demo.female or 0) / total * 100) | round(1) %}
-        <span style="color:var(--text-muted);">♀ {{ pct_f }}% &nbsp; ♂ {{ (100 - pct_f) | round(1) }}%</span>
-      </div>
-    </div>
-  </div>
-  <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.6rem;">
-    Source: IPEDS Fall Enrollment by Race/Ethnicity (ef2024a), EFALEVEL=1 (all undergraduates, Fall 2024).
-  </p>
-</div>
-{% endif %}
 
 {# ── Completions by Program ───────────────────────────────────────────────── #}
 <div class="tab-section">

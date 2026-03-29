@@ -1,0 +1,97 @@
+{# Student Demographics tab — HTMX fragment #}
+
+{% if demographics %}
+<div class="tab-section">
+
+  <h3 class="section-title">
+    Fall 2024 Enrollment Demographics
+    <span class="section-hint">(all undergraduates)</span>
+  </h3>
+  {% set total = demographics.total_enrollment %}
+  <div style="display:flex;flex-direction:column;gap:0.4rem;max-width:480px;">
+    {% set races = [
+      ('White',                   demographics.pct_white),
+      ('Hispanic / Latino',       demographics.pct_hispanic),
+      ('Black / African American',demographics.pct_black),
+      ('Asian',                   demographics.pct_asian),
+      ('Two or More Races',       demographics.pct_two_or_more),
+      ('Am. Indian / Alaska Native', demographics.pct_native),
+      ('Nonresident Alien',       demographics.pct_non_resident),
+      ('Unknown',                 demographics.pct_unknown),
+    ] %}
+    {% for label, pct_val in races %}
+    {% if pct_val and pct_val > 0 %}
+    {% set pct = (pct_val * 100) | round(1) %}
+    {% set n = (total * pct_val) | round | int %}
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:2px;">
+        <span>{{ label }}</span>
+        <span style="color:var(--text-muted);">{{ "{:,}".format(n) }} ({{ pct }}%)</span>
+      </div>
+      <div style="background:var(--color-surface);border-radius:4px;height:8px;overflow:hidden;">
+        <div style="width:{{ pct }}%;background:var(--color-primary);height:100%;border-radius:4px;transition:width 0.4s;"></div>
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+    <div style="margin-top:0.5rem;">
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:2px;">
+        <span>Gender split</span>
+        {% set pct_f = ((demographics.pct_women or 0) * 100) | round(1) %}
+        <span style="color:var(--text-muted);">♀ {{ pct_f }}% &nbsp; ♂ {{ (100 - pct_f) | round(1) }}%</span>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.6rem;">
+    Source: IPEDS Fall Enrollment by Race/Ethnicity (ef2024a), EFALEVEL=1 (all undergraduates, Fall 2024).
+  </p>
+</div>
+{% endif %}
+
+{% if completions %}
+<div class="tab-section" style="margin-top:2rem;">
+  <h3 class="section-title">
+    2023–24 Completions Demographics
+    <span class="section-hint">(all programs at this institution)</span>
+  </h3>
+  {% set cp_total = completions.total_completions %}
+  <div style="display:flex;flex-direction:column;gap:0.4rem;max-width:480px;">
+    {% set cp_races = [
+      ('White',                   completions.pct_white),
+      ('Hispanic / Latino',       completions.pct_hispanic),
+      ('Black / African American',completions.pct_black),
+      ('Asian',                   completions.pct_asian),
+      ('Two or More Races',       completions.pct_two_or_more),
+      ('Am. Indian / Alaska Native', completions.pct_native),
+      ('Nonresident Alien',       completions.pct_non_resident),
+      ('Unknown',                 completions.pct_unknown),
+    ] %}
+    {% for label, pct_val in cp_races %}
+    {% if pct_val and pct_val > 0 %}
+    {% set pct = (pct_val * 100) | round(1) %}
+    {% set n = (cp_total * pct_val) | round | int %}
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:2px;">
+        <span>{{ label }}</span>
+        <span style="color:var(--text-muted);">{{ "{:,}".format(n) }} ({{ pct }}%)</span>
+      </div>
+      <div style="background:var(--color-surface);border-radius:4px;height:8px;overflow:hidden;">
+        <div style="width:{{ pct }}%;background:var(--color-primary);height:100%;border-radius:4px;transition:width 0.4s;"></div>
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+    <div style="margin-top:0.5rem;">
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:2px;">
+        <span>Gender split</span>
+        {% set cp_pct_f = ((completions.pct_women or 0) * 100) | round(1) %}
+        {% set cp_pct_m = ((completions.pct_men or 0) * 100) | round(1) %}
+        <span style="color:var(--text-muted);">♀ {{ cp_pct_f }}% &nbsp; ♂ {{ cp_pct_m }}%</span>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.6rem;">
+    Source: IPEDS Completions (c2024_a), MAJORNUM=1 (first major, institution-wide total).
+  </p>
+</div>
+{% endif %}

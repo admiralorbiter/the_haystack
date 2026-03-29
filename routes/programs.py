@@ -208,77 +208,6 @@ def _fts_program_ids(query: str) -> list[str]:
         return []
 
 
-# ---------------------------------------------------------------------------
-# IPEDS raw-table helpers (sqlite3 direct — not SQLAlchemy models)
-# ---------------------------------------------------------------------------
-
-def _ipeds_enrollment_for_program(unitid: str, cip: str) -> dict | None:
-    """
-    Pull fall enrollment for the CIP *family* at a specific institution from
-    ipeds_ef2024cp.
-
-    ef2024cp reports at the CIP family level (e.g. '52.0000'), not 6-digit.
-    EFCIPLEV=601 is the grand total row (all students, all credential levels).
-    We match on the 2-digit family prefix (cip[:2] + '.0000').
-    Returns dict with total/male/female, or None if not found.
-    """
-    if not unitid or not cip:
-        return None
-    # Build family-level CIP code: '52.0201' → '52.0000'
-    family = cip.split(".")[0] if "." in cip else cip[:2]
-    family_cip = f"{family}.0000"
-    try:
-        conn = sqlite3.connect(_DB_PATH)
-        cur = conn.cursor()
-        row = cur.execute(
-            '''
-            SELECT EFTOTLT, EFTOTLM, EFTOTLW
-            FROM ipeds_ef2024cp
-            WHERE UNITID = ? AND CIPCODE = ? AND EFCIPLEV = "601"
-            LIMIT 1
-            ''',
-            (str(unitid), family_cip),
-        ).fetchone()
-        conn.close()
-        if not row:
-            return None
-        def _int(v):
-            try: return int(v)
-            except (TypeError, ValueError): return None
-        total, male, female = _int(row[0]), _int(row[1]), _int(row[2])
-        if total is None:
-            return None
-        return {"total": total, "male": male, "female": female, "family_cip": family_cip}
-    except sqlite3.OperationalError:
-        return None
-
-
-def _ipeds_completions_equity(unitid: str) -> dict | None:
-    """
-    Pull institution-level completion gender breakdown from ipeds_c2024_b.
-    (c2024_b doesn't have per-CIP rows — it's institution totals)
-    Returns dict or None.
-    """
-    if not unitid:
-        return None
-    try:
-        conn = sqlite3.connect(_DB_PATH)
-        cur = conn.cursor()
-        row = cur.execute(
-            'SELECT CSTOTLT, CSTOTLM, CSTOTLW FROM ipeds_c2024_b WHERE UNITID = ? LIMIT 1',
-            (str(unitid),),
-        ).fetchone()
-        conn.close()
-        if not row:
-            return None
-        def _int(v):
-            try: return int(v)
-            except (TypeError, ValueError): return None
-        return {"total": _int(row[0]), "male": _int(row[1]), "female": _int(row[2])}
-    except sqlite3.OperationalError:
-        return None
-
-
 def _ipeds_cip_enrollment_by_family(cip_family: str, limit: int = 10) -> list[dict]:
     """
     Pull total fall enrollment for a CIP family across all KC providers.
@@ -610,17 +539,21 @@ def program_tab_outcomes(program_id: str):
     prog = _get_program_or_404(program_id)
     org = db.session.query(Organization).filter_by(org_id=prog.org_id).first()
 
-    # IPEDS raw table lookups
-    unitid = org.unitid if org else None
-    enrollment = _ipeds_enrollment_for_program(unitid, prog.cip) if unitid else None
-    completions_equity = _ipeds_completions_equity(unitid) if unitid else None
-
     return render_template(
         "programs/partials/tab_outcomes.html",
         prog=prog,
         org=org,
-        enrollment=enrollment,
-        completions_equity=completions_equity,
+    )
+
+@root_bp.route("/programs/<program_id>/tab/demographics")
+def program_tab_demographics(program_id: str):
+    prog = _get_program_or_404(program_id)
+    org = db.session.query(Organization).filter_by(org_id=prog.org_id).first()
+    return render_template(
+        "programs/partials/tab_demographics.html",
+        prog=prog,
+        org=org,
+        demographics=prog.demographics
     )
 
 @root_bp.route("/programs/<program_id>/tab/scorecard")

@@ -151,13 +151,20 @@ The user should never have to guess the ROI of a program. If they view a Medical
 | `ipeds_om2024` | Outcome measures (8-year completion) | Provider Outcomes tab |
 | `ipeds_al2024` | Library volumes, digital resources | Provider Outcomes tab (optional) |
 
-### Epic 4 — Program pages
+### Epic 4 — Program pages ✅ Shipped 2026-03-28
 
 | Table | What it powers | Where |
 |---|---|---|
-| `ipeds_c2024_b` | Program-level completion counts by race/ethnicity/gender | Program detail — Outcomes tab equity breakdown |
+| `ipeds_c2024_b` | Program-level completion counts by demographic | Program detail — "Equity in Completions" tab |
 | `ipeds_ef2024cp` | Enrollment by major field (CIP) — demand signal | Program detail — enrollment context |
 | `ipeds_ef2024a` | Total fall enrollment by level (UG, GR, PB) | Program detail — institutional context |
+
+### Epic 3.5 — Provider Demographics ✅ Shipped 2026-03-29
+
+| Table | What it powers | Where |
+|---|---|---|
+| `ipeds_ef2024a` | Fall 2024 Enrollment demographics (race/ethnicity/gender) | Provider detail — "Student Demographics" tab |
+| `ipeds_c2024_a` (Grand Totals) | Institutional completions by demographic | Provider detail — "Student Demographics" tab |
 
 ### Epic 5 — Field (CIP) pages
 
@@ -214,7 +221,6 @@ The user should never have to guess the ROI of a program. If they view a Medical
 | `ipeds_s2024_oc/sis/is/nh` | Staff equity analysis, tenure-track ratios |
 | `ipeds_sal2024_is/nis` | Faculty salary benchmarking |
 | `ipeds_eap2024` | Employee headcount by functional category |
-| `ipeds_ef2024a` | Enrollment demographics (race/gender) — equity lens |
 | `ipeds_ef2024b` | Age distribution of student body |
 | `ipeds_ef2024c` | Student migration / state-of-origin data |
 | `ipeds_al2024` | Library resources indicator |

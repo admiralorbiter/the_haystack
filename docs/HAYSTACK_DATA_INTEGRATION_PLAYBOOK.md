@@ -232,6 +232,34 @@ if contact_email or contact_phone:
 
 ---
 
+## Part 4.5 — The Demographic Persistence Pattern
+
+When ingesting large vectors of demographic data (e.g., race, ethnicity, and gender distributions) for an entity, **do not** add dozens of flat columns (`pct_white`, `pct_black`, `total_enrollment`, etc.) directly to the core `Organization` or `Program` tables. This causes severe schema bloat and coupling.
+
+Instead, create dedicated 1:1 mapped tables configured with `uselist=False` in SQLAlchemy. 
+
+### Implementation Guide
+1. **Model Separation:** Create models like `OrganizationDemographics` (for enrollment) and `OrganizationCompletionsDemographics` (for institution-wide completions). 
+2. **Relationship Binding:** Use `cascade="all, delete-orphan"` so they automatically follow the lifecycle of their parent entity.
+3. **Data Normalization:** Always normalize raw demographic counts into percentages (`float` out of 1.0) during the ETL ingestion phase so UI templating does not have to compute them inline.
+
+```python
+# models.py
+class OrganizationDemographics(db.Model):
+    __tablename__ = "organization_demographics"
+    org_id: Mapped[str] = mapped_column(ForeignKey("organization.org_id"), primary_key=True)
+    total_enrollment: Mapped[int] = mapped_column(Integer, nullable=True)
+    pct_women: Mapped[float] = mapped_column(Float, nullable=True)
+    # ... other demographic columns
+
+    organization = relationship("Organization", back_populates="demographics")
+
+# Organization Model
+demographics = relationship("OrganizationDemographics", uselist=False, back_populates="organization", cascade="all, delete-orphan")
+```
+
+---
+
 ## Part 5 — Schema Changes (Migrations)
 
 When a new dataset needs new columns:
