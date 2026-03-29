@@ -22,7 +22,7 @@
 </header>
 
 {% if q %}
-  {% if not orgs and not progs and not fields %}
+  {% if not orgs and not progs and not fields and not occs %}
     <div class="empty-state">
       <div class="empty-icon">🔍</div>
       <h3>No results for "{{ q }}"</h3>
@@ -99,6 +99,37 @@
         {% if progs|length == 5 %}
         <div style="margin-top: 1rem;">
           <a href="{{ url_for('root.programs_directory', q=q) }}" class="nav-links" style="font-weight: 500;">Show all matching programs &rarr;</a>
+        </div>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {# -- Occupations -- #}
+      {% if occs %}
+      <section>
+        <div class="title-row" style="margin-bottom: 1rem;">
+          <h2 style="margin:0; font-size: 1.5rem;">Occupations</h2>
+          {{ components.entity_badge('occupation', occs|length ~ ' top matches') }}
+        </div>
+        <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+          {% for o in occs %}
+          <div class="card provider-roster-card" style="padding: 1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <h4 style="margin:0 0 0.5rem 0; line-height: 1.3;">
+                <a href="{{ url_for('root.occupation_detail', soc=o.soc) }}" style="color: var(--text-color); text-decoration: none;">{{ o.title }}</a>
+              </h4>
+              <span style="font-size:1.25rem; color:var(--text-muted);">→</span>
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items: center;">
+              <span class="chip" style="font-family:monospace; margin:0;">{{ o.soc }}</span>
+              {% if o.bright_outlook %}<span class="badge badge-sm" style="background:#FFF3CD; color:#856404; margin:0;" title="Bright Outlook">☀️ Bright</span>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% if occs|length == 5 %}
+        <div style="margin-top: 1rem;">
+          <a href="{{ url_for('root.occupations_directory') }}" class="nav-links" style="font-weight: 500;">Browse full Occupations directory &rarr;</a>
         </div>
         {% endif %}
       </section>

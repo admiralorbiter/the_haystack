@@ -21,7 +21,7 @@
 | **2.9 Pre-Phase-3 Hardening** | org_fact table, soft-delete, API namespace, search spec, analytics | ✅ Shipped 2026-03-29 |
 | **6.5 Program Compare** | Head-to-head program-level side-by-side | ✅ Shipped 2026-03-29 |
 | **11 Workforce Connections** | BLS OEWS wage & O*NET demand integration | ✅ Shipped 2026-03-29 |
-| **11b O*NET Depth** | Alternate Titles (search), Skills, Education Level, Work Values | 🔲 Planned |
+| **11b O*NET Depth** | Alternate Titles (search), Skills, Education Level, Work Values | ✅ Shipped 2026-03-29 |
 | **16 BLS Expansion** | Employment Projections (growth) + NAICS-to-SOC Industry Matrix | 🔲 Planned |
 | **17 Employer-Occupation Link** | Apprenticeship SOC direct links + NAICS inferred employer matching | 🔲 Planned |
 | **12 Ecosystem & Network View** | Force-directed graph of provider relationships | 🔲 Planned |
@@ -129,34 +129,34 @@
 
 ---
 
-## Epic 11b — O*NET Depth (Planned)
+## ✅ Epic 11b — O*NET Depth (Shipped 2026-03-29)
 **Goal:** Surface the remaining high-value datasets from our existing O*NET `db_29_0_text` bundle to turn Occupation profiles from wage-tables into genuine career exploration profiles.
 
-### Priority 1 — Ship Next
+### Priority 1 — Shipped
 
 **Alternate Titles (Search Power-Up)**
 - **File:** `Alternate Titles.txt`
-- **What it does:** Maps colloquial job titles ("Welder", "Cashier") to structured SOC codes. Ingested into `OccupationAlias` table and wired into SQLite FTS5 search. Users searching everyday terms will land on the correct occupation profile. Also powers the Epic 15 Search Intercept.
+- **What it does:** Maps colloquial job titles ("Welder", "Cashier") to structured SOC codes. Ingested into `OccupationAlias` table and wired into SQLite FTS5 search (`occupation_fts`). Users searching everyday terms will land on the correct occupation profile. Also powers the Epic 15 Search Intercept.
 - **Models:** New `OccupationAlias` (`soc`, `alias_title`, `short_title`)
-- **UI:** Powers search results. No visible surface change but massive search UX impact.
+- **UI:** Powers `/search` global search Occupation section block.
 
 **Core Skills**
 - **File:** `Skills.txt` (filter: `Scale ID = 'IM'` for Importance ratings)
 - **What it does:** Maps universal competencies (Active Listening, Critical Thinking, Service Orientation) to every occupation with an importance score. Surface top 5 as compact pill-tags on the Overview tab.
 - **Models:** New `OccupationSkill` (`soc`, `element_name`, `importance_score`)
-- **UI:** Compact pill-tag row in `tab_overview.html` above the wage section.
+- **UI:** Compact pill-tag row in `tab_overview.html` under typical tasks.
 
 **Education & Training Requirements**
-- **File:** `Education, Training, and Experience.txt` (filter: `Element Name = 'Required Level of Education'`)
-- **What it does:** Shows percentage of current workers holding each credential level (High School, Associate's, Bachelor's, etc.). Directly answers "Do I really need a degree for this?" — renders as a single callout like "68% of workers have an Associate's or less."
+- **File:** `Education, Training, and Experience.txt` (filter: `Element Name = 'Required Level of Education'`, `Scale ID = 'RL'`)
+- **What it does:** Shows percentage of current workers holding each credential level (High School, Associate's, Bachelor's, etc.). Directly answers "Do I really need a degree for this?".
 - **Models:** New `OccupationEducation` (`soc`, `ed_level_code`, `ed_level_label`, `pct_workers`)
 - **UI:** Single-row callout in the "Profile Overview" table on `tab_overview.html`.
 
-### Priority 2 — Nice to Have
+### Priority 2 — Deferred
 
 **Work Values**
 - **File:** `Work Values.txt` (filter: `Scale ID = 'EX'` for Extent)
-- **What it does:** Maps occupation-level drivers of job satisfaction (Achievement, Independence, Recognition, Working Conditions). Surface top 2–3 as contextual chips for career fit explorers.
+- **What it does:** Maps occupation-level drivers of job satisfaction. Deferred for now to avoid UI bloat.
 - **Models:** New `OccupationWorkValue` (`soc`, `element_name`, `extent_score`)
 - **UI:** Small icon-paired tag row near the description block.
 

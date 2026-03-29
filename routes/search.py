@@ -60,9 +60,10 @@ def search_view():
     org_results = []
     prog_results = []
     field_results = []
+    occ_results = []
 
     if not q:
-        return render_template("search/results.html", q=q, orgs=[], progs=[], fields=[])
+        return render_template("search/results.html", q=q, orgs=[], progs=[], fields=[], occs=[])
 
     # 1. Search Organizations
     org_ids = _fts_org_ids(q, limit=5)
@@ -126,10 +127,34 @@ def search_view():
             if len(field_results) >= 5:
                 break
 
+    # 4. Search Occupations
+    def _fts_occ_ids(query: str, limit: int = 5) -> list[str]:
+        safe_q = query.replace('"', "").replace("'", "").strip()
+        if not safe_q:
+            return []
+        try:
+            conn = sqlite3.connect(_DB_PATH)
+            cur = conn.cursor()
+            rows = cur.execute(
+                "SELECT soc FROM occupation_fts WHERE occupation_fts MATCH ? GROUP BY soc ORDER BY MIN(rank) LIMIT ?",
+                (safe_q + "*", limit),
+            ).fetchall()
+            conn.close()
+            return [r[0] for r in rows]
+        except sqlite3.OperationalError:
+            return []
+
+    occ_ids = _fts_occ_ids(q, limit=5)
+    if occ_ids:
+        from models import Occupation
+        occ_rows = db.session.query(Occupation).filter(Occupation.soc.in_(occ_ids)).all()
+        occ_dict = {o.soc: o for o in occ_rows}
+        occ_results = [occ_dict[soc] for soc in occ_ids if soc in occ_dict]
+
     try:
         from models import SearchEvent
 
-        total = len(org_results) + len(prog_results) + len(field_results)
+        total = len(org_results) + len(prog_results) + len(field_results) + len(occ_results)
         se = SearchEvent(query_text=q[:500], result_count=total)
         db.session.add(se)
         db.session.commit()
@@ -142,4 +167,5 @@ def search_view():
         orgs=org_results,
         progs=prog_results,
         fields=field_results,
+        occs=occ_results,
     )

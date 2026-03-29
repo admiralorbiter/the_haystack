@@ -33,6 +33,16 @@
             <span style="color:var(--text-muted); font-size:0.9rem;">(Broad category)</span>
           </td>
         </tr>
+        {% if occ.education %}
+        <tr>
+          <td style="font-weight:600;">Top Credential</td>
+          <td>
+            {% set top_ed = occ.education|sort(attribute='pct_workers', reverse=True)|first %}
+            <span style="font-weight:500; color:var(--text-main);">{{ top_ed.ed_level_label }}</span>
+            <span style="color:var(--text-muted); font-size:0.9rem; margin-left:4px;">({{ (top_ed.pct_workers)|round|int }}% of workers)</span>
+          </td>
+        </tr>
+        {% endif %}
       </tbody>
     </table>
   </div>
@@ -65,6 +75,17 @@
       </ul>
     </div>
     {% endif %}
+  </div>
+  {% endif %}
+
+  {% if occ.skills %}
+  <div class="panel-section" style="margin-top:2.5rem;">
+    <h3 style="margin-bottom:0.75rem;">Core Competencies</h3>
+    <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+      {% for skill in occ.skills|sort(attribute='importance_score', reverse=True) %}
+        <span class="chip-recent" style="font-size:0.9rem; padding:6px 14px;">{{ skill.element_name }}</span>
+      {% endfor %}
+    </div>
   </div>
   {% endif %}
 

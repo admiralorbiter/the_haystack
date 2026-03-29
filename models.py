@@ -220,6 +220,9 @@ class Occupation(db.Model):
     tasks = relationship("OccupationTask", back_populates="occupation", cascade="all, delete-orphan")
     tech_skills = relationship("OccupationTechSkill", back_populates="occupation", cascade="all, delete-orphan")
     related = relationship("RelatedOccupation", back_populates="occupation", foreign_keys="RelatedOccupation.soc", cascade="all, delete-orphan")
+    aliases = relationship("OccupationAlias", back_populates="occupation", cascade="all, delete-orphan")
+    skills = relationship("OccupationSkill", back_populates="occupation", cascade="all, delete-orphan")
+    education = relationship("OccupationEducation", back_populates="occupation", cascade="all, delete-orphan")
 
     @property
     def soc_major_title(self) -> str:
@@ -280,6 +283,40 @@ class RelatedOccupation(db.Model):
     
     occupation = relationship("Occupation", back_populates="related", foreign_keys=[soc])
     related_occupation = relationship("Occupation", foreign_keys=[related_soc])
+
+
+class OccupationAlias(db.Model):
+    __tablename__ = "occupation_alias"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    soc: Mapped[str] = mapped_column(ForeignKey("occupation.soc"), nullable=False, index=True)
+    alias_title: Mapped[str] = mapped_column(String, nullable=False)
+    short_title: Mapped[str] = mapped_column(String, nullable=True)
+
+    occupation = relationship("Occupation", back_populates="aliases", foreign_keys=[soc])
+
+
+class OccupationSkill(db.Model):
+    __tablename__ = "occupation_skill"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    soc: Mapped[str] = mapped_column(ForeignKey("occupation.soc"), nullable=False, index=True)
+    element_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    importance_score: Mapped[float] = mapped_column(Float, nullable=False)
+    
+    occupation = relationship("Occupation", back_populates="skills", foreign_keys=[soc])
+
+
+class OccupationEducation(db.Model):
+    __tablename__ = "occupation_education"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    soc: Mapped[str] = mapped_column(ForeignKey("occupation.soc"), nullable=False, index=True)
+    ed_level_code: Mapped[int] = mapped_column(Integer, nullable=False)
+    ed_level_label: Mapped[str] = mapped_column(String(100), nullable=True)
+    pct_workers: Mapped[float] = mapped_column(Float, nullable=False)
+    
+    occupation = relationship("Occupation", back_populates="education", foreign_keys=[soc])
 
 
 class ProgramOccupation(db.Model):
