@@ -19,7 +19,8 @@ def employers_directory():
 
     # Query all organizations that are employers OR intermediaries
     query = db.session.query(Organization).filter(
-        Organization.org_type.in_(["employer", "intermediary"])
+        Organization.org_type.in_(["employer", "intermediary"]),
+        Organization.is_active == True
     )
 
     if q:

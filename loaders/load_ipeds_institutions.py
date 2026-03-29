@@ -20,6 +20,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -167,6 +168,8 @@ def load_institutions(
                 org.lon = lon
                 org.website = website
                 org.unitid = unitid
+                org.last_seen_in_source = datetime.now(timezone.utc)
+                org.is_active = True
                 updated += 1
                 if verbose:
                     print(f"  [update] {unitid} — {name}")
@@ -190,6 +193,8 @@ def load_institutions(
                 lon=lon,
                 website=website,
                 unitid=unitid,
+                last_seen_in_source=datetime.now(timezone.utc),
+                is_active=True,
             )
             session.add(org)
             session.flush()  # Get the generated org_id

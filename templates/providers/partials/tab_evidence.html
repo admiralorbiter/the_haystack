@@ -1,5 +1,31 @@
 {# Evidence tab — HTMX fragment #}
 
+{% if org.facts %}
+<div class="tab-section" style="margin-bottom: 2rem;">
+  <h3 class="section-title">Additional Facts</h3>
+  <table class="data-table" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+    <thead>
+      <tr style="background-color: var(--bg-surface); border-bottom: 2px solid var(--border-color);">
+        <th style="padding: 0.75rem; text-align: left;">Fact Type</th>
+        <th style="padding: 0.75rem; text-align: left;">Value</th>
+        <th style="padding: 0.75rem; text-align: left;">Source</th>
+        <th style="padding: 0.75rem; text-align: left;">As Of</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fact in org.facts %}
+      <tr style="border-bottom: 1px solid var(--border-color);">
+        <td style="padding: 0.75rem;">{{ fact.fact_type }}</td>
+        <td style="padding: 0.75rem; font-family: monospace;">{{ fact.value_text or fact.value_num }}</td>
+        <td style="padding: 0.75rem; color: var(--text-muted);">{{ fact.source }}</td>
+        <td style="padding: 0.75rem; color: var(--text-muted);">{{ fact.as_of_date.strftime('%Y-%m-%d') if fact.as_of_date else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
 <div class="tab-section">
   <h3 class="section-title">Data Provenance</h3>
   <dl class="detail-list">

@@ -13,7 +13,8 @@ from routes.cip_utils import cip_title
 
 def _get_apprenticeship_orgs():
     return db.session.query(Organization).filter(
-        Organization.is_apprenticeship_partner == True
+        Organization.is_apprenticeship_partner == True,
+        Organization.is_active == True
     ).order_by(Organization.name).all()
 
 def _get_apprenticeship_progs():

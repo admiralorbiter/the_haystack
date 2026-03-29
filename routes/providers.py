@@ -751,6 +751,7 @@ def providers_directory():
         .outerjoin(Relationship, db.and_(Relationship.from_entity_id == Organization.org_id, Relationship.rel_type == "parent_org"))
         .outerjoin(ParentOrg, ParentOrg.org_id == Relationship.to_entity_id)
         .filter(Organization.org_type == "training")
+        .filter(Organization.is_active == True)
         .group_by(Organization.org_id, ParentOrg.name, ParentOrg.org_id)
     )
 
@@ -792,7 +793,7 @@ def providers_directory():
         db.session.query(RegionCounty.county_fips, RegionCounty.county_name, RegionCounty.state)
         .filter(RegionCounty.county_fips.in_(
             db.session.query(Organization.county_fips)
-            .filter_by(org_type="training")
+            .filter_by(org_type="training", is_active=True)
             .filter(Organization.county_fips.isnot(None))
         ))
         .order_by(RegionCounty.county_name)

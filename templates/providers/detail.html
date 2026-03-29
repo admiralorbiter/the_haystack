@@ -42,6 +42,13 @@
   </div>
 </header>
 
+{# ── Archive / Inactive Banner ───────────────────────────────────────────── #}
+{% if org.is_active == False %}
+<div class="alert" style="background-color: #fee2e2; border-left: 4px solid #ef4444; color: #991b1b; padding: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+  <strong>Archive Notice:</strong> The Haystack could not verify this provider in recent data releases. It may have permanently closed or merged with another institution.
+</div>
+{% endif %}
+
 {# ── Parent institution notice (for WIOA satellites) ──────────────────────── #}
 {% if parent_org %}
 <div class="org-relation-notice org-relation-parent">

@@ -7,6 +7,7 @@ import sys
 import uuid
 import re
 from pathlib import Path
+from datetime import datetime, timezone
 from thefuzz import fuzz
 
 import pandas as pd
@@ -156,6 +157,8 @@ def load_etpl(session, dry_run=False, verbose=False) -> dict:
                     
             if best_match:
                 org_id = best_match.org_id
+                best_match.last_seen_in_source = datetime.now(timezone.utc)
+                best_match.is_active = True
                 if verbose:
                     print(f"    [Merge] WIOA '{provider_name}' -> IPEDS '{best_match.name}'")
             else:
@@ -167,7 +170,9 @@ def load_etpl(session, dry_run=False, verbose=False) -> dict:
                     org_type="training",
                     city=city,
                     state=state,
-                    website=_str(row.get("d107_program_url", ""))
+                    website=_str(row.get("d107_program_url", "")),
+                    last_seen_in_source=datetime.now(timezone.utc),
+                    is_active=True
                 )
                 if not dry_run:
                     session.add(new_org)

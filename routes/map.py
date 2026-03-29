@@ -46,6 +46,7 @@ def map_providers_geojson():
     # Base query for all providers with lat/lon
     q = db.session.query(Organization).filter(
         Organization.org_type == "training",
+        Organization.is_active == True,
         Organization.lat.isnot(None),
         Organization.lon.isnot(None)
     )

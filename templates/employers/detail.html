@@ -36,6 +36,13 @@
   </div>
 </header>
 
+{# ── Archive / Inactive Banner ───────────────────────────────────────────── #}
+{% if org.is_active == False %}
+<div class="alert" style="background-color: #fee2e2; border-left: 4px solid #ef4444; color: #991b1b; padding: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+  <strong>Archive Notice:</strong> The Haystack could not verify this employer in recent WIOA or RAPIDS releases. It may no longer be an active training partner.
+</div>
+{% endif %}
+
 <div class="layout-grid">
   <div class="main-content">
     <section class="info-section">

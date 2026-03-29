@@ -63,6 +63,16 @@ class GeoArea(db.Model):
     lon: Mapped[float] = mapped_column(Float, nullable=True)
 
 
+class OrgFactType:
+    """Standardized keys for the org_fact EAV table."""
+    REVENUE = "revenue"
+    EXPENSES = "expenses"
+    NET_INCOME = "net_income"
+    EMPLOYEES_TOTAL = "employees_total"
+    H1B_PETITIONS = "h1b_petitions"
+    WAGE_AVG = "wage_avg"
+
+
 class Organization(db.Model):
     __tablename__ = "organization"
     
@@ -79,14 +89,31 @@ class Organization(db.Model):
     ein: Mapped[str] = mapped_column(String(50), nullable=True)
     is_apprenticeship_partner: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="0")
     apprenticeship_role: Mapped[str] = mapped_column(String(50), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, server_default="1")
+    last_seen_in_source: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
     # Relationships
     programs = relationship("Program", back_populates="organization")
     contacts = relationship("OrgContact", back_populates="organization", cascade="all, delete-orphan")
+    facts = relationship("OrgFact", back_populates="organization", cascade="all, delete-orphan")
     demographics = relationship("OrganizationDemographics", uselist=False, back_populates="organization", cascade="all, delete-orphan")
     completions_demo = relationship("OrganizationCompletionsDemographics", uselist=False, back_populates="organization", cascade="all, delete-orphan")
 
 Index("ix_organization_county_fips", Organization.county_fips)
+
+
+class OrgFact(db.Model):
+    __tablename__ = "org_fact"
+    
+    fact_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    org_id: Mapped[str] = mapped_column(ForeignKey("organization.org_id"), nullable=False, index=True)
+    fact_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    value_num: Mapped[float] = mapped_column(Float, nullable=True)
+    value_text: Mapped[str] = mapped_column(String, nullable=True)
+    source: Mapped[str] = mapped_column(String(100), nullable=False)
+    as_of_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+    organization = relationship("Organization", back_populates="facts")
 
 
 class OrgAlias(db.Model):

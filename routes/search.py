@@ -75,7 +75,7 @@ def search_view():
         org_ids = [o.org_id for o in fallback_orgs]
         
     if org_ids:
-        org_rows = db.session.query(Organization).filter(Organization.org_id.in_(org_ids)).all()
+        org_rows = db.session.query(Organization).filter(Organization.org_id.in_(org_ids), Organization.is_active == True).all()
         org_dict = {o.org_id: o for o in org_rows}
         # Maintain FTS rank order
         org_results = [org_dict[uuid] for uuid in org_ids if uuid in org_dict]
