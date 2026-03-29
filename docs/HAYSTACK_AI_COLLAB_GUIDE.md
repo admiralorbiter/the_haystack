@@ -301,11 +301,21 @@ Each entry is a hard-won lesson. Read before starting a new loader or route.
 - **Cap rows in the loader, not in the template.** When ingesting ranked/scored data, apply the per-SOC cap (`MAX_PER_SOC`) during ingestion so templates can iterate without conditional truncation.
 - **On-disk data inventory:** Our O*NET `db_29_0_text` bundle (`data/raw/onet/db_29_0_text/`) contains 41 files. Shipped in Epics 11/11b: Job Zones, Occupation Data (description), Task Statements (tasks), Technology Skills (tech tools), Related Occupations (similar careers), Skills (core competencies), Education/Training/Experience (credential distribution), Alternate Titles (search aliases), Work Values (satisfaction drivers). Always check what is already ingested before writing a new loader.
 
-### BLS Dataset Notes (Epics 11 / 16)
+### BLS Dataset Notes (Epics 11 / 16 / 16-C)
 - **OEWS (already ingested):** Answers "what do jobs pay today?" — KC MSA, state, and national wage bands. Caps median_wage for high earners; use `annual_mean_wage` fallback.
 - **Employment Projections (Epic 16 - Completed):** Answers "what jobs will grow?" — national 10-year outlook. Loaded `occupation.xlsx` Table 1.2 from bls.gov/emp. Badged as `(Nat.)` since BLS does not publish metro-level projections.
 - **NAICS-to-SOC Industry Matrix (Epic 16 - Completed):** Answers "what industries hire this occupation?" — prerequisite for Epic 17 employer inference. Loaded `matrix.xlsx` from bls.gov/emp/data.htm.
-- **Census LEHD J2J Flows (Epic 18 Pivot):** Answers "what industries are poaching talent from each other?" — tracks firm/NAICS flows, *not* occupation/SOC flows. Cannot be used for career stepping stones.
+- **MERIC Missouri Projections (Epic 16-C - Planned):** Answers "what jobs will grow in Missouri?" — closest publicly available proxy for local KC projections. Download from https://meric.mo.gov/workforce-data-tools/download-center ("Long-Term Occupational Employment Projections"). Badge as `(MO)` or `📍 MO Growth` in the UI. Never claim these are KC-specific.
+- **BLS QCEW (Epic 16-C - Planned):** Answers "how many establishments in each KC county industry, and is that count trending up or down?" — quarterly, county-level data. Download from https://www.bls.gov/cew/downloadable-data.htm. To avoid enormous file sizes, scope to only the KC metro FIPS codes: Jackson (29095), Johnson KS (20091), Clay (29047), Wyandotte (20209), Cass (29037), Platte (29165). Powers both the Occupation-level "Who Hires This?" trend arrow and the future Epic 18 Industry Profiles.
+- **Census LEHD J2J Flows (Epic 18 - Planned):** Answers "what industries are poaching talent from each other?" — tracks firm/NAICS flows, *not* occupation/SOC flows. Cannot be used for career stepping stones. Ideal for Industry Profile pages (Epic 18 Phase C). Download from https://lehd.ces.census.gov/data/#j2j.
+
+### Data Research Spike Strategy
+When uncertain about a new dataset's feasibility, run a structured spike *before* building a model or loader:
+1. Download a small sample or inspect the schema via `pandas.read_excel/csv(..., nrows=10)`
+2. Confirm required fields map to our SOC/NAICS keys
+3. Check file size and whether a KC-scoped subset is feasible
+4. Check licensing (public domain vs licensed vs API key required)
+5. Document the findings in `HAYSTACK_EPICS.md` under the relevant Epic's "Data Research Spike" section before writing any production code.
 
 
 ### SQLite FTS5 Approach (Epic 4+)

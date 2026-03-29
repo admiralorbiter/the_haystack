@@ -22,12 +22,15 @@
 | **6.5 Program Compare** | Head-to-head program-level side-by-side | ✅ Shipped 2026-03-29 |
 | **11 Workforce Connections** | BLS OEWS wage & O*NET demand integration | ✅ Shipped 2026-03-29 |
 | **11b O*NET Depth** | Alternate Titles (search), Skills, Education Level, Work Values | ✅ Shipped 2026-03-29 |
-| **16 BLS Expansion** | Employment Projections (growth) + NAICS-to-SOC Industry Matrix | 🔲 Planned |
+| **16 BLS Expansion** | Employment Projections (growth) + NAICS-to-SOC Industry Matrix | ✅ Shipped 2026-03-29 |
+| **16-C Regional Projections** | MERIC MO-level projections + QCEW local trend signals | 🔲 Planned |
 | **17 Employer-Occupation Link** | Apprenticeship SOC direct links + NAICS inferred employer matching | 🔲 Planned |
+| **18 Industry (NAICS) Profiles** | Industry detail pages + LEHD J2J talent flow intelligence | 🔲 Planned |
 | **12 Ecosystem & Network View** | Force-directed graph of provider relationships | 🔲 Planned |
 | **13 Briefing Builder** | Collect stats/entities and generate printable one-pager | 🔲 Planned |
 | **14 Stepping Stones** | Sequenced credential pathways + ROI break-even calculator | 🔬 Research Spike |
 | **15 Hidden Gems Engine** | Algorithmic surfacing of high-ROI programs | 🔬 Research Spike |
+| **Data Research Spike** | Proactive discovery of new regional/local datasets to fill data gaps | 🔬 Research Spike |
 
 ---
 
@@ -191,6 +194,41 @@
 
 ---
 
+## Epic 16-C — Regional Projections: MERIC + QCEW (Planned)
+**Goal:** Replace the "national projections only" limitation with real local and state-level growth signals that are meaningful to a student in Wyandotte County who can't commute across the metro.
+
+**Design principle:** The national `(Nat.)` badge on projections data is a transparency disclaimer, not a design goal. Locality matters enormously for students without transportation. Every projection we surface should be as close to "your backyard" as the data allows.
+
+### Dataset C1: MERIC Missouri 10-Year Occupation Projections
+- **Source:** https://meric.mo.gov/workforce-data-tools/download-center — "Long-Term Occupational Employment Projections"
+- **Fields:** SOC code, 2022 base employment, 2032 projected employment, % change, annual openings — all for Missouri statewide
+- **Geographic scope:** Missouri statewide (closest public source to local projections available)
+- **Models:** Extend `OccupationProjection` to add `mo_emp_base`, `mo_emp_projected`, `mo_pct_change`, `mo_annual_openings` columns (optional — or create a new `OccupationProjectionMO` spoke table)
+- **Loader:** `loaders/load_meric_projections.py`
+- **UI surfaces:**
+  - Occupation Detail snapshot strip: Add a MO-level `📍 MO Growth` stat card alongside the national card.
+  - Occupations Directory: New `?sort=growth_mo` option for locally-relevant sorting.
+
+### Dataset C2: BLS QCEW (Quarterly Census of Employment and Wages) — Local Trend Signal
+- **Source:** https://www.bls.gov/cew/downloadable-data.htm — County-level, by NAICS, quarterly
+- **Fields:** NAICS code, county FIPS, quarter, establishment count, employment, average weekly wage
+- **Geographic scope:** County-level (Jackson, Johnson, Clay, Wyandotte, etc.)
+- **What it does:** Rather than a forecasted projection, this gives a *real, local, quarterly trend* — "KC area Manufacturing employment grew 2.1% over the last 4 quarters." Combined with our `OccupationIndustry` (matrix) crosswalk, we can infer local occupation demand signals.
+- **Models:** New `IndustryQCEW` table (`naics`, `county_fips`, `year`, `quarter`, `establishments`, `employment`, `avg_weekly_wage`)
+- **Loader:** `loaders/load_bls_qcew.py`
+- **UI surfaces:**
+  - Occupation Detail "Who Hires This?": Augment each Industry row with a local QCEW trend indicator (▲ Growing / ▼ Declining in KC area).
+  - Future: Powers Epic 18 Industry Profile pages as the primary local employment time-series chart.
+
+### Data Research Spike
+**When to run:** Before starting Epic 16-C development, spend a session evaluating:
+- MERIC download format (Excel vs CSV, column names, vintage year)
+- Whether QCEW county files are feasibly scoped (they are large) — consider only Jackson + Johnson + Wyandotte + Clay for the KC metro
+- Any additional Missouri state labor data sources (e.g., Missouri DED, KC Regional Labor Market Information)
+- Kansas-side data sources (KLIC, KANSASWORKS) for the full KC bi-state metro
+
+---
+
 ## Epic 17 — Employer-to-Occupation Linking (Planned)
 **Goal:** Close the final gap in the workforce intelligence map. Current map: `Provider → Program → Occupation`. Target map: `Employer → Occupation ← Program ← Provider`.
 
@@ -221,6 +259,48 @@
 **UI surface (Occupation Detail):** New collapsible "Employers in KC" section showing both Strategy A results (labeled `Registered Apprenticeship`) and Strategy B results (labeled `Inferred — employer in related industry`) in the same panel with clear visual differentiation.
 
 **Critical rule:** Never display inferred employer links without the `(Inferred)` disclaimer. The Haystack's credibility depends on users understanding how data was derived.
+
+### Strategy C: BLS QCEW Establishment Count (Aggregate Signal)
+**Coverage:** All industries in the KC metro  
+**Confidence:** Aggregate — "there are 47 healthcare establishments operating in the KC metro, which is growing."
+
+Once `IndustryQCEW` is loaded (Epic 16-C), we can surface aggregate employer presence without needing a named employer list. This is valuable for occupations in industries where named employer data is sparse.
+- **UI surface (Occupation Detail):** Supplement "Who Hires This?" with a KC metro establishment count per industry row.
+- **Source linkage:** `OccupationIndustry.naics` → `IndustryQCEW.naics` WHERE county IN KC metro counties.
+
+### KC Employer Data Research Spike
+Before building Strategy B/C, evaluate these named employer data sources for the KC region:
+- **Missouri Secretary of State** — registered business database with NAICS codes (free, bulk download)
+- **KANSASWORKS / KLIC** — Kansas labor market employer registry for the bi-state metro
+- **DataAxle / ReferenceUSA** — licensed business directory (check if PREP-KC has an institutional subscription)
+- **KCMO Open Data Portal** — business license data with industry codes
+
+---
+
+## Epic 18 — Industry (NAICS) Profiles (Planned)
+**Goal:** Build dedicated Industry profile pages that let users explore KC-area employment by sector, see talent pipeline flows between industries, and understand which industries are growing vs contracting.
+
+**Design principle:** Just as Occupation profiles answer "is this job good?", Industry profiles answer "is this sector healthy in KC?" These pages will be the future home of all NAICS-level data, including the J2J talent flow intelligence that was too broad for the Occupation layer.
+
+**Prerequisites:** Epic 16-C QCEW loaded, Epic 17 NAICS tagging on employers.
+
+### Phase A: Industry Directory
+- Basic NAICS directory page at `/industries`
+- Sources employment totals from `IndustryQCEW` (QCEW county data)
+- Shows list of broad sectors (Agriculture, Manufacturing, Healthcare, etc.) with KC-area employment counts
+
+### Phase B: Industry Detail Pages
+- `/industries/<naics>` — a profile page for a specific industry
+- **Snapshot strip:** Total KC establishments, total KC employment, QoQ trend, avg weekly wage
+- **Top Occupations:** Pulls from `OccupationIndustry` to show which job titles dominate this sector
+- **Training Pathways:** Pulls from `ProgramOccupation` to surface KC training programs that feed into this industry
+
+### Phase C: LEHD J2J Talent Flow Intelligence
+- **Source:** https://lehd.ces.census.gov/data/#j2j  
+- **What it does:** Tracks where workers *come from* when they join an industry, and where they *go* when they leave — by prior/next industry (NAICS). Also tracks earnings changes on those transitions.
+- **UI widget:** "Industry Talent Flows" — a Sankey or ranked list showing: "When people leave Manufacturing, 28% go to Construction and 14% go to Healthcare. When people enter Healthcare, 19% come from Retail."
+- **Loader:** `loaders/load_lehd_j2j.py`
+- **Note:** J2J is NAICS-level only — cannot track occupation-to-occupation transitions. Ideal for this Industry layer.
 
 ---
 
@@ -281,14 +361,15 @@
 **Status:** 🔬 Research Spike — requires Labor-First primitives (Occupations directory) first.
 
 **Research Spike:**
-- **Census LEHD Job-to-Job (J2J) Flows** (see Epic 16 Dataset C) are the primary data engine for probabilistic "next step" transition probabilities. Evaluate whether we store J2J origin→destination pairs or compute at query time.
-- Evaluate O*NET `RelatedOccupation` data (already ingested in Epic 11) as a structural fallback when J2J data is unavailable for a specific SOC.
+- **O*NET `RelatedOccupation`** data (already ingested in Epic 11) is the primary structural engine for stepping stone proximity. Evaluate how to translate `index_score` into a visual step-size metric.
+- **Note:** Census LEHD J2J Flows cannot be used here — J2J tracks firm/industry (NAICS) transitions, not occupation (SOC) transitions. Stepping Stones must rely on O*NET structural similarity instead. J2J has been pivoted to Epic 18 (Industry Profiles).
 - Investigate Credential Engine Registry (CTDL) for structured credential stacking schemas showing how certs roll up into degrees.
 - Prototype the "Interactive ROI Slider" math: cost of credential ÷ (BLS median wage − current wage) = break-even years.
 
 **Data dependencies:**
 - Epic 11 (BLS OEWS wages) — ✅ Shipped
-- Epic 16 (BLS Employment Projections + J2J Flows) — prerequisite for accurate trajectory step sizing
+- Epic 16 (BLS Projections + Industry Matrix) — ✅ Shipped
+- Epic 16-C (MERIC regional projections) — provides step-sizing by local growth signal
 - Credential Engine Registry (future external ingestion).
 
 ---
