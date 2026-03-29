@@ -36,7 +36,7 @@
     <a href="{{ url_for('root.providers_directory', comparing=org.org_id) }}"
        class="btn btn-secondary" title="Compare this provider with another">⊕ Compare</a>
     {% if org.website %}
-    <a href="{{ org.website }}" target="_blank" rel="noopener" class="btn btn-secondary">Visit Website &rarr;</a>
+    <a href="{{ org.website }}" target="_blank" rel="noopener" class="btn btn-secondary plausible-event-name=Outbound+Provider+Click">Visit Website &rarr;</a>
     {% endif %}
     <button class="btn btn-secondary" id="copy-link-btn" onclick="copyPageLink(this)" title="Copy link to clipboard">🔗 Copy Link</button>
   </div>

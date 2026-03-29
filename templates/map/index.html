@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Construct API URL
-  let apiUrl = '{{ url_for("root.map_providers_geojson") }}';
+  let apiUrl = '{{ url_for("api_v1.map_providers_geojson") }}';
   const params = new URLSearchParams();
   if (credFilter) params.append('cred', credFilter);
   if (cipFilter) params.append('cip', cipFilter);

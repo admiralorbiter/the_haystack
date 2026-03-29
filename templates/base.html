@@ -16,6 +16,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/providers.css') }}">
     {% block extra_css %}{% endblock %}
     {% block head %}{% endblock %}
+    {% if not config.DEBUG %}
+    <!-- Analytics Telemetry -->
+    <script defer data-domain="thehaystack.org" src="https://plausible.io/js/script.tagged-events.outbound-links.js"></script>
+    <script>window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }</script>
+    {% endif %}
 </head>
 <body>
     <header class="top-nav">

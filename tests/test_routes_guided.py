@@ -42,7 +42,7 @@ def test_api_search_occupations(app, client):
         db.session.commit()
 
     # Query exactly matches
-    resp = client.get(url_for("root.api_search_occupations", q="nurse"))
+    resp = client.get(url_for("api_v1.search_occupations", q="nurse"))
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
     assert "Registered Nurses" in html
@@ -50,7 +50,7 @@ def test_api_search_occupations(app, client):
     assert "Chief Executives" not in html
 
     # Empty/short query returns nothing
-    resp = client.get(url_for("root.api_search_occupations", q="n"))
+    resp = client.get(url_for("api_v1.search_occupations", q="n"))
     assert resp.status_code == 200
     assert resp.get_data(as_text=True) == ""
 
@@ -64,7 +64,7 @@ def test_api_search_programs(app, client):
         db.session.add_all([org, p1, p2])
         db.session.commit()
 
-    resp = client.get(url_for("root.api_search_programs", q="Weld"))
+    resp = client.get(url_for("api_v1.search_programs", q="Weld"))
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
     assert "Welding Tech" in html

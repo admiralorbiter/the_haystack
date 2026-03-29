@@ -12,7 +12,7 @@
     <input type="text" class="typeahead-input" id="prog-search" name="q"
            placeholder="e.g., Welding, Nursing, Business..." autocomplete="off"
            style="padding-left: 2.8rem; outline:none;"
-           hx-get="{{ url_for('root.api_search_programs') }}"
+           hx-get="{{ url_for('api_v1.search_programs') }}"
            hx-trigger="keyup changed delay:300ms, search"
            hx-target="#prog-results"
            onkeydown="if(event.key==='Enter') event.preventDefault(); document.getElementById('btn-step3-prog').disabled = true;">

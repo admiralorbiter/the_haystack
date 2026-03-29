@@ -24,9 +24,11 @@ def create_app(config_name="default"):
     # Register blueprints
     from routes import root_bp
     from routes.admin import admin_bp
+    from routes.api import api_v1_bp
 
     app.register_blueprint(root_bp)
     app.register_blueprint(admin_bp, url_prefix="/admin")
+    app.register_blueprint(api_v1_bp, url_prefix="/api/v1")
 
     @app.errorhandler(404)
     def page_not_found(e):
