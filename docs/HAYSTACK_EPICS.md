@@ -249,8 +249,9 @@
 ### Strategy A: Apprenticeship Direct Links (Deterministic)
 **Coverage:** ~50 KC apprenticeship sponsors currently in DB  
 **Confidence:** High — these employers signed a federal DOL contract to train workers in a specific SOC code.
+**Status:** 🛑 Blocked. The `partner-finder-listings.csv` does **not** contain SOC/RAPIDS codes or any industry field. It only contains sponsor names and contact info. We need the raw DOL RAPIDS database or an alternative source to map these to occupations.
 
-- Re-examine `data/raw/apprenticeship/partner-finder-listings.csv` for SOC/RAPIDS occupation code fields
+- Re-examine `data/raw/apprenticeship/partner-finder-listings.csv` for SOC/RAPIDS occupation code fields (❌ Failed: data missing)
 - Update `loaders/load_apprenticeships.py` to parse occupation codes and create `ProgramOccupation` links for apprenticeship programs
 - **UI surface (Occupation Detail):** New "Apprenticeship Sponsors in KC" section — employer names as clickable org links. Badged `Registered Apprenticeship`.
 
@@ -259,7 +260,7 @@
 **Confidence:** Inferred — "employers in this industry *likely* hire this occupation."
 
 **Schema prerequisite:** Add `naics_code: Mapped[str]` to `Organization` (nullable). NAICS code sourcing options (ranked by preference):
-1. Parse from apprenticeship listing CSV if industry field exists (free, immediate)
+1. Parse from apprenticeship listing CSV if industry field exists (❌ Failed: data missing)
 2. Manual tag for top ~50 active KC employers in the DB (quick, high accuracy)
 3. Defer to Phase 3 IRS 990 ingestion which maps NTEE → NAICS automatically
 
