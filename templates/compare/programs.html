@@ -7,9 +7,13 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/compare.css') }}">
 {% endblock %}
 
-{% macro fmt_cell(val, fmt) %}
+{% macro fmt_cell(val, fmt, prog=none) %}
   {%- if val is none or val == '' -%}
-    <span class="no-data">—</span>
+    {%- if prog and (prog.is_wioa_eligible or prog.is_apprenticeship) -%}
+      <span class="no-data" title="Unlinked WIOA/Apprenticeship data">N/A</span>
+    {%- else -%}
+      <span class="no-data">—</span>
+    {%- endif -%}
   {%- elif fmt == 'currency' -%}
     ${{ '{:,}'.format(val|int) }}
   {%- elif fmt == 'percent' -%}
@@ -141,19 +145,39 @@
 
       {# Numeric outcomes #}
       <tr class="compare-section-header"><td colspan="3">Outcomes</td></tr>
-      {% for row in rows %}
+      {% for row in row_groups.outcomes %}
       <tr>
         <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
-        <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt) }}{{ winner_badge(row.status_a) }}</td>
-        <td class="compare-cell {{ row.status_b }}">{{ fmt_cell(row.val_b, row.fmt) }}{{ winner_badge(row.status_b) }}</td>
+        <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt, prog_a) }}{{ winner_badge(row.status_a) }}</td>
+        <td class="compare-cell {{ row.status_b }}">{{ fmt_cell(row.val_b, row.fmt, prog_b) }}{{ winner_badge(row.status_b) }}</td>
+      </tr>
+      {% endfor %}
+
+      {# Demographics #}
+      <tr class="compare-section-header"><td colspan="3">Student Demographics</td></tr>
+      {% for row in row_groups.demographics %}
+      <tr>
+        <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
+        <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt, prog_a) }}</td>
+        <td class="compare-cell {{ row.status_b }}">{{ fmt_cell(row.val_b, row.fmt, prog_b) }}</td>
+      </tr>
+      {% endfor %}
+
+      {# Scorecard #}
+      <tr class="compare-section-header"><td colspan="3">Scorecard Outcomes</td></tr>
+      {% for row in row_groups.scorecard %}
+      <tr>
+        <td class="compare-row-label">{{ row.label }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
+        <td class="compare-cell {{ row.status_a }}">{{ fmt_cell(row.val_a, row.fmt, prog_a) }}{{ winner_badge(row.status_a) }}</td>
+        <td class="compare-cell {{ row.status_b }}">{{ fmt_cell(row.val_b, row.fmt, prog_b) }}{{ winner_badge(row.status_b) }}</td>
       </tr>
       {% endfor %}
 
       {# Suppression note if applicable #}
-      {% if prog_a.completions is none or prog_b.completions is none %}
+      {% if prog_a.completions is none or prog_b.completions is none or prog_a.is_wioa_eligible or prog_b.is_wioa_eligible %}
       <tr>
         <td colspan="3" style="padding:var(--spacing-xs) var(--spacing-md); font-size:0.8rem; color:var(--text-muted);">
-          ℹ️ — means NCES suppressed this value to protect student privacy. N/A means data is not reported to IPEDS (e.g. WIOA alternative pathways).
+          ℹ️ — means NCES suppressed this value to protect student privacy. N/A (WIOA/Apprenticeship) means data is not reported to IPEDS.
         </td>
       </tr>
       {% endif %}

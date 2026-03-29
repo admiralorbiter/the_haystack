@@ -18,8 +18,8 @@
 | **6 Provider Compare** | Side-by-side provider comparison page | ✅ Shipped 2026-03-27 |
 | **7 Directory UI** | Dropdown filters + sortable columns across all directories | ✅ Shipped 2026-03-27 |
 | **10 Non-Title IV Training Base** | WIOA ETPL + Apprenticeships ingested, Hubs + Employers shipped | ✅ Shipped 2026-03-28 |
-| **6.5 Program Compare** | Head-to-head program-level side-by-side | 🔲 Next Up |
-| **11 Workforce Connections** | BLS OEWS wage & O*NET demand integration | 🔲 Planned |
+| **6.5 Program Compare** | Head-to-head program-level side-by-side | ✅ Shipped 2026-03-29 |
+| **11 Workforce Connections** | BLS OEWS wage & O*NET demand integration | 🔲 Next Up |
 | **12 Ecosystem & Network View** | Force-directed graph of provider relationships | 🔲 Planned |
 | **13 Briefing Builder** | Collect stats/entities and generate printable one-pager | 🔲 Planned |
 | **14 Stepping Stones** | Sequenced credential pathways + ROI break-even calculator | 🔬 Research Spike |
@@ -86,16 +86,12 @@
 
 ---
 
-## Epic 6.5 — Program-to-Program Head-to-Head Compare
-**Goal:** Allow users to compare specific programs across institutions (e.g., Nursing at JCCC vs Nursing at KCKS) rather than comparing parent providers.
-
-**Data Readiness:** ✅ All required data already loaded — `ProgramDemographics`, `ipeds_c2024_b`, College Scorecard program-level `cip` + `opeid` fields.
-
-**Implementation Plan:**
-- Add "Add to Compare" affordance on program cards and program detail pages.
+## ✅ Epic 6.5 — Program-to-Program Head-to-Head Compare (Shipped 2026-03-29)
+**What shipped:**
+- Added "Add to Compare" affordances on program cards and program detail pages.
 - New `/compare/programs` route mirroring the existing provider compare pattern.
-- Sections to diff: Field of Study, Institution, Completions Count, Demographics, Scorecard Debt & Earnings, WIOA Eligibility.
-- Reuse `compare.css` and existing compare component patterns.
+- Aggregated Outomes, Student Demographics, and College Scorecard metrics with dynamic grouping.
+- Built explicit graceful degradation logic to render `N/A` for WIOA/Apprenticeship non-Title IV records.
 
 **Effort estimate:** 1 week
 

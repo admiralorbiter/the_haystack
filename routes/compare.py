@@ -18,7 +18,7 @@ from sqlalchemy import func
 
 from models import (
     DatasetSource, Occupation, Organization,
-    Program, ProgramOccupation, db,
+    Program, ProgramOccupation, ProgramDemographics, db,
 )
 from routes.cip_utils import CIP_FAMILY_NAMES, cip_family_code, cip_family_label, cip_title
 
@@ -290,8 +290,8 @@ def _build_provider_rows(snap_a, snap_b, ipeds_a, ipeds_b) -> list[dict]:
     return rows
 
 
-def _build_program_rows(prog_a, prog_b, org_a, org_b, occ_a, occ_b) -> list[dict]:
-    """Build comparison rows for program compare."""
+def _build_program_rows(prog_a, prog_b, org_a, org_b, occ_a, occ_b, demo_a, demo_b, sc_a, sc_b) -> dict:
+    """Build comparison rows for program compare in groups."""
     def _row(label, val_a, val_b, fmt="number", higher=True, note=""):
         sa, sb = _annotate_winner(val_a, val_b, higher)
         return {
@@ -304,10 +304,39 @@ def _build_program_rows(prog_a, prog_b, org_a, org_b, occ_a, occ_b) -> list[dict
             "note": note,
         }
 
-    return [
+    def _pct(demo, field):
+        if demo and getattr(demo, field) is not None:
+            return round(getattr(demo, field) * 100)
+        return None
+
+    outcomes = [
         _row("Annual Completions", prog_a.completions, prog_b.completions),
         _row("Linked Occupations", occ_a, occ_b),
     ]
+
+    demographics = [
+        _row("Women", _pct(demo_a, "pct_women"), _pct(demo_b, "pct_women"), fmt="percent", higher=True),
+        _row("Men", _pct(demo_a, "pct_men"), _pct(demo_b, "pct_men"), fmt="percent", higher=True),
+        _row("White", _pct(demo_a, "pct_white"), _pct(demo_b, "pct_white"), fmt="percent", higher=True),
+        _row("Black", _pct(demo_a, "pct_black"), _pct(demo_b, "pct_black"), fmt="percent", higher=True),
+        _row("Hispanic", _pct(demo_a, "pct_hispanic"), _pct(demo_b, "pct_hispanic"), fmt="percent", higher=True),
+        _row("Asian", _pct(demo_a, "pct_asian"), _pct(demo_b, "pct_asian"), fmt="percent", higher=True),
+    ]
+
+    sc_a_dict = sc_a or {}
+    sc_b_dict = sc_b or {}
+
+    scorecard = [
+        _row("Median Earnings (1yr)", sc_a_dict.get("earn_1yr"), sc_b_dict.get("earn_1yr"), fmt="currency", higher=True, note="Earnings 1 year after graduation"),
+        _row("Median Earnings (2yr)", sc_a_dict.get("earn_2yr"), sc_b_dict.get("earn_2yr"), fmt="currency", higher=True, note="Earnings 2 years after graduation"),
+        _row("Median Debt", sc_a_dict.get("debt_stgp_mdn"), sc_b_dict.get("debt_stgp_mdn"), fmt="currency", higher=False, note="Median student loan debt"),
+    ]
+
+    return {
+        "outcomes": outcomes,
+        "demographics": demographics,
+        "scorecard": scorecard
+    }
 
 
 def _winner_sentence(rows: list[dict], name_a: str, name_b: str) -> str:
@@ -422,6 +451,8 @@ def compare_programs():
     if not org_a or not org_b:
         abort(404)
 
+    from routes.programs import _scorecard_fos_for_program
+
     occ_a = (
         db.session.query(func.count(ProgramOccupation.soc))
         .filter_by(program_id=id_a)
@@ -433,8 +464,15 @@ def compare_programs():
         .scalar() or 0
     )
 
-    rows = _build_program_rows(prog_a, prog_b, org_a, org_b, occ_a, occ_b)
-    summary = _winner_sentence(rows, cip_title(prog_a.name), cip_title(prog_b.name))
+    demo_a = db.session.query(ProgramDemographics).filter_by(program_id=id_a).first()
+    demo_b = db.session.query(ProgramDemographics).filter_by(program_id=id_b).first()
+
+    sc_a = _scorecard_fos_for_program(org_a.unitid, prog_a.cip, prog_a.credential_type)
+    sc_b = _scorecard_fos_for_program(org_b.unitid, prog_b.cip, prog_b.credential_type)
+
+    row_groups = _build_program_rows(prog_a, prog_b, org_a, org_b, occ_a, occ_b, demo_a, demo_b, sc_a, sc_b)
+    flat_rows = row_groups["outcomes"] + row_groups["demographics"] + row_groups["scorecard"]
+    summary = _winner_sentence(flat_rows, cip_title(prog_a.name), cip_title(prog_b.name))
 
     ds = (
         db.session.query(DatasetSource)
@@ -458,7 +496,7 @@ def compare_programs():
         org_b=org_b,
         occ_a=occ_a,
         occ_b=occ_b,
-        rows=rows,
+        row_groups=row_groups,
         summary=summary,
         id_a=id_a,
         id_b=id_b,
