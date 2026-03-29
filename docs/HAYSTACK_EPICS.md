@@ -23,7 +23,7 @@
 | **11 Workforce Connections** | BLS OEWS wage & O*NET demand integration | ✅ Shipped 2026-03-29 |
 | **11b O*NET Depth** | Alternate Titles (search), Skills, Education Level, Work Values | ✅ Shipped 2026-03-29 |
 | **16 BLS Expansion** | Employment Projections (growth) + NAICS-to-SOC Industry Matrix | ✅ Shipped 2026-03-29 |
-| **16-C Regional Projections** | MERIC MO-level projections + QCEW local trend signals | 🔲 Planned |
+| **16-C Regional Projections** | MERIC MO-level projections + QCEW local trend signals | 🟡 Partial (QCEW Shipped) |
 | **17 Employer-Occupation Link** | Apprenticeship SOC direct links + NAICS inferred employer matching | 🔲 Planned |
 | **18 Industry (NAICS) Profiles** | Industry detail pages + LEHD J2J talent flow intelligence | 🔲 Planned |
 | **12 Ecosystem & Network View** | Force-directed graph of provider relationships | 🔲 Planned |
@@ -194,7 +194,7 @@
 
 ---
 
-## Epic 16-C — Regional Projections: MERIC + QCEW (Planned)
+## 🟡 Epic 16-C — Regional Projections: MERIC + QCEW (Partial)
 **Goal:** Replace the "national projections only" limitation with real local and state-level growth signals that are meaningful to a student in Wyandotte County who can't commute across the metro.
 
 **Design principle:** The national `(Nat.)` badge on projections data is a transparency disclaimer, not a design goal. Locality matters enormously for students without transportation. Every projection we surface should be as close to "your backyard" as the data allows.
@@ -209,10 +209,10 @@
   - Occupation Detail snapshot strip: Add a MO-level `📍 MO Growth` stat card alongside the national card.
   - Occupations Directory: New `?sort=growth_mo` option for locally-relevant sorting.
 
-### Dataset C2: BLS QCEW (Quarterly Census of Employment and Wages) — Local Trend Signal
+### ✅ Dataset C2: BLS QCEW (Quarterly Census of Employment and Wages) — Local Trend Signal (Shipped 2026-03-29)
 - **Source:** https://www.bls.gov/cew/downloadable-data.htm — County-level, by NAICS, quarterly
 - **Fields:** NAICS code, county FIPS, quarter, establishment count, employment, average weekly wage
-- **Geographic scope:** County-level (Jackson, Johnson, Clay, Wyandotte, etc.)
+- **Geographic scope:** KC Metro FIPS codes. Filtered to Ownership Code 5 (Private Sector) to ensure NAICS granularity.
 - **What it does:** Rather than a forecasted projection, this gives a *real, local, quarterly trend* — "KC area Manufacturing employment grew 2.1% over the last 4 quarters." Combined with our `OccupationIndustry` (matrix) crosswalk, we can infer local occupation demand signals.
 - **Models:** New `IndustryQCEW` table (`naics`, `county_fips`, `year`, `quarter`, `establishments`, `employment`, `avg_weekly_wage`)
 - **Loader:** `loaders/load_bls_qcew.py`
@@ -277,7 +277,7 @@ Before building Strategy B/C, evaluate these named employer data sources for the
 
 ---
 
-## Epic 18 — Industry (NAICS) Profiles (Planned)
+## 🟡 Epic 18 — Industry (NAICS) Profiles (Partial)
 **Goal:** Build dedicated Industry profile pages that let users explore KC-area employment by sector, see talent pipeline flows between industries, and understand which industries are growing vs contracting.
 
 **Design principle:** Just as Occupation profiles answer "is this job good?", Industry profiles answer "is this sector healthy in KC?" These pages will be the future home of all NAICS-level data, including the J2J talent flow intelligence that was too broad for the Occupation layer.
@@ -289,11 +289,12 @@ Before building Strategy B/C, evaluate these named employer data sources for the
 - Sources employment totals from `IndustryQCEW` (QCEW county data)
 - Shows list of broad sectors (Agriculture, Manufacturing, Healthcare, etc.) with KC-area employment counts
 
-### Phase B: Industry Detail Pages
+### ✅ Phase B: Industry Detail Pages (Foundation Shipped 2026-03-29)
+- Started early during Epic 16-C to surface QCEW data.
 - `/industries/<naics>` — a profile page for a specific industry
-- **Snapshot strip:** Total KC establishments, total KC employment, QoQ trend, avg weekly wage
-- **Top Occupations:** Pulls from `OccupationIndustry` to show which job titles dominate this sector
-- **Training Pathways:** Pulls from `ProgramOccupation` to surface KC training programs that feed into this industry
+- **Snapshot strip:** Total KC establishments, total KC employment, avg weekly wage. Includes an interactive 12-quarter bar chart.
+- **Top Occupations:** (Pending) Pulls from `OccupationIndustry` to show which job titles dominate this sector
+- **Training Pathways:** (Pending) Pulls from `ProgramOccupation` to surface KC training programs that feed into this industry
 
 ### Phase C: LEHD J2J Talent Flow Intelligence
 - **Source:** https://lehd.ces.census.gov/data/#j2j  

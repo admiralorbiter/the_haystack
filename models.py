@@ -444,3 +444,19 @@ class ProgramDemographics(db.Model):
     pct_non_resident: Mapped[float] = mapped_column(Float, nullable=True)
 
     program = relationship("Program", back_populates="demographics")
+
+
+class IndustryQCEW(db.Model):
+    __tablename__ = "industry_qcew"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    naics: Mapped[str] = mapped_column(String(20), nullable=False)
+    county_fips: Mapped[str] = mapped_column(String(5), nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    quarter: Mapped[int] = mapped_column(Integer, nullable=False)
+    establishments: Mapped[int] = mapped_column(Integer, nullable=True)
+    employment: Mapped[int] = mapped_column(Integer, nullable=True)
+    avg_weekly_wage: Mapped[float] = mapped_column(Float, nullable=True)
+
+Index("ix_industry_qcew_lookup", IndustryQCEW.naics, IndustryQCEW.county_fips)
+Index("ix_industry_qcew_time", IndustryQCEW.year, IndustryQCEW.quarter)

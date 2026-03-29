@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | Industry Profile | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb" style="margin-bottom: 2rem;">
+  <a href="{{ url_for('root.index') }}">Home</a> &rsaquo; 
+  Industry Profiles
+</div>
+
+<header class="page-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 2rem; margin-bottom: 2.5rem;">
+  <div style="display: flex; gap: 1rem; align-items: baseline; margin-bottom: 0.5rem;">
+    <h1 style="margin: 0; font-size: 2.5rem; letter-spacing: -0.02em;">{{ title }}</h1>
+    <span style="font-family: monospace; font-size: 1.1rem; color: var(--text-muted); padding: 0.25rem 0.5rem; background: var(--bg-surface); border-radius: 4px; border: 1px solid var(--border-color);">
+      NAICS {{ naics }}
+    </span>
+  </div>
+  <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 800px; line-height: 1.6;">
+    Quarterly economic indicators and employment trends for the Kansas City region, tracking private sector establishments over time.
+  </p>
+</header>
+
+{% if not history %}
+<div class="empty-state" style="padding: 3rem; text-align: center; background: var(--bg-surface); border-radius: 12px; border: 1px dashed var(--border-color);">
+  <div style="font-size: 2rem; margin-bottom: 1rem;">📉</div>
+  <h3>Data Withheld</h3>
+  <p style="color: var(--text-muted);">The BLS has suppressed data for this specific NAICS code in the Kansas City area to protect employer confidentiality.</p>
+</div>
+{% else %}
+
+{# Metrics Row #}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+  <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+    <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Current Employment</div>
+    <div style="font-size: 2.5rem; font-weight: 700; color: var(--color-primary, #2563eb); margin-bottom: 0.25rem;">
+      {{ '{:,}'.format(latest.employment) }}
+    </div>
+    <div style="font-size: 0.9rem; color: var(--text-muted);">Total covered jobs as of {{ latest.label }}</div>
+  </div>
+
+  <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+    <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Active Establishments</div>
+    <div style="font-size: 2.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">
+      {{ '{:,}'.format(latest.establishments) }}
+    </div>
+    <div style="font-size: 0.9rem; color: var(--text-muted);">Unique physical locations</div>
+  </div>
+
+  <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+    <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Avg Weekly Wage</div>
+    <div style="font-size: 2.5rem; font-weight: 700; color: var(--color-success, #16a34a); margin-bottom: 0.25rem;">
+      ${{ '{:,.0f}'.format(latest.wage) }}
+    </div>
+    <div style="font-size: 0.9rem; color: var(--text-muted);">Aggregated average pay</div>
+  </div>
+</div>
+
+{# Employment Trend Chart (CSS only) #}
+<section class="panel-section" style="margin-bottom: 3rem;">
+  <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Local Employment Trend (3-Year)</h2>
+  <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; overflow-x: auto;">
+    
+    {% set emp_values = history | map(attribute='employment') | list %}
+    {% set max_emp = emp_values | max %}
+    {% set min_emp = (emp_values | min) * 0.9 %} 
+    {% set range = max_emp - min_emp if max_emp > min_emp else 1 %}
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 0.5rem; height: 280px; min-width: 600px; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem;">
+      {% for point in history %}
+        {% set height_pct = ((point.employment - min_emp) / range) * 100 %}
+        {% set height_pct = height_pct if height_pct > 5 else 5 %}
+        
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative;" class="chart-col">
+          <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; text-align: center;">
+            {{ '{:,}'.format(point.employment) }}
+          </div>
+          <div style="width: 100%; max-width: 48px; background: linear-gradient(to top, var(--color-primary-light, #93c5fd), var(--color-primary, #3b82f6)); height: {{ height_pct }}%; border-radius: 4px 4px 0 0; transition: filter 0.2s; cursor: pointer; opacity: 0.9;" class="chart-bar"></div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; gap: 0.5rem; min-width: 600px;">
+        {% for point in history %}
+            <div style="flex: 1; text-align: center; font-size: 0.8rem; color: var(--text-muted); font-weight: 500; white-space: nowrap;">
+                {{ point.label }}
+            </div>
+        {% endfor %}
+    </div>
+  </div>
+  
+  <style>
+    .chart-bar:hover {
+      filter: brightness(1.2);
+      opacity: 1;
+    }
+  </style>
+
+</section>
+
+{# Full Data Table #}
+<section class="panel-section">
+  <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">Quarterly Data Table</h2>
+  <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden;">
+    <table class="data-table" style="width: 100%; border: none; box-shadow: none; border-collapse: collapse;">
+      <thead style="background: var(--color-bg-alt);">
+        <tr>
+          <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Quarter</th>
+          <th style="padding: 1rem; text-align: right; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Employment</th>
+          <th style="padding: 1rem; text-align: right; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Establishments</th>
+          <th style="padding: 1rem; text-align: right; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Avg Weekly Wage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for point in history|reverse %} 
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 1rem; font-weight: 500;">{{ point.label }}</td>
+          <td style="padding: 1rem; text-align: right; font-variant-numeric: tabular-nums;">{{ '{:,}'.format(point.employment) }}</td>
+          <td style="padding: 1rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted);">{{ '{:,}'.format(point.establishments) }}</td>
+          <td style="padding: 1rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--color-success, #16a34a);">${{ '{:,.0f}'.format(point.wage) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% endif %}
+{% endblock %}
