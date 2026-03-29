@@ -63,6 +63,11 @@
             Total Employed (KC) <span class="{% if sort == 'employment' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'employment' %}↓{% else %}↕{% endif %}</span>
           </a>
         </th>
+        <th class="num-col sortable-th {% if sort == 'growth' %}sort-desc{% endif %}" data-sort="num">
+          <a href="{{ url_for('root.occupations_directory', sort='growth', zone=zone_filter) }}">
+            10-Yr Growth (Nat.) <span class="{% if sort == 'growth' %}sort-ind-active{% else %}sort-ind{% endif %}">{% if sort == 'growth' %}↓{% else %}↕{% endif %}</span>
+          </a>
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -112,6 +117,19 @@
             <span style="color:var(--text-muted); font-size:0.85rem;" title="Data withheld by BLS">—</span>
           {% endif %}
         </td>
+        <td class="num-col" data-sort-val="{{ o.projection.pct_change if o.projection and o.projection.pct_change else -999 }}">
+          {% if o.projection and o.projection.pct_change is not none %}
+            {% if o.projection.pct_change > 0 %}
+              <span style="color:var(--success-msg); font-weight:500;">+{{ o.projection.pct_change }}%</span>
+            {% elif o.projection.pct_change < 0 %}
+              <span style="color:var(--error-msg); font-weight:500;">{{ o.projection.pct_change }}%</span>
+            {% else %}
+              <span style="color:var(--text-muted); font-weight:500;">{{ o.projection.pct_change }}%</span>
+            {% endif %}
+          {% else %}
+             <span style="color:var(--text-muted); font-size:0.85rem;" title="Data withheld by BLS">—</span>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -141,7 +159,7 @@
 
 {# ── Methods footer ──────────────────────────────────────────────────────── #}
 <div class="methods-footer">
-  <strong>Data:</strong> BLS OEWS May 2024 (Regional Wages & Employment); O*NET 29.0 (Job Zones). Local data corresponds to the Kansas City MSA. Suppressed values (—) are withheld by federal agencies to protect anonymity or due to sample size.
+  <strong>Data:</strong> BLS OEWS May 2024 (Regional Wages & Employment); BLS Employment Projections 2024-2034 (National 10-Yr Growth); O*NET 29.0 (Job Zones). Local OEWS data corresponds to the Kansas City MSA. Suppressed values (—) are withheld by federal agencies to protect anonymity or due to sample size.
 </div>
 
 {% endblock %}

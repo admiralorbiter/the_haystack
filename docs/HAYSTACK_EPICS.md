@@ -162,34 +162,32 @@
 
 ---
 
-## Epic 16 — BLS Expansion: Projections & Industry Matrix (Planned)
+## ✅ Epic 16 — BLS Expansion: Projections & Industry Matrix (Shipped 2026-03-29)
 **Goal:** Fill the gap between "what jobs pay today" (OEWS) and "what jobs will grow" (EP) while establishing the NAICS-to-SOC crosswalk that unlocks the Employer-to-Occupation link in Epic 17.
 
-### Dataset A: BLS Employment Projections 2023–2033
-- **Source:** https://www.bls.gov/emp/data/occupational-data.htm (`ep_table_1.xlsx`)
-- **Fields:** SOC code, 2023 employment, 2033 employment, `% change`, annual job openings
-- **Geographic scope:** National only (BLS does not publish metro-level 10-year projections — badge clearly as `(Nat.)`)
-- **Models:** New `OccupationProjection` (`soc`, `emp_2023`, `emp_2033`, `pct_change`, `annual_openings`)
+### Dataset A: BLS Employment Projections 2024–2034
+- **Source:** https://www.bls.gov/emp/data/occupational-data.htm (`occupation.xlsx` Table 1.2)
+- **Fields:** SOC code, 2024 employment, 2034 employment, `% change`, annual job openings
+- **Geographic scope:** National only (BLS does not publish metro-level 10-year projections — badged clearly as `(Nat.)`)
+- **Models:** New `OccupationProjection` (`soc`, `emp_2024`, `emp_2034`, `pct_change`, `annual_openings`)
 - **Loader:** `loaders/load_bls_projections.py`
 - **UI surfaces:**
-  - Occupation Detail snapshot strip: replace placeholder `☀️` Bright Outlook with real `+14% Projected Growth` card
-  - Occupations Directory: new "Growth" sort option alongside Wage and Employment
-  - Hubs: replace static bright outlook badge with projected growth data
+  - Occupation Detail snapshot strip: Surfaces a true `10-Yr Growth (Nat.)` percentage card with annual opening caveat.
+  - Occupations Directory: New "10-Yr Growth (Nat.)" column and native support for `?sort=growth` URL filtering.
 
 ### Dataset B: BLS NAICS-to-SOC Industry-Occupation Matrix
-- **Source:** https://www.bls.gov/emp/tables/industry-occupation-matrix-occupation.htm
+- **Source:** https://www.bls.gov/emp/data.htm (`matrix.xlsx`)
 - **Fields:** SOC code, NAICS code, NAICS title, employment share in that industry
-- **Models:** New `OccupationIndustry` (`soc`, `naics_code`, `naics_title`, `pct_employment`)
-- **Loader:** `loaders/load_bls_naics_soc.py`
+- **Models:** New `OccupationIndustry` (`soc`, `naics`, `industry_title`, `employment_2024`, `pct_of_occupation`)
+- **Loader:** `loaders/load_bls_matrix.py`
 - **UI surfaces:**
-  - New "Who Hires This" section on Occupation Detail (top 5 industries as a simple table or bar visual)
-  - Powers inferred employer matching in Epic 17-B
+  - Embedded "Who Hires This?" widget on Occupation Detail `tab_overview.html` under Regional Earnings.
+  - Directly powers inferred employer matching in Epic 17-B.
 
 ### Dataset C (Research Spike): Census LEHD Job-to-Job Flows (J2J)
 - **Source:** https://lehd.ces.census.gov/data/#j2j
-- **Fields:** Origin SOC, destination SOC, transition rate (probability)
-- **What it does:** Shows the statistical probability that a worker in Occupation A will transition to Occupation B over a 3-year window. Directly powers the Epic 14 "Stepping Stones" career pathway widget with real transition data rather than just O*NET structural similarity.
-- **Status:** Research spike — evaluate schema and decide if we store transition probabilities or compute them at query time.
+- **Status:** 🚫 Cancelled for Epic 16. The research spike confirmed that Census J2J data tracks worker movements via *firm/industry (NAICS)* tax records, **not** by *job title/occupation (SOC)*. Therefore, it cannot be used to calculate Occupation-to-Occupation stepping stones.
+- **Pivot to Epic 18:** We will instead leverage this incredibly powerful dataset when we build out **Industry (NAICS) Profiles**. It will natively answer: "Where does this Industry bleed talent to, and where does it poach talent from?" along with the average earnings bump for making an industry jump.
 
 ---
 

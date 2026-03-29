@@ -30,6 +30,14 @@
   {% set nat_lbl = "National Mean Wage*" if (nat and not nat.median_wage and nat.annual_mean_wage) else "National Median Wage" %}
   {{ components.stat_card(nat_lbl, "${:,.0f}".format(nat_val) if nat_val else "—") }}
   {{ components.stat_card("Local Employment", "{:,}".format(snapshot.employment) if snapshot.employment else "—") }}
+  
+  {% if occ.projection and occ.projection.pct_change is not none %}
+    {% set growth_dir = "+" if occ.projection.pct_change|float > 0 else "" %}
+    {{ components.stat_card("10-Yr Growth (Nat.)", growth_dir ~ occ.projection.pct_change ~ "%", caveat="Projected 2024–2034. " ~ '{:,}'.format(occ.projection.annual_openings|int) ~ " new openings/yr nationally.") }}
+  {% else %}
+    {{ components.stat_card("10-Yr Growth (Nat.)", "—", caveat="Projection data unavailable") }}
+  {% endif %}
+
   {{ components.stat_card("Related Programs", snapshot.program_count) }}
   {{ components.stat_card("Required Prep", zone_names.get(snapshot.job_zone, "Unknown") + (" (Zone " ~ snapshot.job_zone ~ ")" if snapshot.job_zone else "")) }}
   {{ components.stat_card("Primary Data", "O*NET & BLS OEWS", caveat="Wage data from BLS Occupational Employment and Wage Statistics (OEWS). Job characteristics from O*NET.") }}

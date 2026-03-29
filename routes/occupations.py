@@ -13,6 +13,7 @@ from sqlalchemy.orm import joinedload
 from models import (
     DatasetSource,
     Occupation,
+    OccupationProjection,
     OccupationWage,
     Organization,
     Program,
@@ -27,7 +28,12 @@ from .cip_utils import cip_title
 # ---------------------------------------------------------------------------
 
 def _get_occ(soc: str) -> Occupation:
-    occ = db.session.query(Occupation).filter_by(soc=soc).first()
+    occ = (
+        db.session.query(Occupation)
+        .options(joinedload(Occupation.industries))
+        .filter_by(soc=soc)
+        .first()
+    )
     if not occ:
         abort(404)
     return occ
@@ -74,7 +80,8 @@ def occupations_directory():
             (OccupationWage.area_type == "msa") & 
             (OccupationWage.area_name.like("%Kansas City%"))
         )
-        .options(joinedload(Occupation.wages))
+        .outerjoin(OccupationProjection)
+        .options(joinedload(Occupation.wages), joinedload(Occupation.projection))
     )
 
     if zone_filter and zone_filter.isdigit():
@@ -84,6 +91,8 @@ def occupations_directory():
         q = q.order_by(Occupation.title.asc())
     elif sort == "employment":
         q = q.order_by(OccupationWage.employment_count.desc().nulls_last())
+    elif sort == "growth":
+        q = q.order_by(OccupationProjection.pct_change.desc().nulls_last())
     else:  # default to wage
         sort = "wage"
         q = q.order_by(OccupationWage.median_wage.desc().nulls_last())

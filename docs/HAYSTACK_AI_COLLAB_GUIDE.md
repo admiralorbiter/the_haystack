@@ -303,9 +303,9 @@ Each entry is a hard-won lesson. Read before starting a new loader or route.
 
 ### BLS Dataset Notes (Epics 11 / 16)
 - **OEWS (already ingested):** Answers "what do jobs pay today?" — KC MSA, state, and national wage bands. Caps median_wage for high earners; use `annual_mean_wage` fallback.
-- **Employment Projections (Epic 16):** Answers "what jobs will grow?" — national 10-year outlook. Download `ep_table_1.xlsx` from bls.gov/emp. Always badge as `(Nat.)` since BLS does not publish metro-level projections.
-- **NAICS-to-SOC Industry Matrix (Epic 16):** Answers "what industries hire this occupation?" — prerequisite for Epic 17 employer inference. Download from bls.gov/emp/tables/industry-occupation-matrix-occupation.htm.
-- **Census LEHD J2J Flows (Epic 16 research spike):** Answers "what do workers in this job transition to next?" — powers Epic 14 Stepping Stones pathway calculator.
+- **Employment Projections (Epic 16 - Completed):** Answers "what jobs will grow?" — national 10-year outlook. Loaded `occupation.xlsx` Table 1.2 from bls.gov/emp. Badged as `(Nat.)` since BLS does not publish metro-level projections.
+- **NAICS-to-SOC Industry Matrix (Epic 16 - Completed):** Answers "what industries hire this occupation?" — prerequisite for Epic 17 employer inference. Loaded `matrix.xlsx` from bls.gov/emp/data.htm.
+- **Census LEHD J2J Flows (Epic 18 Pivot):** Answers "what industries are poaching talent from each other?" — tracks firm/NAICS flows, *not* occupation/SOC flows. Cannot be used for career stepping stones.
 
 
 ### SQLite FTS5 Approach (Epic 4+)

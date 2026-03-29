@@ -223,6 +223,8 @@ class Occupation(db.Model):
     aliases = relationship("OccupationAlias", back_populates="occupation", cascade="all, delete-orphan")
     skills = relationship("OccupationSkill", back_populates="occupation", cascade="all, delete-orphan")
     education = relationship("OccupationEducation", back_populates="occupation", cascade="all, delete-orphan")
+    projection = relationship("OccupationProjection", uselist=False, back_populates="occupation", cascade="all, delete-orphan")
+    industries = relationship("OccupationIndustry", back_populates="occupation", cascade="all, delete-orphan")
 
     @property
     def soc_major_title(self) -> str:
@@ -317,6 +319,31 @@ class OccupationEducation(db.Model):
     pct_workers: Mapped[float] = mapped_column(Float, nullable=False)
     
     occupation = relationship("Occupation", back_populates="education", foreign_keys=[soc])
+
+
+class OccupationProjection(db.Model):
+    __tablename__ = "occupation_projection"
+    
+    soc: Mapped[str] = mapped_column(ForeignKey("occupation.soc"), primary_key=True)
+    emp_2024: Mapped[int] = mapped_column(Integer, nullable=True)
+    emp_2034: Mapped[int] = mapped_column(Integer, nullable=True)
+    pct_change: Mapped[float] = mapped_column(Float, nullable=True)
+    annual_openings: Mapped[int] = mapped_column(Integer, nullable=True)
+    
+    occupation = relationship("Occupation", back_populates="projection", foreign_keys=[soc])
+
+
+class OccupationIndustry(db.Model):
+    __tablename__ = "occupation_industry"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    soc: Mapped[str] = mapped_column(ForeignKey("occupation.soc"), nullable=False, index=True)
+    naics: Mapped[str] = mapped_column(String(20), nullable=False)
+    industry_title: Mapped[str] = mapped_column(String, nullable=False)
+    employment_2024: Mapped[int] = mapped_column(Integer, nullable=True)
+    pct_of_occupation: Mapped[float] = mapped_column(Float, nullable=True)
+    
+    occupation = relationship("Occupation", back_populates="industries", foreign_keys=[soc])
 
 
 class ProgramOccupation(db.Model):
