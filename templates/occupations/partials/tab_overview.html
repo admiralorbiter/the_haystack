@@ -43,6 +43,41 @@
           </td>
         </tr>
         {% endif %}
+
+        {% if snapshot.grade or occ.bright_outlook or occ.remote_capable or occ.automation_risk is not none %}
+        <tr>
+          <td style="font-weight:600; padding:1rem 0.5rem 0.5rem 0.5rem; border-top:1px solid var(--color-surface); vertical-align:top;">Future Outlook</td>
+          <td style="padding:1rem 0.5rem 0.5rem 0.5rem; border-top:1px solid var(--color-surface);">
+            <div style="display:flex; flex-direction:column; gap:0.5rem;">
+              {% if snapshot.grade %}
+                {% set g = snapshot.grade %}
+                {% set grade_bg = '#16a34a' if g == 'A+' else '#22c55e' if g == 'A' else '#84cc16' if g == 'B+' else '#ca8a04' %}
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <span title="KC Career Grade" style="font-weight:bold; background:{{grade_bg}}; color:white; padding:2px 8px; border-radius:4px;">{{ g }} Grade</span>
+                  <span style="color:var(--text-muted); font-size:0.9rem;">Career Tier: <strong>{{ snapshot.tier }}</strong></span>
+                </div>
+              {% endif %}
+              
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.25rem;">
+                {% if occ.bright_outlook %}
+                  <span title="O*NET Bright Outlook" style="font-size:0.85rem; background:rgba(234, 179, 8, 0.1); color:#eab308; padding:3px 8px; border-radius:12px;">🔥 Rapid Growth Focus</span>
+                {% endif %}
+                {% if occ.remote_capable %}
+                  <span title="Dingel & Neiman Remote Work Potential" style="font-size:0.85rem; background:rgba(14, 165, 233, 0.1); color:#0ea5e9; padding:3px 8px; border-radius:12px;">🏠 Remote-Capable</span>
+                {% endif %}
+                {% if occ.automation_risk is not none %}
+                  {% set arisk = occ.automation_risk %}
+                  {% set rcolor = '#ef4444' if arisk > 0.7 else '#eab308' if arisk > 0.3 else '#22c55e' %}
+                  {% set rbg = '239, 68, 68' if arisk > 0.7 else '234, 179, 8' if arisk > 0.3 else '34, 197, 94' %}
+                  <span title="{{ '{:.0f}'.format(arisk*100) }}% Probability of Computerization" style="font-size:0.85rem; background:rgba({{ rbg }}, 0.1); color:{{ rcolor }}; padding:3px 8px; border-radius:12px;">
+                    🤖 {{"High" if arisk > 0.7 else "Medium" if arisk > 0.3 else "Low"}} Auto-Risk
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
       </tbody>
     </table>
   </div>

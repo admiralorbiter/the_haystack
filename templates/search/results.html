@@ -120,9 +120,17 @@
               </h4>
               <span style="font-size:1.25rem; color:var(--text-muted);">→</span>
             </div>
-            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items: center;">
-              <span class="chip" style="font-family:monospace; margin:0;">{{ o.soc }}</span>
-              {% if o.bright_outlook %}<span class="badge badge-sm" style="background:#FFF3CD; color:#856404; margin:0;" title="Bright Outlook">☀️ Bright</span>{% endif %}
+            <div style="display:flex; gap:0.25rem; flex-wrap:wrap; align-items: center; margin-top:0.25rem;">
+              <span class="chip" style="font-family:monospace; margin:0; margin-right:0.25rem;">{{ o.soc }}</span>
+               {% if o.bright_outlook %}
+                 <span title="O*NET Bright Outlook" style="font-size:0.75rem; background:rgba(234, 179, 8, 0.1); color:#eab308; padding:2px 6px; border-radius:12px;">🔥 Bright</span>
+               {% endif %}
+               {% if o.remote_capable %}
+                 <span title="High Remote Work Potential" style="font-size:0.75rem; background:rgba(14, 165, 233, 0.1); color:#0ea5e9; padding:2px 6px; border-radius:12px;">🏠 Remote</span>
+               {% endif %}
+               {% if o.automation_risk is not none and o.automation_risk > 0.7 %}
+                 <span title="{{ '{:.0f}'.format(o.automation_risk*100) }}% Automation Probability" style="font-size:0.75rem; background:rgba(239, 68, 68, 0.1); color:#ef4444; padding:2px 6px; border-radius:12px;">🤖 Risk</span>
+               {% endif %}
             </div>
           </div>
           {% endfor %}

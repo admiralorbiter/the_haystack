@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% import "partials/components.html" as components %}
+
+{% block title %}KC Career Intelligence | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('root.index') }}">Home</a> &rsaquo; KC Career Intelligence
+</div>
+
+<header class="page-header" style="border-bottom:none; padding-bottom:0;">
+  <div class="title-row">
+    <h1 class="m-0">KC Career Intelligence</h1>
+    {{ components.entity_badge('outlook', 'Projections') }}
+  </div>
+  <p style="color:var(--text-muted); margin-top:0.5rem; max-width:800px;">
+    Future-proof regional employment data. Each occupation is assigned a <strong>Career Grade (A+ to F)</strong> based on a proprietary 6-factor composite score combining annual openings, 10-year growth trajectory, local KC wages, QCEW employment momentum, automation risk, and training ROI.
+  </p>
+</header>
+
+<section style="margin: var(--spacing-lg) 0;">
+    <div class="snapshot-strip">
+        <div class="stat-card" style="border-top: 4px solid var(--color-primary);">
+            <div class="stat-label">KC Annual Openings</div>
+            <div class="stat-value">{{ '{:,}'.format(summary.total_openings) }}</div>
+            <div class="stat-caveat">Projected average per year (2024–2034)</div>
+        </div>
+        <div class="stat-card" style="border-top: 4px solid var(--color-success, #16a34a);">
+            <div class="stat-label">Grade A & B Openings</div>
+            <div class="stat-value">{{ '{:,}'.format(summary.ab_openings) }}</div>
+            <div class="stat-caveat"><strong>{{ '{:.0f}'.format(summary.ab_concentration) }}%</strong> of all regional opportunities</div>
+        </div>
+        <div class="stat-card" style="border-top: 4px solid var(--color-warning, #eab308);">
+            <div class="stat-label">Average Regional Wage</div>
+            <div class="stat-value">${{ '{:,.0f}'.format(summary.avg_wage_all) }}</div>
+            <div class="stat-caveat">ACross all 800+ occupations in KC</div>
+        </div>
+        <div class="stat-card" style="border-top: 4px solid var(--color-success, #16a34a);">
+            <div class="stat-label">Grade A Wage Premium</div>
+            <div class="stat-value">+{{ '{:.0f}'.format(summary.wage_premium) }}%</div>
+            <div class="stat-caveat">Avg Grade-A wage: <strong>${{ '{:,.0f}'.format(summary.avg_wage_a) }}</strong></div>
+        </div>
+    </div>
+</section>
+
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--spacing-xl); margin-top: var(--spacing-xl);">
+  
+  {# Left Column: Major Groups tabular breakdown #}
+  <div>
+    <h3 style="border-bottom:1px solid var(--color-surface); padding-bottom:var(--spacing-sm); margin-bottom:var(--spacing-md);">Top Outlook Occupation Groups</h3>
+    <table class="data-table" style="font-size:0.9rem;">
+      <thead>
+        <tr>
+          <th style="text-align:left; padding:0.5rem;">Major Group</th>
+          <th style="text-align:right; padding:0.5rem;">Total<br>Openings</th>
+          <th style="text-align:right; padding:0.5rem;">A & B<br>Openings</th>
+          <th style="text-align:right; padding:0.5rem;">A & B<br>Concentration</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in groups %}
+        <tr style="border-bottom:1px solid var(--color-surface);">
+          <td style="padding:0.75rem 0.5rem; font-weight:500;">{{ g.name }}</td>
+          <td style="text-align:right; padding:0.75rem 0.5rem;">{{ '{:,}'.format(g.total) }}</td>
+          <td style="text-align:right; padding:0.75rem 0.5rem; color:var(--color-success, #16a34a);">{{ '{:,}'.format(g.ab_total) }}</td>
+          <td style="text-align:right; padding:0.75rem 0.5rem;">
+            <div style="display:flex; align-items:center; justify-content:flex-end; gap:0.5rem;">
+              {{ '{:.0f}'.format(g.pct) }}%
+              <div style="width:50px; height:6px; background:var(--color-surface); border-radius:3px; overflow:hidden;">
+                <div style="height:100%; background:var(--color-primary); width:{{ g.pct }}%;"></div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  {# Right Column: Legend #}
+  <div>
+    <h3 style="border-bottom:1px solid var(--color-surface); padding-bottom:var(--spacing-sm); margin-bottom:var(--spacing-md);">Grading Methodology</h3>
+    <div style="background:var(--color-surface); padding:var(--spacing-lg); border-radius:var(--radius-lg);">
+      <p style="margin-top:0;">Each occupation is scored from 0 to 100 on six weighted dimensions:</p>
+      <ul style="margin:0.5rem 0 1rem 1.5rem; color:var(--text-muted); font-size:0.95rem;">
+        <li>25% &mdash; Demand Volume (Annual Openings)</li>
+        <li>20% &mdash; Demand Trajectory (10-year growth %)</li>
+        <li>20% &mdash; Compensation (KC Median Wage)</li>
+        <li>15% &mdash; Local Market Signal (KC QCEW Industry Momentum)</li>
+        <li>10% &mdash; Access/ROI (Wage relative to Training Required)</li>
+        <li>10% &mdash; Future-Proofing (Low Automation Risk)</li>
+      </ul>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; font-size:0.9rem;">
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <span style="background:#16a34a; color:white; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:4px; font-weight:bold;">A+</span>
+          <div>Exceptional (Top 5%)</div>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <span style="background:#22c55e; color:white; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:4px; font-weight:bold;">A</span>
+          <div>Excellent (Top 25%)</div>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <span style="background:#84cc16; color:white; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:4px; font-weight:bold;">B+</span>
+          <div>Very Good (Top 40%)</div>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <span style="background:#ca8a04; color:white; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:4px; font-weight:bold;">B</span>
+          <div>Good / Average (Top 55%)</div>
+        </div>
+      </div>
+      <p style="margin-bottom:0; font-size:0.85rem; color:var(--text-muted); margin-top:1rem;">
+        <strong>Data Sources:</strong> BLS Employment Projections (2024-2034), OEWS May 2023 (KC Metro), QCEW, O*NET Job Zones, Frey & Osborne (2013), Dingel & Neiman (2020).
+      </p>
+    </div>
+  </div>
+</div>
+
+<hr style="margin:var(--spacing-xl) 0; border:none; border-bottom:1px solid var(--color-surface);" />
+
+<h2 style="margin-bottom: var(--spacing-lg);">KC Top Grade Jobs by Career Tier</h2>
+
+{% set tier_colors = {'Now': '#0ea5e9', 'Next': '#8b5cf6', 'Later': '#d946ef'} %}
+{% set tier_descriptions = {
+  'Now': 'Typically requires short-term on-the-job training, little to no experience, or a high school diploma.',
+  'Next': 'Typically requires non-degree certificate, associate degree, apprenticeship, or moderate-term training.',
+  'Later': 'Typically requires a bachelor\'s degree or higher.'
+} %}
+
+{% for t in ['Now', 'Next', 'Later'] %}
+  <div style="margin-bottom: 3rem;">
+    <div style="display:flex; align-items:baseline; gap:1rem; border-bottom:3px solid {{ tier_colors[t] }}; padding-bottom:0.5rem; margin-bottom:1rem;">
+      <h3 style="margin:0; font-size:1.8rem; color:{{ tier_colors[t] }}; font-style:italic;">{{ t }}</h3>
+      <span style="color:var(--text-muted); font-size:0.95rem;">{{ tier_descriptions[t] }}</span>
+    </div>
+    
+    <table class="data-table" style="width:100%; font-size:0.95rem;">
+      <thead>
+        <tr style="background:rgba(0,0,0,0.2);">
+          <th style="padding:1rem; width:80px; text-align:center;">Grade</th>
+          <th style="padding:1rem; text-align:left;">Occupation Title</th>
+          <th style="padding:1rem; text-align:right;">KC Annual<br>Openings</th>
+          <th style="padding:1rem; text-align:right;">10yr Growth<br>Rate</th>
+          <th style="padding:1rem; text-align:right;">KC Average<br>Wage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in tiers[t] %}
+        <tr class="field-row" style="border-bottom:1px solid var(--color-surface);">
+          <td style="padding:0.75rem; text-align:center;">
+            {% set g = r.grade %}
+            {% set bg = '#16a34a' if g == 'A+' else '#22c55e' if g == 'A' else '#84cc16' if g == 'B+' else '#ca8a04' %}
+            <span style="display:inline-block; font-weight:bold; color:white; background:{{bg}}; padding:0.25rem 0.5rem; border-radius:4px; font-size:1rem; min-width:32px;">{{ g }}</span>
+          </td>
+          <td style="padding:0.75rem;">
+            <a href="{{ url_for('root.occupation_detail', soc=r.soc) }}" style="font-weight:600; color:var(--text-primary); text-decoration:none;">{{ r.title }}</a>
+            <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+               {% if r.bright_outlook %}
+                 <span title="O*NET Bright Outlook" style="font-size:0.8rem; background:rgba(234, 179, 8, 0.1); color:#eab308; padding:2px 6px; border-radius:12px;">🔥 Bright Outlook</span>
+               {% endif %}
+               {% if r.remote_capable %}
+                 <span title="High Remote Work Potential" style="font-size:0.8rem; background:rgba(14, 165, 233, 0.1); color:#0ea5e9; padding:2px 6px; border-radius:12px;">🏠 Remote-Capable</span>
+               {% endif %}
+               {% if r.automation_risk is not none and r.automation_risk > 0.7 %}
+                 <span title="{{ '{:.0f}'.format(r.automation_risk*100) }}% Automation Probability" style="font-size:0.8rem; background:rgba(239, 68, 68, 0.1); color:#ef4444; padding:2px 6px; border-radius:12px;">🤖 High Auto-Risk</span>
+               {% endif %}
+            </div>
+          </td>
+          <td style="padding:0.75rem; text-align:right; font-weight:500;">{{ '{:,}'.format(r.raw_openings|int) if r.raw_openings else '—' }}</td>
+          <td style="padding:0.75rem; text-align:right; color: {{ '#16a34a' if r.raw_growth and r.raw_growth > 0 else '#ef4444' if r.raw_growth and r.raw_growth < 0 else 'inherit' }};">
+            {{ '{:+.1f}%'.format(r.raw_growth) if r.raw_growth is not none else '—' }}
+          </td>
+          <td style="padding:0.75rem; text-align:right; font-weight:500;">
+            {{ '${:,.0f}'.format(r.raw_wage) if r.raw_wage else '—' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endfor %}
+
+{% endblock %}

@@ -289,6 +289,17 @@ Before building Strategy B/C, evaluate these named employer data sources for the
 
 ---
 
+## ✅ Epic 19 — KC Career Intelligence Dashboard (Shipped 2026-03-29)
+**Goal:** Build a `/outlook` page and occupation-level "Career Grades" using a proprietary weighted algorithm to assess demand, wage, trajectory, automation risk, and job zone ROI.
+
+**What shipped:**
+- **External Data Ingestion:** Automated loaders for O*NET Bright Outlook (`load_onet_bright_outlook.py`), Frey & Osborne Automation Risk (`load_automation_risk.py`), and Dingel & Neiman Remote Work Potential (`load_remote_potential.py`).
+- **KC Career Grade Algorithm:** Custom 100-point percent-rank weighted index scoring local occupations based on openings, growth, median wage, QCEW local momentum, automation risk, and ROI.
+- **Career Intelligence Dashboard:** New `/outlook` interactive UI surfacing top SOC groups and tier-based career leaderboards.
+- **UI Integration:** Wired new indicators (Bright Outlook, Remote-Capable, Auto-Risk) across the entire platform, including global Search Results and all Occupations directory tables.
+
+---
+
 ## 🟡 Epic 18 — Industry (NAICS) Profiles (Partial)
 **Goal:** Build dedicated Industry profile pages that let users explore KC-area employment by sector, see talent pipeline flows between industries, and understand which industries are growing vs contracting.
 

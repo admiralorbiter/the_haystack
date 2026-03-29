@@ -1,6 +1,6 @@
 # Epic 19 — KC Career Intelligence Dashboard
 
-**Status:** 🟡 In Design — Data Downloads Pending  
+**Status:** 🟢 Completed (Shipped 2026-03-29)  
 **Goal:** Build a `/outlook` page and occupation-level "Career Grades" inspired by MERIC's KC Region Top Grade Jobs report, using our existing data plus three new free datasets.
 
 ---
@@ -168,22 +168,22 @@ Dingel-Neiman remote  ──┘
 ## File Checklist
 
 ### Data Downloads (You)
-- [ ] `data/raw/onet/bright_outlook.xlsx` — O*NET Bright Outlook
-- [ ] `data/raw/automation_risk.csv` — Frey & Osborne
-- [ ] `data/raw/remote_work_potential.csv` — Dingel & Neiman
+- [x] `data/raw/onet/bright_outlook.xlsx` — O*NET Bright Outlook
+- [x] `data/raw/automation_risk.csv` — Frey & Osborne
+- [x] `data/raw/remote_work_potential.csv` — Dingel & Neiman
 
 ### Loaders (Antigravity, after downloads)
-- [ ] `loaders/load_onet_bright_outlook.py`
-- [ ] `loaders/load_automation_risk.py`
-- [ ] `loaders/load_remote_potential.py`
+- [x] `loaders/load_onet_bright_outlook.py`
+- [x] `loaders/load_automation_risk.py`
+- [x] `loaders/load_remote_potential.py`
 
 ### Application Code (Antigravity)
-- [ ] `routes/career_grade.py` — weighted scoring engine
-- [ ] `routes/outlook.py` — `/outlook` route
-- [ ] `templates/outlook/index.html` — full dashboard UI
-- [ ] Update `templates/base.html` — add "Outlook" to nav
-- [ ] Update `templates/home.html` — add gateway card
-- [ ] Update `HAYSTACK_EPICS.md` to mark Epic 19 in roadmap
+- [x] `routes/career_grade.py` — weighted scoring engine
+- [x] `routes/outlook.py` — `/outlook` route
+- [x] `templates/outlook/index.html` — full dashboard UI
+- [x] Update `templates/base.html` — add "Outlook" to nav
+- [x] Update `templates/home.html` — add gateway card
+- [x] Update `HAYSTACK_EPICS.md` to mark Epic 19 in roadmap
 
 ---
 

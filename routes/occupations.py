@@ -22,6 +22,7 @@ from models import (
     IndustryQCEW,
     db,
 )
+from .career_grade import get_career_grades
 from . import root_bp
 from .cip_utils import cip_title
 from .qcew_utils import get_qcew_trends
@@ -196,6 +197,15 @@ def occupation_detail(soc: str):
         "nat_wage": nat_wage,
         "employment": kc_wage.employment_count if kc_wage else None
     }
+    
+    # Inject Career Grade
+    cg_df = get_career_grades()
+    if soc in cg_df.index:
+        snapshot["grade"] = cg_df.loc[soc, "grade"]
+        snapshot["tier"] = cg_df.loc[soc, "tier"]
+    else:
+        snapshot["grade"] = None
+        snapshot["tier"] = None
 
     local_trends = _get_industry_trends([ind.naics for ind in occ.industries])
 
@@ -224,9 +234,35 @@ def occupation_tab_overview(soc: str):
     kc_wage = _get_kc_wage(soc)
     nat_wage = _get_nat_wage(soc)
     local_trends = _get_industry_trends([ind.naics for ind in occ.industries])
+    
+    # Calculate linked programs for snapshot
+    program_count = (
+        db.session.query(func.count(func.distinct(Program.program_id)))
+        .join(ProgramOccupation, ProgramOccupation.program_id == Program.program_id)
+        .join(Organization, Organization.org_id == Program.org_id)
+        .filter(ProgramOccupation.soc == soc, Organization.org_type == "training")
+        .scalar() or 0
+    )
+    
+    snapshot = {
+        "soc": soc,
+        "title": occ.title,
+        "job_zone": occ.job_zone,
+        "program_count": program_count,
+        "employment": kc_wage.employment_count if kc_wage else None
+    }
+    cg_df = get_career_grades()
+    if soc in cg_df.index:
+        snapshot["grade"] = cg_df.loc[soc, "grade"]
+        snapshot["tier"] = cg_df.loc[soc, "tier"]
+    else:
+        snapshot["grade"] = None
+        snapshot["tier"] = None
+        
     return render_template(
         "occupations/partials/tab_overview.html",
         occ=occ,
+        snapshot=snapshot,
         kc_wage=kc_wage,
         nat_wage=nat_wage,
         local_trends=local_trends,

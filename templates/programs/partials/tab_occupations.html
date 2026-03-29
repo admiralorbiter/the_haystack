@@ -28,7 +28,20 @@
       <tbody>
         {% for occ, confidence in occ_links %}
         <tr>
-          <td data-sort-val="{{ occ.title | lower }}"><a href="{{ url_for('root.occupation_detail', soc=occ.soc) }}" class="provider-name-link">{{ occ.title }}</a></td>
+          <td data-sort-val="{{ occ.title | lower }}">
+            <a href="{{ url_for('root.occupation_detail', soc=occ.soc) }}" class="provider-name-link">{{ occ.title }}</a>
+            <div style="display:flex; gap:0.25rem; margin-top:0.25rem;">
+               {% if occ.bright_outlook %}
+                 <span title="O*NET Bright Outlook" style="font-size:0.75rem; background:rgba(234, 179, 8, 0.1); color:#eab308; padding:2px 6px; border-radius:12px;">🔥 Bright</span>
+               {% endif %}
+               {% if occ.remote_capable %}
+                 <span title="High Remote Work Potential" style="font-size:0.75rem; background:rgba(14, 165, 233, 0.1); color:#0ea5e9; padding:2px 6px; border-radius:12px;">🏠 Remote</span>
+               {% endif %}
+               {% if occ.automation_risk is not none and occ.automation_risk > 0.7 %}
+                 <span title="{{ '{:.0f}'.format(occ.automation_risk*100) }}% Automation Probability" style="font-size:0.75rem; background:rgba(239, 68, 68, 0.1); color:#ef4444; padding:2px 6px; border-radius:12px;">🤖 Risk</span>
+               {% endif %}
+            </div>
+          </td>
           <td style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);" data-sort-val="{{ occ.soc }}">{{ occ.soc }}</td>
           <td class="num-col" data-sort-val="{{ confidence if confidence is not none else -1 }}">
             {% if confidence is not none %}

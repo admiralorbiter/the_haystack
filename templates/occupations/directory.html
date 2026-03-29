@@ -79,6 +79,17 @@
         <td data-sort-val="{{ o.title | lower }}">
           <a href="{{ detail_url }}" class="provider-name-link">{{ o.title }}</a>
           <span style="font-family:monospace; font-size:0.85rem; color:var(--text-muted); display:block;">{{ o.soc }}</span>
+          <div style="display:flex; gap:0.25rem; margin-top:0.25rem;">
+               {% if o.bright_outlook %}
+                 <span title="O*NET Bright Outlook" style="font-size:0.75rem; background:rgba(234, 179, 8, 0.1); color:#eab308; padding:2px 6px; border-radius:12px;">🔥 Bright</span>
+               {% endif %}
+               {% if o.remote_capable %}
+                 <span title="High Remote Work Potential" style="font-size:0.75rem; background:rgba(14, 165, 233, 0.1); color:#0ea5e9; padding:2px 6px; border-radius:12px;">🏠 Remote</span>
+               {% endif %}
+               {% if o.automation_risk is not none and o.automation_risk > 0.7 %}
+                 <span title="{{ '{:.0f}'.format(o.automation_risk*100) }}% Automation Probability" style="font-size:0.75rem; background:rgba(239, 68, 68, 0.1); color:#ef4444; padding:2px 6px; border-radius:12px;">🤖 Risk</span>
+               {% endif %}
+          </div>
         </td>
         <td class="text-col" data-sort-val="{{ o.job_zone or 0 }}">
           {{ components.job_zone_badge(o.job_zone) }}

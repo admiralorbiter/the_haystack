@@ -14,6 +14,12 @@
   <div class="entity-title-row">
     <h1 class="m-0">{{ occ.title }}</h1>
     <span class="badge badge-lg">SOC {{ occ.soc }}</span>
+    {% if snapshot.grade %}
+      {% set bg = '#16a34a' if snapshot.grade == 'A+' else '#22c55e' if snapshot.grade == 'A' else '#84cc16' if snapshot.grade == 'B+' else '#ca8a04' %}
+      <a href="{{ url_for('root.outlook_index') }}" style="text-decoration:none;">
+        <span class="badge badge-lg" style="background: {{ bg }}; color: white; border: none; font-weight: bold; cursor: pointer;" title="KC Career Grade">Grade {{ snapshot.grade }}</span>
+      </a>
+    {% endif %}
   </div>
 </header>
 

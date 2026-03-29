@@ -1,0 +1,41 @@
+{
+  "tele": [
+    {
+      "onetsoccode": "11-1011.00",
+      "title": "Chief Executives",
+      "teleworkable": 1
+    }
+  ],
+  "outlook": [
+    {
+      "Code": "13-2011.00",
+      "Occupation": "Accountants and Auditors",
+      "Categories": "Rapid Growth; Numerous Job Openings"
+    }
+  ],
+  "auto_state": "'utf-8' codec can't decode byte 0x92 in position 75061: invalid start byte",
+  "auto_occ": [
+    {
+      "OCC_CODE": "00-0000",
+      "OCC_TITLE": "All Occupations",
+      "OCC_GROUP": "total",
+      "TOT_EMP": 140400040,
+      "EMP_PRSE": 0.1,
+      "H_MEAN": 23.86,
+      "A_MEAN": 49630,
+      "MEAN_PRSE": 0.1,
+      "H_PCT10": 9.27,
+      "H_PCT25": 11.6,
+      "H_MEDIAN": 17.81,
+      "H_PCT75": 28.92,
+      "H_PCT90": 45.45,
+      "A_PCT10": 19290,
+      "A_PCT25": 24140,
+      "A_MEDIAN": 37040,
+      "A_PCT75": 60150,
+      "A_PCT90": 94540,
+      "ANNUAL": NaN,
+      "HOURLY": NaN
+    }
+  ]
+}

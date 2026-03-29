@@ -215,6 +215,8 @@ class Occupation(db.Model):
     soc_minor: Mapped[str] = mapped_column(String(10), nullable=True)
     job_zone: Mapped[int] = mapped_column(Integer, nullable=True)
     bright_outlook: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    automation_risk: Mapped[float] = mapped_column(Float, nullable=True)
+    remote_capable: Mapped[bool] = mapped_column(Boolean, nullable=True, server_default="0")
     
     wages = relationship("OccupationWage", back_populates="occupation", cascade="all, delete-orphan")
     tasks = relationship("OccupationTask", back_populates="occupation", cascade="all, delete-orphan")
