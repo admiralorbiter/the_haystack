@@ -47,8 +47,8 @@ def clean_wage(val):
 
 def main():
     if not BLS_FILE.exists():
-        print(f"ERROR: BLS data not found at {BLS_FILE}")
-        sys.exit(1)
+        print(f"[skip] BLS data not found at {BLS_FILE}")
+        sys.exit(0)
 
     print(f"Loading BLS OEWS data from {BLS_FILE.name}...")
 

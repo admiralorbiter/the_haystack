@@ -121,13 +121,55 @@ def main() -> None:
         ] + dry,
     ))
 
-    # Step 6 — CIP→SOC Phase 2 (link programs to occupations — programs must exist first)
+    # Step 6 — CIP→SOC Phase 2 (link programs to occupations)
     steps.append((
-        "Link programs to occupations via CIP→SOC crosswalk (Phase 2: program_occupation)",
+        "Link programs to occupations via CIP→SOC crosswalk (Phase 2)",
         [py, str(LOADERS_DIR / "load_cip_soc.py")] + dry,
     ))
 
-    # Step 6 — QA (only if not dry-run — QA reads from DB)
+    # --- PHASE 1.5 ENRICHMENT ---
+    steps.append((
+        f"Load IPEDS supplemental tables ({args.year})",
+        [py, str(LOADERS_DIR / "load_ipeds_tables.py"), "--year", str(args.year)],
+    ))
+    steps.append((
+        f"Load IPEDS demographics ({args.year})",
+        [py, str(LOADERS_DIR / "load_ipeds_demographics.py"), "--year", str(args.year)],
+    ))
+    steps.append((
+        "Load College Scorecard Outcomes",
+        [py, str(LOADERS_DIR / "load_scorecard.py")],
+    ))
+
+    # --- PHASE 2 NON-TITLE IV ---
+    steps.append((
+        "Load WIOA ETPL Providers & Programs",
+        [py, str(LOADERS_DIR / "load_etpl.py")] + dry,
+    ))
+    steps.append((
+        "Load Registered Apprenticeships",
+        [py, str(LOADERS_DIR / "load_apprenticeships.py")],
+    ))
+    steps.append((
+        "Link Satellite Organizations to Parents",
+        [py, str(LOADERS_DIR / "link_org_parents.py")] + dry,
+    ))
+    steps.append((
+        "Sweep & Deactivate Inactive Organizations",
+        [py, str(LOADERS_DIR / "sweep_inactive_orgs.py")] + dry,
+    ))
+
+    # --- WORKFORCE INTELLIGENCE ---
+    steps.append(("Load O*NET Core Data", [py, str(LOADERS_DIR / "load_onet_data.py")]))
+    steps.append(("Load O*NET Bright Outlook", [py, str(LOADERS_DIR / "load_onet_bright_outlook.py")]))
+    steps.append(("Load BLS OEWS (Wages)", [py, str(LOADERS_DIR / "load_bls_oews.py")]))
+    steps.append(("Load BLS Projections", [py, str(LOADERS_DIR / "load_bls_projections.py")]))
+    steps.append(("Load BLS Industry Matrix", [py, str(LOADERS_DIR / "load_bls_matrix.py")]))
+    steps.append(("Load BLS QCEW (Local Momentum)", [py, str(LOADERS_DIR / "load_bls_qcew.py")]))
+    steps.append(("Load Remote Work Potential", [py, str(LOADERS_DIR / "load_remote_potential.py")]))
+    steps.append(("Load Automation Risk", [py, str(LOADERS_DIR / "load_automation_risk.py")]))
+
+    # Step Final — QA
     if not args.dry_run:
         steps.append((
             "Run IPEDS QA checks",

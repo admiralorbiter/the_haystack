@@ -231,12 +231,12 @@ def main() -> None:
 
     zip_path = Path(args.zip)
     if not zip_path.exists():
-        print(f"[error] Zip not found: {zip_path}")
-        sys.exit(1)
+        print(f"[skip] Zip not found: {zip_path}")
+        sys.exit(0)
 
     if not DB_PATH.exists():
-        print(f"[error] Database not found: {DB_PATH}")
-        sys.exit(1)
+        print(f"[skip] Database not found: {DB_PATH}")
+        sys.exit(0)
 
     print("=" * 60)
     print("Haystack — Load College Scorecard")

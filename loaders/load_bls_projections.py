@@ -39,8 +39,8 @@ def clean_num(val):
 
 def main():
     if not BLS_FILE.exists():
-        print(f"ERROR: BLS data not found at {BLS_FILE}")
-        sys.exit(1)
+        print(f"[skip] BLS data not found at {BLS_FILE}")
+        sys.exit(0)
 
     print("Reading BLS projections...")
     # Skip the first row so Real headers become the dataframe columns

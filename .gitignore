@@ -27,6 +27,7 @@ wheels/
 
 # Database
 *.db
+*.db-journal
 *.db.bak
 *.sqlite3
 

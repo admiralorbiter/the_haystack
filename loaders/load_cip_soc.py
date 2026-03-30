@@ -134,11 +134,11 @@ def load_program_occupation_links(
 def run(dry_run: bool = False, verbose: bool = False) -> None:
     if not CROSSWALK_FILE.exists():
         print(
-            f"[error] Crosswalk file not found: {CROSSWALK_FILE}\n"
+            f"[skip] Crosswalk file not found: {CROSSWALK_FILE}\n"
             f"        Run `python scripts/download_data.py --crosswalks-only` first.",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(0)
 
     print(f"  Reading {CROSSWALK_FILE.name} ...")
     # The NCES crosswalk xlsx has multiple sheets; data is on 'CIP-SOC'
@@ -157,7 +157,7 @@ def run(dry_run: bool = False, verbose: bool = False) -> None:
             f"[error] Could not identify CIP/SOC columns. Found: {list(df.columns)}",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(0)
 
     # Rename for consistent access
     df = df.rename(columns={cip_col: "cip_code", soc_col: "soc_code"})

@@ -58,6 +58,9 @@
 | Item | Status | Notes |
 |------|--------|-------|
 | Epic 2.9: Pre-Phase-3 Hardening | ✅ Shipped | org_fact, soft-delete, API namespace, search spec, analytics tables |
-| Epic 10: Non-Title IV Training Base | ✅ Shipped 2026-03-28 | ETPL, RAPIDS, Employers, Hubs all landed |
-| Epic 11: BLS OEWS Wage Integration | ✅ Shipped | Map SOCs to wage metrics — done |
+| Epic 10: Non-Title IV Training Base | ✅ Shipped | ETPL, RAPIDS, Employers, Hubs all landed |
+| Epic 11/11b: Workforce & O*NET | ✅ Shipped | Wage integration, skills, alternate titles, education levels |
+| Epic 16: BLS Expansion | ✅ Shipped | 10-Yr Projections, NAICS Industry Matrix, QCEW Local Momentum |
+| Epic 18: Industry Profiles | ✅ Shipped | Core NAICS profiles and QCEW 12-quarter trend charts |
+| Epic 19: Career Intelligence | ✅ Shipped | Career Grades, Remote/Automation Risk, `/outlook` dashboard |
 | Epic 12: Network Explorer | 🔲 Planned | Graph UI for relationships |

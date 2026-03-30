@@ -430,7 +430,8 @@ This is where Haystack becomes distinctly local and hard to replicate.
 **Goal:** Transform Haystack from a search directory into an active discovery and pathways intelligence engine.
 
 Add:
-- **Stepping Stones (Epic 14):** Sequenced credential pathways with interactive ROI Break-Even calculator. Users trace from their current situation to their goal — seeing the exact steps, costs, and wages at each credential rung. *Requires: Epic 11 (BLS OEWS) + Credential Engine Registry.*
+- **Stepping Stones (Epic 14):** ✅ Shipped. Sequenced credential pathways with interactive ROI Break-Even calculator. Users trace from their current situation to their goal — seeing the exact steps, costs, and wages at each credential rung.
+- **Career Intelligence (Epic 19):** ✅ Shipped. `/outlook` dashboard with proprietary 100-point Career Grade index.
 - **Hidden Gems Engine (Epic 15):** Algorithmic surface of high-ROI, low-cost programs that are structurally buried under dominant institutions. Changes the UX from "search" to "discover." *Requires: minimum completions threshold tuning + Epic 11 wages.*
 - **Briefing Builder (Epic 13):** ★ collection tray → printable/exportable one-pager for counselors, grant writers, and analysts.
 

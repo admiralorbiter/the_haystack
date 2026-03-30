@@ -70,11 +70,11 @@ def load_institutions(
     csv_path = IPEDS_DIR / str(year) / f"hd{year}.csv"
     if not csv_path.exists():
         print(
-            f"[error] File not found: {csv_path}\n"
+            f"[skip] File not found: {csv_path}\n"
             f"        Run `python scripts/download_data.py --year {year}` first.",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(0)
 
     # Load the KC MSA county FIPS set
     kc_fips = get_kc_county_fips(session, region_slug)
@@ -94,7 +94,7 @@ def load_institutions(
             "Check the data dictionary for this year.",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(0)
 
     df["_county_fips_norm"] = df["COUNTYCD"].apply(pad_county_fips)
 

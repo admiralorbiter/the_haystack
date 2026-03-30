@@ -31,7 +31,7 @@
 | **14 Stepping Stones** | Sequenced credential pathways + ROI break-even calculator | 🔬 Research Spike |
 | **15 Hidden Gems Engine** | Algorithmic surfacing of high-ROI programs | 🔬 Research Spike |
 | **Data Research Spike** | Proactive discovery of new regional/local datasets to fill data gaps | 🔬 Research Spike |
-| **19 KC Career Intelligence** | `/outlook` dashboard — Career Grades (A+→F), Now/Next/Later tiers, top jobs by tier | 🟡 Data Downloads Pending |
+| **19 KC Career Intelligence** | `/outlook` dashboard — Career Grades (A+→F), Now/Next/Later tiers, top jobs by tier | ✅ Shipped 2026-03-29 |
 
 ---
 
@@ -206,7 +206,7 @@
 
 ---
 
-## 🟡 Epic 16-C — Regional Projections: MERIC + QCEW (Partial)
+## ✅ Epic 16-C — Regional Projections: MERIC + QCEW (Partial)
 **Goal:** Replace the "national projections only" limitation with real local and state-level growth signals that are meaningful to a student in Wyandotte County who can't commute across the metro.
 
 **Design principle:** The national `(Nat.)` badge on projections data is a transparency disclaimer, not a design goal. Locality matters enormously for students without transportation. Every projection we surface should be as close to "your backyard" as the data allows.
@@ -301,7 +301,7 @@ Before building Strategy B/C, evaluate these named employer data sources for the
 
 ---
 
-## 🟡 Epic 18 — Industry (NAICS) Profiles (Partial)
+## ✅ Epic 18 — Industry (NAICS) Profiles (Partial)
 **Goal:** Build dedicated Industry profile pages that let users explore KC-area employment by sector, see talent pipeline flows between industries, and understand which industries are growing vs contracting.
 
 **Design principle:** Just as Occupation profiles answer "is this job good?", Industry profiles answer "is this sector healthy in KC?" These pages will be the future home of all NAICS-level data, including the J2J talent flow intelligence that was too broad for the Occupation layer.

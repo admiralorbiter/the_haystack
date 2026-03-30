@@ -39,8 +39,8 @@ def clean_num(val):
 
 def main():
     if not BLS_FILE.exists():
-        print(f"ERROR: BLS matrix data not found at {BLS_FILE}")
-        sys.exit(1)
+        print(f"[skip] BLS matrix data not found at {BLS_FILE}")
+        sys.exit(0)
 
     print("Reading BLS matrix data...")
     df = pd.read_excel(BLS_FILE)

@@ -76,8 +76,8 @@ def load_onet_data():
     ]
     for f in files:
         if not f.exists():
-            print(f"ERROR: Not found {f}")
-            sys.exit(1)
+            print(f"[skip] Not found {f}")
+            sys.exit(0)
 
     print("Loading O*NET data...")
     with app.app_context():

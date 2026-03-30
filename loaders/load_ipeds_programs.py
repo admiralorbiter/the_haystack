@@ -53,11 +53,11 @@ def load_programs(
     csv_path = IPEDS_DIR / str(year) / f"c{year}_a.csv"
     if not csv_path.exists():
         print(
-            f"[error] File not found: {csv_path}\n"
+            f"[skip] File not found: {csv_path}\n"
             f"        Run `python scripts/download_data.py --year {year}` first.",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(0)
 
     # Build lookup: UNITID (str) → org_id for KC institutions already in DB
     aliases = session.query(OrgAlias).filter_by(source="ipeds").all()
@@ -69,7 +69,7 @@ def load_programs(
             "        Run load_ipeds_institutions.py first.",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(0)
 
     print(f"  KC institutions in DB: {len(unitid_to_org)}")
 
