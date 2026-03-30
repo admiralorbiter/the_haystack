@@ -139,6 +139,15 @@ Used for:
 Map mode should never try to show everything at once.
 One mode at a time.
 
+### E. Collection workspace (Briefing Builder)
+Used for:
+- compiling cross-entity portfolios (providers + occupations + industries)
+- prepping PDF/print exports
+- thematic data extraction
+
+#### Rule
+The collection state must be clearly badged on the entity pages themselves (`Save to Briefing` out-of-band updates) so users don't have to navigate to the active collection to see if an item is saved.
+
 ---
 
 ## 5. Map modes

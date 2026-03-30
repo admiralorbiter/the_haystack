@@ -21,6 +21,13 @@
       </a>
     {% endif %}
   </div>
+  <div class="quick-actions" style="margin-top: 1rem;">
+    {% set entity_type = 'occupation' %}
+    {% set entity_id = occ.soc %}
+    {% set entity_name = occ.title %}
+    {% set is_saved = is_in_briefing(entity_type, entity_id) %}
+    {% include 'partials/briefing_btn.html' %}
+  </div>
 </header>
 
 <div class="snapshot-strip">

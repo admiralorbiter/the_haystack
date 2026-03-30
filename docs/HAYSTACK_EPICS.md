@@ -27,7 +27,7 @@
 | **17 Employer-Occupation Link** | Apprenticeship SOC direct links + NAICS inferred employer matching | 🔲 Planned |
 | **18 Industry (NAICS) Profiles** | Industry detail pages + LEHD J2J talent flow intelligence | ✅ Shipped 2026-03-29 |
 | **12 Ecosystem & Network View** | Force-directed graph of provider relationships | 🔲 Planned |
-| **13 Briefing Builder** | Collect stats/entities and generate printable one-pager | 🔲 Planned |
+| **13 Briefing Builder** | Collect stats/entities and generate printable one-pager | ✅ Shipped 2026-03-30 |
 | **14 Stepping Stones** | Sequenced credential pathways + ROI break-even calculator | 🔬 Research Spike |
 | **15 Hidden Gems Engine** | Algorithmic surfacing of high-ROI programs | 🔬 Research Spike |
 | **Data Research Spike** | Proactive discovery of new regional/local datasets to fill data gaps | 🔬 Research Spike |
@@ -238,6 +238,19 @@
 - Whether QCEW county files are feasibly scoped (they are large) — consider only Jackson + Johnson + Wyandotte + Clay for the KC metro
 - Any additional Missouri state labor data sources (e.g., Missouri DED, KC Regional Labor Market Information)
 - Kansas-side data sources (KLIC, KANSASWORKS) for the full KC bi-state metro
+
+---
+
+## ✅ Epic 13 — Briefing Builder (Shipped 2026-03-30)
+**Goal:** Provide researchers and grant-writers a workspace to collect multiple discrete platform entities (providers, occupations, programs) into a single unified exportable report.
+
+**What shipped:**
+- **Session Architecture:** Leveraged stateless Flask `session[]` storage, enabling instant cross-entity collection without forcing users to create accounts.
+- **HTMX Ecosystem:** Engineered the `briefing_btn.html` component that uses `hx-swap-oob` to seamlessly update the global navigation counter without triggering full page reloads.
+- **Entity Injection:** Retrofitted the "Save to Briefing" framework into the quick-actions headers of all four core domain entities (Providers, Programs, Occupations, Industries).
+- **Review Hub (`/briefing`):** Deployed a centralized staging area allowing inline title editing, entity review, and removal with responsive UX styling.
+- **Print Export (`/briefing/print`):** Created a dedicated, ink-optimized PDF rendering endpoint that hydrates the saved IDs against the backend SQLite database to fetch the latest IPEDS completions, QCEW wages, and O*NET career grades dynamically at runtime.
+- **Automated Testing:** Wrote a comprehensive 10-test `pytest` harness validating border cases, session exhaustion, and database attribute rendering explicitly.
 
 ---
 

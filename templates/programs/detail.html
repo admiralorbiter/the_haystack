@@ -24,6 +24,12 @@
     {{ components.data_freshness_badge(snapshot.data_as_of, snapshot.data_source) }}
   </div>
   <div class="quick-actions">
+    {% set entity_type = 'program' %}
+    {% set entity_id = prog.program_id %}
+    {% set entity_name = snapshot.cip_title %}
+    {% set is_saved = is_in_briefing(entity_type, entity_id) %}
+    {% include 'partials/briefing_btn.html' %}
+
     <a href="{{ url_for('root.programs_directory', comparing=prog.program_id) }}"
        class="btn btn-secondary" title="Compare this program with another">⊕ Compare</a>
     <a href="{{ url_for('root.provider_detail', org_id=org.org_id) }}" class="btn btn-secondary">

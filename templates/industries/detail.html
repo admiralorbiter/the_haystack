@@ -16,9 +16,18 @@
       NAICS {{ naics }}
     </span>
   </div>
-  <p style="color: var(--text-muted); font-size: 1rem; max-width: 800px; line-height: 1.6; margin: 0;">
-    Quarterly economic indicators and employment trends for the Kansas City region, sourced from BLS QCEW.
-  </p>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+    <p style="color: var(--text-muted); font-size: 1rem; max-width: 800px; line-height: 1.6; margin: 0;">
+      Quarterly economic indicators and employment trends for the Kansas City region, sourced from BLS QCEW.
+    </p>
+    <div class="quick-actions">
+      {% set entity_type = 'industry' %}
+      {% set entity_id = naics %}
+      {% set entity_name = title %}
+      {% set is_saved = is_in_briefing(entity_type, entity_id) %}
+      {% include 'partials/briefing_btn.html' %}
+    </div>
+  </div>
 </header>
 
 {% if not history %}

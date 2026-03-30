@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}My Briefing | The Haystack{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('root.index') }}">Home</a> &rsaquo;
+  Briefing Collection
+</div>
+
+<header class="page-header" style="margin-bottom: 2rem;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 class="m-0" style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 2rem;">📋</span> 
+        <form hx-post="{{ url_for('root.briefing_title') }}" style="display: inline-block; margin: 0;">
+            <input type="text" name="title" value="{{ title }}" placeholder="Name your briefing..." 
+                   style="font-size: 2.25rem; font-weight: 800; border: 1px dashed var(--border-color); background: var(--bg-surface); padding: 0.25rem 0.75rem; width: 500px; color: var(--text-color); border-radius: 6px; transition: all 0.2s ease;"
+                   onfocus="this.style.border='1px solid var(--brand-primary, #870058)'; this.style.boxShadow='0 0 0 3px rgba(135,0,88,0.1)';"
+                   onblur="this.style.border='1px dashed var(--border-color)'; this.style.boxShadow='none'; htmx.trigger(this.form, 'submit');"
+                   hx-trigger="keyup[key=='Enter']"
+                   title="Click to rename your briefing document"
+            >
+            <span id="title-saved-badge"></span>
+        </form>
+      </h1>
+      <p style="color:var(--text-muted); margin:0;">Curated research entities ready for export.</p>
+    </div>
+    
+    <div class="quick-actions">
+        <a href="{{ url_for('root.briefing_print') }}" target="_blank" class="btn btn-primary" {% if briefings|length == 0 %}disabled style="opacity: 0.5; pointer-events: none;"{% endif %} 
+           style="font-size: 1.1rem; padding: 0.75rem 1.5rem; background-color: var(--brand-primary, #870058); color: white; border-radius: 8px; font-weight: 600; text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: transform 0.1s ease, box-shadow 0.1s ease;"
+           onmouseover="if({{ briefings|length }} > 0) { this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(0,0,0,0.15)'; }"
+           onmouseout="if({{ briefings|length }} > 0) { this.style.transform='none'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)'; }">
+            🖨️ Generate Print Report
+        </a>
+    </div>
+  </div>
+</header>
+
+<div class="alert" style="background-color: #fffbeb; border-left: 4px solid #f59e0b; color: #b45309; padding: var(--spacing-md); margin-bottom: var(--spacing-xl);">
+  <strong>Temporary Storage:</strong> This briefing is saved in your current browser session. <strong>It will be permanently lost when you close this window.</strong> Please print or export your report before leaving.
+</div>
+
+{% if briefings|length == 0 %}
+<div class="empty-state" style="padding: 4rem 2rem; text-align: center; border: 2px dashed var(--border-color); border-radius: 12px; background: var(--bg-surface);">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">☆</div>
+    <h3>Your briefing is empty</h3>
+    <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto 1.5rem;">
+        Browse the platform and click the "Save to Briefing" button on any Provider, Program, Occupation, or Industry to build your custom report.
+    </p>
+    <a href="{{ url_for('root.guided_search') }}" class="btn btn-primary">Start Exploring</a>
+</div>
+{% else %}
+
+<div class="briefing-sections" style="display: flex; flex-direction: column; gap: 2.5rem;">
+
+    {% macro render_section(title, items, icon) %}
+        {% if items %}
+        <section class="briefing-group">
+            <h2 style="font-size: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                {{ icon }} {{ title }} ({{ items|length }})
+            </h2>
+            <div style="display: grid; gap: 0.5rem;">
+                {% for item in items %}
+                <div class="briefing-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); transition: transform 0.1s ease;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.08)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.04)';">
+                    <div style="font-weight: 600; font-size: 1.1rem;">
+                        {% if item.type == 'provider' %}
+                            <a href="{{ url_for('root.provider_detail', org_id=item.id) }}" style="color: var(--text-color); text-decoration: none;">{{ item.name }}</a>
+                        {% elif item.type == 'program' %}
+                            <a href="{{ url_for('root.program_detail', program_id=item.id) }}" style="color: var(--text-color); text-decoration: none;">{{ item.name }}</a>
+                        {% elif item.type == 'occupation' %}
+                            <a href="{{ url_for('root.occupation_detail', soc=item.id) }}" style="color: var(--text-color); text-decoration: none;">{{ item.name }} <span class="badge" style="margin-left:0.5rem;">SOC {{ item.id }}</span></a>
+                        {% elif item.type == 'industry' %}
+                            <a href="{{ url_for('root.industry_detail', naics=item.id) }}" style="color: var(--text-color); text-decoration: none;">{{ item.name }} <span class="badge" style="margin-left:0.5rem;">NAICS {{ item.id }}</span></a>
+                        {% endif %}
+                    </div>
+                    
+                    <form action="{{ url_for('root.briefing_toggle') }}" method="post" hx-post="{{ url_for('root.briefing_toggle') }}" hx-target="closest .briefing-item" hx-swap="outerHTML" style="margin: 0;">
+                        <input type="hidden" name="entity_type" value="{{ item.type }}">
+                        <input type="hidden" name="entity_id" value="{{ item.id }}">
+                        <input type="hidden" name="entity_name" value="{{ item.name }}">
+                        <button type="submit" class="btn btn-secondary btn-outline" style="color: #ef4444; border: 1px solid #fca5a5; background: transparent; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease; cursor: pointer;" onmouseover="this.style.background='#fef2f2'; this.style.borderColor='#ef4444';" onmouseout="this.style.background='transparent'; this.style.borderColor='#fca5a5';" title="Remove from Briefing">✕ Remove</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    {% endmacro %}
+
+    {{ render_section("Providers", grouped['provider'], "🎓") }}
+    {{ render_section("Programs", grouped['program'], "📜") }}
+    {{ render_section("Occupations", grouped['occupation'], "💼") }}
+    {{ render_section("Industries", grouped['industry'], "🏭") }}
+
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,25 @@
+<form action="{{ url_for('root.briefing_toggle') }}" method="post" hx-post="{{ url_for('root.briefing_toggle') }}" hx-swap="outerHTML" style="display: inline-block; margin: 0;">
+    <input type="hidden" name="entity_type" value="{{ entity_type }}">
+    <input type="hidden" name="entity_id" value="{{ entity_id }}">
+    <input type="hidden" name="entity_name" value="{{ entity_name }}">
+    
+    {% if is_saved %}
+        <button type="submit" class="btn btn-secondary btn-outline" style="color: var(--color-primary); border-color: var(--color-primary);" title="Remove from Briefing">
+            ★ Saved to Briefing
+        </button>
+    {% else %}
+        <button type="submit" class="btn btn-secondary btn-outline" title="Save this page to your Briefing collection">
+            ☆ Save to Briefing
+        </button>
+    {% endif %}
+</form>
+
+{% if request.headers.get('HX-Request') %}
+<a href="{{ url_for('root.briefing_page') }}" id="briefing-nav-counter" hx-swap-oob="true" style="display: flex; justify-content: space-between; align-items: center;">
+    <span>📋 Briefing Setup</span>
+    {% set b_len = session.get('briefing', [])|length %}
+    {% if b_len > 0 %}
+    <span class="badge" style="background:var(--color-primary); color:white; border-radius:12px; font-size: 0.75rem; padding: 2px 6px;">{{ b_len }}</span>
+    {% endif %}
+</a>
+{% endif %}

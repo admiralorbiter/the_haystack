@@ -71,6 +71,17 @@ def create_app(config_name="default"):
         if days < 365: return f"{days // 30} months ago"
         return f"{days // 365} years ago"
 
+    @app.context_processor
+    def inject_briefing_utils():
+        from flask import session
+        def is_in_briefing(e_type, e_id):
+            b_list = session.get("briefing", [])
+            for item in b_list:
+                if item.get("type") == e_type and str(item.get("id")) == str(e_id):
+                    return True
+            return False
+        return dict(is_in_briefing=is_in_briefing)
+
     @app.errorhandler(404)
     def page_not_found(e):
         return render_template("errors/404.html"), 404

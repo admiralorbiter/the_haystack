@@ -95,14 +95,85 @@ class TestStubRoutes:
         res = client.get("/search/guided")
         assert res.status_code == 200
 
-    def test_briefing_page_stub_returns_200(self, client):
+class TestBriefingBuilder:
+    """Briefing Builder — Epic 13"""
+
+    def test_briefing_index_loads_empty_state(self, client):
+        """Happy path: /briefing loads with empty state message."""
         res = client.get("/briefing")
         assert res.status_code == 200
+        assert b"Your briefing is empty" in res.data
+        assert b"Save to Briefing" in res.data
 
-    def test_briefing_add_stub_accepts_post(self, client):
-        """The briefing add endpoint accepts POST and returns 200 (stub behaviour)."""
-        res = client.post("/briefing/add", data={"entity_type": "org", "entity_id": "abc"})
+    def test_briefing_toggle_adds_to_session(self, client, seeded_program):
+        """Happy path: toggling an item adds it to the session and returns badge HTML."""
+        with client:
+            res = client.post("/briefing/toggle", data={
+                "entity_type": "provider",
+                "entity_id": seeded_program["org_id"],
+                "entity_name": "Test Community College"
+            })
+            assert res.status_code == 200
+            assert b"Saved to Briefing" in res.data
+            
+            # Verify session was updated
+            from flask import session
+            assert "briefing" in session
+            assert len(session["briefing"]) == 1
+            assert session["briefing"][0]["type"] == "provider"
+
+    def test_briefing_toggle_removes_from_session_if_exists(self, client, seeded_program):
+        """Happy path: toggling an already saved item removes it."""
+        with client.session_transaction() as sess:
+            sess["briefing"] = [{
+                "type": "provider", "id": seeded_program["org_id"], "name": "Testing"
+            }]
+        
+        with client:
+            res = client.post("/briefing/toggle", data={
+                "entity_type": "provider",
+                "entity_id": seeded_program["org_id"]
+            })
+            assert res.status_code == 200
+            assert b"Save to Briefing" in res.data  # The unset state text
+            from flask import session
+            assert len(session["briefing"]) == 0
+
+    def test_briefing_toggle_missing_data_returns_400(self, client):
+        """Error path: missing POST data returns a 400 Bad Request."""
+        res = client.post("/briefing/toggle", data={})
+        assert res.status_code == 400
+
+    def test_briefing_title_updates_session(self, client):
+        """Happy path: POST to /briefing/title updates the session custom title."""
+        with client:
+            res = client.post("/briefing/title", data={"title": "My Custom Research"})
+            assert res.status_code == 200
+            assert b"Saved \xe2\x9c\x93" in res.data  # \xe2\x9c\x93 is ✓
+            
+            from flask import session
+            assert session.get("briefing_title") == "My Custom Research"
+
+    def test_briefing_print_endpoint_loads(self, client):
+        """Happy path: print endpoint loads even if empty."""
+        res = client.get("/briefing/print")
         assert res.status_code == 200
+        assert b"No data collected" in res.data
+
+    def test_briefing_print_fetches_real_data(self, client, seeded_program):
+        """Happy path: print layout pulls real database models from session IDs."""
+        with client.session_transaction() as sess:
+            sess["briefing"] = [{
+                "type": "provider", 
+                "id": seeded_program["org_id"], 
+                "name": "Test Community College"
+            }]
+            
+        res = client.get("/briefing/print")
+        assert res.status_code == 200
+        # The true name of the provider should be hydrated from the DB
+        assert b"Test Community College" in res.data
+        assert b"Total Programs" in res.data
 
     def test_map_route_returns_200(self, client):
         res = client.get("/map")
