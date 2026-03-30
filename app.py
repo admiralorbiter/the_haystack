@@ -10,6 +10,7 @@ cache = Cache()
 def create_app(config_name="default"):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+    config[config_name].init_app(app)  # runs per-env startup hooks (e.g. production key guard)
 
     # SimpleCache — in-process dict cache, 24h default TTL.
     # Upgrade path: swap CACHE_TYPE to 'RedisCache' with CACHE_REDIS_URL for production.
