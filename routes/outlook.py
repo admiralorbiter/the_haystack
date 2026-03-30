@@ -1,6 +1,7 @@
 from flask import render_template
 
-from models import db
+from models import db, IndustryFlowJ2J, SECTOR_NAMES
+from sqlalchemy import func
 from routes.career_grade import get_career_grades
 from models import SOC_MAJOR_GROUPS
 from . import root_bp
@@ -65,9 +66,43 @@ def outlook_index():
         top_records = top_df.head(15).reset_index().to_dict('records')
         tiers[t] = top_records
         
+    # 4. Macro Regional Talent Flows (LEHD J2J)
+    # Calculate Inbound sum (where destination is sector)
+    inbound_raw = dict(
+        db.session.query(IndustryFlowJ2J.destination_naics, func.sum(IndustryFlowJ2J.transitions))
+        .group_by(IndustryFlowJ2J.destination_naics)
+        .all()
+    )
+    # Calculate Outbound sum (where origin is sector)
+    outbound_raw = dict(
+        db.session.query(IndustryFlowJ2J.origin_naics, func.sum(IndustryFlowJ2J.transitions))
+        .group_by(IndustryFlowJ2J.origin_naics)
+        .all()
+    )
+
+    flow_data = []
+    for naics, name in SECTOR_NAMES.items():
+        ins = inbound_raw.get(naics, 0)
+        outs = outbound_raw.get(naics, 0)
+        if ins > 0 or outs > 0:
+            flow_data.append({
+                "naics": naics,
+                "name": name,
+                "inbound": ins,
+                "outbound": outs,
+                "net": ins - outs
+            })
+            
+    # Sort for magnets (Net > 0) descending, and exporters (Net < 0) ascending
+    flow_data.sort(key=lambda x: x["net"], reverse=True)
+    magnets = flow_data[:5]
+    exporters = list(reversed(flow_data))[:5]
+        
     return render_template(
         "outlook/index.html",
         summary=summary,
         groups=groups,
-        tiers=tiers
+        tiers=tiers,
+        magnets=magnets,
+        exporters=exporters
     )

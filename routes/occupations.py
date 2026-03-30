@@ -21,6 +21,8 @@ from models import (
     Program,
     ProgramOccupation,
     IndustryQCEW,
+    IndustryFlowJ2J,
+    SECTOR_NAMES,
     RelatedOccupation,
     OrgFact,
     db,
@@ -113,6 +115,46 @@ def _get_likely_employers(soc: str):
             return pass2[:8], 2  # Level 2: Broad Match
             
     return [], 0
+
+def _get_escape_hatch(occ):
+    if not occ.industries:
+        return None
+        
+    top_ind = sorted(occ.industries, key=lambda i: i.pct_of_occupation, reverse=True)[0]
+    naics_prefix = top_ind.naics[:2]
+    
+    dominant_sector = None
+    if naics_prefix in ['31', '32', '33']: dominant_sector = '31-33'
+    elif naics_prefix in ['44', '45']: dominant_sector = '44-45'
+    elif naics_prefix in ['48', '49']: dominant_sector = '48-49'
+    elif naics_prefix in SECTOR_NAMES: dominant_sector = naics_prefix
+    
+    if not dominant_sector:
+        return None
+
+    outbound = (
+        db.session.query(IndustryFlowJ2J.destination_naics, func.sum(IndustryFlowJ2J.transitions).label("count"))
+        .filter(IndustryFlowJ2J.origin_naics == dominant_sector)
+        .filter(IndustryFlowJ2J.destination_naics != dominant_sector)
+        .group_by(IndustryFlowJ2J.destination_naics)
+        .order_by(func.sum(IndustryFlowJ2J.transitions).desc())
+        .limit(3)
+        .all()
+    )
+    
+    if not outbound:
+        return None
+        
+    paths = []
+    for dest_naics, count in outbound:
+        name = SECTOR_NAMES.get(dest_naics, f"Sector {dest_naics}")
+        paths.append({"naics": dest_naics, "name": name, "transitions": count})
+        
+    return {
+        "origin_naics": dominant_sector,
+        "origin_name": SECTOR_NAMES[dominant_sector],
+        "paths": paths
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +307,7 @@ def occupation_detail(soc: str):
 
     local_trends = _get_industry_trends([ind.naics for ind in occ.industries])
     employers, match_level = _get_likely_employers(soc)
+    escape_hatch = _get_escape_hatch(occ)
 
     if request.headers.get("HX-Request"):
         return render_template(
@@ -275,7 +318,8 @@ def occupation_detail(soc: str):
             snapshot=snapshot,
             local_trends=local_trends,
             employers=employers,
-            match_level=match_level
+            match_level=match_level,
+            escape_hatch=escape_hatch
         )
 
     return render_template(
@@ -286,7 +330,8 @@ def occupation_detail(soc: str):
         nat_wage=nat_wage,
         local_trends=local_trends,
         employers=employers,
-        match_level=match_level
+        match_level=match_level,
+        escape_hatch=escape_hatch
     )
 
 @root_bp.route("/occupations/<soc>/tab/overview")
@@ -321,6 +366,7 @@ def occupation_tab_overview(soc: str):
         snapshot["tier"] = None
         
     employers, match_level = _get_likely_employers(soc)
+    escape_hatch = _get_escape_hatch(occ)
         
     return render_template(
         "occupations/partials/tab_overview.html",
@@ -330,7 +376,8 @@ def occupation_tab_overview(soc: str):
         nat_wage=nat_wage,
         local_trends=local_trends,
         employers=employers,
-        match_level=match_level
+        match_level=match_level,
+        escape_hatch=escape_hatch
     )
 
 @root_bp.route("/occupations/<soc>/tab/programs")

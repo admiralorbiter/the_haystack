@@ -117,6 +117,57 @@
 
 <hr style="margin:var(--spacing-xl) 0; border:none; border-bottom:1px solid var(--color-surface);" />
 
+<div style="margin-top: var(--spacing-xl);">
+  <h2 style="margin-bottom: var(--spacing-sm);">Macro Regional Talent Flows</h2>
+  <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:var(--spacing-lg); max-width:800px;">
+    Based on Census LEHD Job-to-Job flows, tracking where workers move when they switch industries in the KC metro over the trailing four quarters. Net Positive sectors are locally operating as "Talent Sinks" (absorbing more workers than they lose), while Net Negative sectors are functioning as "Talent Exporters."
+  </p>
+
+  <div style="display:flex; gap:var(--spacing-xl);">
+    {# Left: Talent Magnets #}
+    <div style="flex:1;">
+      <h3 style="color:var(--color-primary); margin-bottom:var(--spacing-md); display:flex; align-items:center; gap:0.5rem;">
+        <span style="font-size:1.2rem;">📥</span> Top Talent Sinks (Net Positive)
+      </h3>
+      <div style="background:var(--color-bg); border:1px solid var(--border-color); border-radius:var(--radius-lg); overflow:hidden;">
+        {% for m in magnets %}
+        <div style="padding:1rem; border-bottom:1px solid var(--color-surface); display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight:600;"><a href="{{ url_for('root.industry_detail', naics=m.naics) }}" style="text-decoration:none; color:var(--text-main);">{{ m.name }}</a></div>
+            <div style="font-size:0.85rem; color:var(--text-muted);">{{ '{:,}'.format(m.inbound) }} in &nbsp;|&nbsp; {{ '{:,}'.format(m.outbound) }} out</div>
+          </div>
+          <div style="color:var(--color-success, #16a34a); font-weight:700; font-size:1.1rem; text-align:right;">
+            +{{ '{:,}'.format(m.net) }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Right: Talent Exporters #}
+    <div style="flex:1;">
+      <h3 style="color:var(--color-warning, #eab308); margin-bottom:var(--spacing-md); display:flex; align-items:center; gap:0.5rem;">
+        <span style="font-size:1.2rem;">📤</span> Top Talent Exporters (Net Negative)
+      </h3>
+      <div style="background:var(--color-bg); border:1px solid var(--border-color); border-radius:var(--radius-lg); overflow:hidden;">
+        {% for e in exporters %}
+        <div style="padding:1rem; border-bottom:1px solid var(--color-surface); display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight:600;"><a href="{{ url_for('root.industry_detail', naics=e.naics) }}" style="text-decoration:none; color:var(--text-main);">{{ e.name }}</a></div>
+            <div style="font-size:0.85rem; color:var(--text-muted);">{{ '{:,}'.format(e.inbound) }} in &nbsp;|&nbsp; {{ '{:,}'.format(e.outbound) }} out</div>
+          </div>
+          <div style="color:var(--color-warning, #eab308); font-weight:700; font-size:1.1rem; text-align:right;">
+            {{ '{:,}'.format(e.net) }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr style="margin:var(--spacing-xl) 0; border:none; border-bottom:1px solid var(--color-surface);" />
+
 <h2 style="margin-bottom: var(--spacing-lg);">KC Top Grade Jobs by Career Tier</h2>
 
 {% set tier_colors = {'Now': '#0ea5e9', 'Next': '#8b5cf6', 'Later': '#d946ef'} %}

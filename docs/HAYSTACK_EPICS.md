@@ -287,6 +287,19 @@ Before building Strategy B/C, evaluate these named employer data sources for the
 - **DataAxle / ReferenceUSA** — licensed business directory (check if PREP-KC has an institutional subscription)
 - **KCMO Open Data Portal** — business license data with industry codes
 
+### Strategy D: Employer Recruitment Pipelines (J2J Intelligence)
+**Coverage:** 20 Primary 2-Digit NAICS Sectors
+**Confidence:** High — Tracks state-level tax records of job-to-job worker movements across the trailing 12 months.
+
+Once `IndustryFlowJ2J` is populated (Epic 18), we can synthesize a "Recruitment Origin Matrix" on an Employer's profile page. When a user views an Employer in the "Manufacturing" sector, the platform can dynamically display:
+*Employers in this sector most commonly recruit active talent from the following industries:*
+1. Administrative and Support Services
+2. Retail Trade
+3. Construction
+
+- **Backend Logic:** Query `IndustryFlowJ2J` where `destination_naics` equals the Employer's primary `naics_code` prefix. Calculate the highest outbound `transitions` from a distinct `origin_naics`.
+- **UI Surface:** A flex-grid visualization injected onto the `templates/employers/detail.html` layout to guide institutional partnership targeting.
+
 ---
 
 ## ✅ Epic 19 — KC Career Intelligence Dashboard (Shipped 2026-03-29)
