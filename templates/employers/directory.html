@@ -46,40 +46,57 @@
     <thead>
       <tr>
         <th class="text-col">Organization</th>
-        <th class="text-col">Location</th>
+        <th class="text-col">Industry</th>
+        <th class="text-col">Regional Size</th>
         <th class="text-col">Role</th>
-        <th class="text-col">Website</th>
       </tr>
     </thead>
     <tbody>
-      {% for org in rows %}
+      {% for bundle in rows %}
+      {% set org = bundle.org %}
       <tr class="provider-row">
         <td>
           <div style="display: flex; flex-flow: row wrap; align-items: center; gap: 8px;">
             <a href="{{ url_for('root.employer_detail', org_id=org.org_id) }}" style="font-weight: 600; font-size: 1.1rem; color: var(--heading-color); text-decoration: none;">
               {{ org.name }}
             </a>
-            {% if org.org_type == 'employer' %}
+            {% if org.org_type == 'employer' and not org.is_apprenticeship_partner %}
               <span class="badge badge-sm" style="background:var(--bg-accent); color:var(--text-color);">Employer</span>
-            {% elif org.org_type == 'intermediary' %}
-              <span class="badge badge-sm" style="background:var(--bg-accent); color:var(--text-color);">Apprenticeship Sponsor</span>
+            {% elif org.is_apprenticeship_partner or org.org_type == 'intermediary' %}
+              <span class="badge badge-sm" style="background:rgba(34,197,94,0.1); color:#15803d;">Apprenticeship Sponsor</span>
             {% endif %}
             {% if org.contacts %}
               <span title="Contact Info Available">📇</span>
             {% endif %}
           </div>
+          <div style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">
+            📍 {{ org.city }}{% if org.city and org.state %}, {% endif %}{{ org.state }}
+          </div>
         </td>
-        <td style="color:var(--text-muted); font-size:0.9rem;">
-          {{ org.city }}{% if org.city and org.state %}, {% endif %}{{ org.state }}
+        <td style="color:var(--text-muted); font-size:0.95rem;">
+          <div style="font-weight:500;">{{ bundle.industry_title }}</div>
+          {% if org.naics_code %}
+            <div style="font-size:0.8rem; font-family:monospace;">NAICS {{ org.naics_code }}</div>
+          {% endif %}
         </td>
-        <td style="color:var(--text-muted); font-size:0.9rem;">
-          {{ org.apprenticeship_role or 'Employer' }}
-        </td>
-        <td style="font-size:0.9rem;">
-          {% if org.website %}
-            <a href="{{ org.website }}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color);">Visit Site ↗</a>
+        <td style="color:var(--text-muted); font-size:0.95rem;">
+          {% if bundle.employees %}
+            <span title="Total Regional Employees">👥</span> {{ bundle.employees }}
           {% else %}
-            <span style="color: var(--text-muted); opacity: 0.5;">—</span>
+            —
+          {% endif %}
+        </td>
+        <td style="color:var(--text-muted); font-size:0.9rem;">
+          {% if org.apprenticeship_role %}
+            {{ org.apprenticeship_role }}
+          {% else %}
+            General Employer
+          {% endif %}
+          
+          {% if org.website %}
+            <div style="margin-top:0.25rem;">
+              <a href="{{ org.website }}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color);">Visit Site ↗</a>
+            </div>
           {% endif %}
         </td>
       </tr>
