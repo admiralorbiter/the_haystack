@@ -116,6 +116,7 @@ class OrgFactType:
     EMPLOYEES_TOTAL = "employees_total"
     H1B_PETITIONS = "h1b_petitions"
     WAGE_AVG = "wage_avg"
+    EMPLOYEES_TOTAL_RANGE = "employees_total_range"
 
 
 class Organization(db.Model):
@@ -132,6 +133,7 @@ class Organization(db.Model):
     website: Mapped[str] = mapped_column(String(500), nullable=True)
     unitid: Mapped[str] = mapped_column(String(50), nullable=True)
     ein: Mapped[str] = mapped_column(String(50), nullable=True)
+    naics_code: Mapped[str] = mapped_column(String(6), nullable=True)
     is_apprenticeship_partner: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="0")
     apprenticeship_role: Mapped[str] = mapped_column(String(50), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, server_default="1")

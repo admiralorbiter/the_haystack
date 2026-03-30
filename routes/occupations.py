@@ -22,8 +22,10 @@ from models import (
     ProgramOccupation,
     IndustryQCEW,
     RelatedOccupation,
+    OrgFact,
     db,
 )
+from sqlalchemy import or_
 import sqlite3
 from pathlib import Path
 
@@ -74,6 +76,43 @@ def _get_nat_wage(soc: str) -> OccupationWage | None:
 def _get_industry_trends(naics_list: list[str]) -> dict:
     """Thin wrapper around shared get_qcew_trends utility."""
     return get_qcew_trends(naics_list, db.session)
+
+def _get_likely_employers(soc: str):
+    inds = db.session.query(OccupationIndustry.naics).filter_by(soc=soc).order_by(OccupationIndustry.pct_of_occupation.desc()).limit(10).all()
+    if not inds:
+        return [], 0
+        
+    naics_6 = [i[0] for i in inds if i[0]]
+    naics_3 = list(set([n[:3] for n in naics_6 if len(n) >= 3]))
+    naics_2 = list(set([n[:2] for n in naics_6 if len(n) >= 2]))
+    
+    import random
+
+    if naics_3:
+        filters_3 = [Organization.naics_code.like(f"{prefix}%") for prefix in naics_3]
+        pass1 = (
+            db.session.query(Organization, OrgFact.value_text.label('employees'))
+            .outerjoin(OrgFact, db.and_(OrgFact.org_id == Organization.org_id, OrgFact.fact_type == 'employees_total_range'))
+            .filter(Organization.org_type == 'employer', or_(*filters_3))
+            .all()
+        )
+        if pass1:
+            random.shuffle(pass1)
+            return pass1[:8], 3  # Level 3: Strong Match
+
+    if naics_2:
+        filters_2 = [Organization.naics_code.like(f"{prefix}%") for prefix in naics_2]
+        pass2 = (
+            db.session.query(Organization, OrgFact.value_text.label('employees'))
+            .outerjoin(OrgFact, db.and_(OrgFact.org_id == Organization.org_id, OrgFact.fact_type == 'employees_total_range'))
+            .filter(Organization.org_type == 'employer', or_(*filters_2))
+            .all()
+        )
+        if pass2:
+            random.shuffle(pass2)
+            return pass2[:8], 2  # Level 2: Broad Match
+            
+    return [], 0
 
 
 # ---------------------------------------------------------------------------
@@ -225,6 +264,7 @@ def occupation_detail(soc: str):
         snapshot["tier"] = None
 
     local_trends = _get_industry_trends([ind.naics for ind in occ.industries])
+    employers, match_level = _get_likely_employers(soc)
 
     if request.headers.get("HX-Request"):
         return render_template(
@@ -233,7 +273,9 @@ def occupation_detail(soc: str):
             kc_wage=kc_wage,
             nat_wage=nat_wage,
             snapshot=snapshot,
-            local_trends=local_trends
+            local_trends=local_trends,
+            employers=employers,
+            match_level=match_level
         )
 
     return render_template(
@@ -243,6 +285,8 @@ def occupation_detail(soc: str):
         kc_wage=kc_wage,
         nat_wage=nat_wage,
         local_trends=local_trends,
+        employers=employers,
+        match_level=match_level
     )
 
 @root_bp.route("/occupations/<soc>/tab/overview")
@@ -276,6 +320,8 @@ def occupation_tab_overview(soc: str):
         snapshot["grade"] = None
         snapshot["tier"] = None
         
+    employers, match_level = _get_likely_employers(soc)
+        
     return render_template(
         "occupations/partials/tab_overview.html",
         occ=occ,
@@ -283,6 +329,8 @@ def occupation_tab_overview(soc: str):
         kc_wage=kc_wage,
         nat_wage=nat_wage,
         local_trends=local_trends,
+        employers=employers,
+        match_level=match_level
     )
 
 @root_bp.route("/occupations/<soc>/tab/programs")

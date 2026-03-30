@@ -254,37 +254,23 @@
 
 ---
 
-## Epic 17 — Employer-to-Occupation Linking (Planned)
+## ✅ Epic 17 — Employer-to-Occupation Linking (Shipped 2026-03-30)
 **Goal:** Close the final gap in the workforce intelligence map. Current map: `Provider → Program → Occupation`. Target map: `Employer → Occupation ← Program ← Provider`.
 
-**Design principle:** Two strategies in parallel — deterministic (high confidence, small coverage) and inferred (lower confidence, broad coverage). Both must be clearly labeled in the UI so users know the provenance of each link.
+**What shipped:**
+- **Hybrid Data Loader:** Engineered `load_major_employers.py` utilizing the regional *Major Employers* dataset. Overcame string inconsistency ("Headquarters") by implementing a dynamic 3-digit NAICS crosswalk paired with a secondary `Description` substring scanner (detecting keywords like 'auto parts', 'hospital', 'city government').
+- **Idempotent Storage:** Augmented `Organization` model with a 6-char `naics_code` schema and `OrgFact` integration for tracking total regional employees.
+- **Two-Pass Inference Logic:** Wired the `occupations.py` routing engine to parse associated Industry matrices. Pass 1 strictly searches for 3-digit NAICS employer matches (highest confidence). If empty, Pass 2 degrades to a broad 2-digit Sector search (generalized regional matches).
+- **Transparency UI:** Deployed the "Likely Employers in KC" widget below the Who-Hires-This table. Dynamically badges entities as `Strong Match: 3-Digit NAICS` or `Broad Match: Sector Level` to guarantee platform credibility and ensure users immediately understand the data's provenance.
 
 ### Strategy A: Apprenticeship Direct Links (Deterministic)
 **Coverage:** ~50 KC apprenticeship sponsors currently in DB  
 **Confidence:** High — these employers signed a federal DOL contract to train workers in a specific SOC code.
-**Status:** 🛑 Blocked. The `partner-finder-listings.csv` does **not** contain SOC/RAPIDS codes or any industry field. It only contains sponsor names and contact info. We need the raw DOL RAPIDS database or an alternative source to map these to occupations.
+**Status:** 🛑 Partially Blocked. The `partner-finder-listings.csv` does **not** contain SOC/RAPIDS codes or any industry field. It only contains sponsor names and contact info. We need the raw DOL RAPIDS database or an alternative source to map these to occupations.
 
 - Re-examine `data/raw/apprenticeship/partner-finder-listings.csv` for SOC/RAPIDS occupation code fields (❌ Failed: data missing)
 - Update `loaders/load_apprenticeships.py` to parse occupation codes and create `ProgramOccupation` links for apprenticeship programs
 - **UI surface (Occupation Detail):** New "Apprenticeship Sponsors in KC" section — employer names as clickable org links. Badged `Registered Apprenticeship`.
-
-### Strategy B: NAICS Inferred Employer Matching (Probabilistic)
-**Coverage:** All KC employers in DB once tagged with NAICS code  
-**Confidence:** Inferred — "employers in this industry *likely* hire this occupation."
-
-**Schema prerequisite:** Add `naics_code: Mapped[str]` to `Organization` (nullable). NAICS code sourcing options (ranked by preference):
-1. Parse from apprenticeship listing CSV if industry field exists (❌ Failed: data missing)
-2. Manual tag for top ~50 active KC employers in the DB (quick, high accuracy)
-3. Defer to Phase 3 IRS 990 ingestion which maps NTEE → NAICS automatically
-
-**Matching logic:**
-1. For a given SOC, query `OccupationIndustry` → get top industries that employ this role
-2. Query `Organization` WHERE `naics_code IN (...)` AND `org_type = 'employer'` AND KC-scoped
-3. Return as "Likely Employers in KC" with clear `(Inferred via industry)` badge and tooltip
-
-**UI surface (Occupation Detail):** New collapsible "Employers in KC" section showing both Strategy A results (labeled `Registered Apprenticeship`) and Strategy B results (labeled `Inferred — employer in related industry`) in the same panel with clear visual differentiation.
-
-**Critical rule:** Never display inferred employer links without the `(Inferred)` disclaimer. The Haystack's credibility depends on users understanding how data was derived.
 
 ### Strategy C: BLS QCEW Establishment Count (Aggregate Signal)
 **Coverage:** All industries in the KC metro  

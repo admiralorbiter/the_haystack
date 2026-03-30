@@ -252,6 +252,35 @@
   </div>
   {% endif %}
 
+  {% if employers %}
+  <div class="panel-section" style="margin-top:2.5rem; padding-top:2.5rem; border-top:1px solid var(--border-color);">
+    <h3 style="margin-bottom:0.25rem;">Likely Employers in KC</h3>
+    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">
+      Regional employers cross-matched by industry employment patterns.
+    </p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:1rem;">
+      {% for emp in employers %}
+        <div style="padding:1.2rem; background:white; border:1px solid var(--color-border); border-radius:var(--radius-md);">
+          <div style="font-weight:600; color:var(--text-main); margin-bottom:0.25rem; font-size:1.05rem;">
+            {{ emp.Organization.name }}
+          </div>
+          
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:0.75rem;">
+            <div style="font-size:0.85rem; color:var(--text-muted);">
+              <span title="Regional Employees">👥</span> {{ emp.employees or 'Size unlisted' }}
+            </div>
+            {% if match_level == 3 %}
+              <span title="Inferred via a specific 3-digit NAICS industry link" style="font-size:0.75rem; background:rgba(34,197,94,0.1); color:#15803d; padding:2px 6px; border-radius:4px; font-weight:500; cursor:default;">Strong Match</span>
+            {% else %}
+              <span title="Inferred via a broad 2-digit industry sector" style="font-size:0.75rem; background:rgba(234,179,8,0.1); color:#a16207; padding:2px 6px; border-radius:4px; font-weight:500; cursor:default;">Broad Match</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {% if occ.related|length > 0 %}
   <div class="panel-section" style="margin-top:2.5rem; padding-top:2.5rem; border-top:1px solid var(--color-border);">
     <h3 style="margin-bottom:0.25rem;">Similar Careers</h3>
