@@ -108,6 +108,69 @@
 </div>
 {% endif %}
 
+{# LEHD J2J Talent Pipelines #}
+{% if flow_in or flow_out %}
+<section class="panel-section" style="margin-bottom: 3.5rem;">
+  <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+    <span>Talent Pipelines</span>
+    <span style="font-size: 0.85rem; font-weight: 500; font-family: monospace; background: var(--bg-surface); border: 1px solid var(--border-color); padding: 0.25rem 0.5rem; border-radius: 4px; color: var(--text-muted);">Census LEHD J2J</span>
+  </h2>
+  
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <!-- Origins -->
+    <div style="background: var(--bg-page); border: 1px dashed var(--border-color); border-radius: 12px; padding: 1.5rem;">
+      <h3 style="font-size: 1.1rem; margin-top: 0; margin-bottom: 0.5rem; color: var(--text-main);">Where Workers Come From</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">Trailing 4-quarters of top industry origins.</p>
+      {% if flow_in %}
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for f in flow_in %}
+        <a href="{{ url_for('root.industry_detail', naics=f.naics) }}" style="text-decoration: none;">
+          <div class="flow-card" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; transition: all 0.2s; position: relative; overflow: hidden;">
+            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #3b82f6;"></div>
+            <div style="flex: 1; min-width: 0; padding-left: 0.5rem;">
+              <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 1rem;" title="{{ f.title }}">{{ f.title }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace; margin-top: 0.2rem;">NAICS {{ f.naics }}</div>
+            </div>
+            <div style="font-weight: 700; color: #3b82f6; font-size: 1.1rem; text-align: right;">{{ '{:,}'.format(f.count) }}<span style="font-size: 0.75rem; font-weight: 500; display: block; color: var(--text-muted);">hires</span></div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="padding: 1rem; color: var(--text-muted); font-size: 0.9rem; text-align: center; border: 1px dashed var(--border-color); border-radius: 6px;">No inbound flows detected for NAICS {{ naics }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Destinations -->
+    <div style="background: var(--bg-page); border: 1px dashed var(--border-color); border-radius: 12px; padding: 1.5rem;">
+      <h3 style="font-size: 1.1rem; margin-top: 0; margin-bottom: 0.5rem; color: var(--text-main);">Where Workers Go</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">Trailing 4-quarters of top industry destinations.</p>
+      {% if flow_out %}
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for f in flow_out %}
+        <a href="{{ url_for('root.industry_detail', naics=f.naics) }}" style="text-decoration: none;">
+          <div class="flow-card" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; transition: all 0.2s; position: relative; overflow: hidden;">
+            <div style="position: absolute; right: 0; top: 0; bottom: 0; width: 4px; background: #8b5cf6;"></div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 1rem;" title="{{ f.title }}">{{ f.title }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace; margin-top: 0.2rem;">NAICS {{ f.naics }}</div>
+            </div>
+            <div style="font-weight: 700; color: #8b5cf6; font-size: 1.1rem; text-align: right; padding-right: 0.5rem;">{{ '{:,}'.format(f.count) }}<span style="font-size: 0.75rem; font-weight: 500; display: block; color: var(--text-muted);">left</span></div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="padding: 1rem; color: var(--text-muted); font-size: 0.9rem; text-align: center; border: 1px dashed var(--border-color); border-radius: 6px;">No outbound flows detected for NAICS {{ naics }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <style>
+    .flow-card:hover { border-color: var(--color-primary) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transform: translateY(-1px); }
+  </style>
+</section>
+{% endif %}
+
 {# Employment Trend Chart #}
 <section class="panel-section" style="margin-bottom: 3rem;">
   <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Local Employment Trend (3-Year)</h2>

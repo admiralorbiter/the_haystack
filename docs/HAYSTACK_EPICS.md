@@ -300,17 +300,18 @@ Before building Strategy B/C, evaluate these named employer data sources for the
 
 ---
 
-## ✅ Epic 18 — Industry (NAICS) Profiles (Partial)
+## ✅ Epic 18 — Industry (NAICS) Profiles (Shipped 2026-03-30)
 **Goal:** Build dedicated Industry profile pages that let users explore KC-area employment by sector, see talent pipeline flows between industries, and understand which industries are growing vs contracting.
 
 **Design principle:** Just as Occupation profiles answer "is this job good?", Industry profiles answer "is this sector healthy in KC?" These pages will be the future home of all NAICS-level data, including the J2J talent flow intelligence that was too broad for the Occupation layer.
 
 **Prerequisites:** Epic 16-C QCEW loaded, Epic 17 NAICS tagging on employers.
 
-### Phase A: Industry Directory
+### ✅ Phase A: Industry Directory (Shipped 2026-03-30)
 - Basic NAICS directory page at `/industries`
 - Sources employment totals from `IndustryQCEW` (QCEW county data)
 - Shows list of broad sectors (Agriculture, Manufacturing, Healthcare, etc.) with KC-area employment counts
+- **UI UX:** Includes a zero-latency JavaScript fallback filter to toggle between `All Industries`, `2-Digit Super Sectors`, and `Granular Sub-Industries`.
 
 ### ✅ Phase B: Industry Detail Pages (Foundation Shipped 2026-03-29)
 - Started early during Epic 16-C to surface QCEW data.
@@ -319,12 +320,13 @@ Before building Strategy B/C, evaluate these named employer data sources for the
 - **Top Occupations:** (Pending) Pulls from `OccupationIndustry` to show which job titles dominate this sector
 - **Training Pathways:** (Pending) Pulls from `ProgramOccupation` to surface KC training programs that feed into this industry
 
-### Phase C: LEHD J2J Talent Flow Intelligence
+### ✅ Phase C: LEHD J2J Talent Flow Intelligence (Shipped 2026-03-30)
 - **Source:** https://lehd.ces.census.gov/data/#j2j  
-- **What it does:** Tracks where workers *come from* when they join an industry, and where they *go* when they leave — by prior/next industry (NAICS). Also tracks earnings changes on those transitions.
-- **UI widget:** "Industry Talent Flows" — a Sankey or ranked list showing: "When people leave Manufacturing, 28% go to Construction and 14% go to Healthcare. When people enter Healthcare, 19% come from Retail."
+- **What it does:** Tracks where workers *come from* when they join an industry, and where they *go* when they leave — by prior/next industry (NAICS).
+- **Architecture:** Bypasses 130M+ rows of granular demographic partitions by strictly querying `ind_level == 'S'` (Sector) and parsing structural summary demographic codes (`A00`, `E0`). Required summing the `EE` (Continuous Employment) and `AQHire` (Adjacent-Quarter Hires) fields to reconstruct total inter-sector transitions.
+- **UI widget:** "Talent Pipelines" — a fast, flex-block dual-list showing the trailing 4-quarters of top 5 inbound origins and outbound destinations.
 - **Loader:** `loaders/load_lehd_j2j.py`
-- **Note:** J2J is NAICS-level only — cannot track occupation-to-occupation transitions. Ideal for this Industry layer.
+- **Models:** `IndustryFlowJ2J`
 
 ---
 

@@ -27,8 +27,13 @@
 </div>
 {% else %}
 
-<div class="results-header">
-  <span class="results-count">{{ '{:,}'.format(industries|length) }} industries tracked</span>
+<div class="results-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+  <span class="results-count" id="results-count-display">{{ '{:,}'.format(industries|length) }} industries tracked</span>
+  <select id="naics-level-filter" style="padding: 0.4rem 0.8rem; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-surface); color: var(--text-main); font-size: 0.9rem; font-weight: 500; cursor: pointer;">
+    <option value="all">View All Tracked Industries</option>
+    <option value="sectors">View 2-Digit Super Sectors Only</option>
+    <option value="subsectors">View Granular Sub-Industries</option>
+  </select>
 </div>
 
 <div class="table-wrapper">
@@ -47,7 +52,7 @@
       <tr class="field-row" data-href="{{ url_for('root.industry_detail', naics=ind.naics) }}" style="cursor:pointer;">
         <td class="text-col" style="padding:1rem;">
           <a href="{{ url_for('root.industry_detail', naics=ind.naics) }}" class="provider-name-link">{{ ind.title }}</a>
-          <span style="font-family:monospace; font-size:0.8rem; color:var(--text-muted); display:block;">NAICS {{ ind.naics }}</span>
+          <span class="naics-code-span" style="font-family:monospace; font-size:0.8rem; color:var(--text-muted); display:block;">NAICS {{ ind.naics }}</span>
         </td>
         <td class="num-col" style="padding:1rem; font-weight:600;">{{ '{:,}'.format(ind.employment) }}</td>
         <td class="num-col" style="padding:1rem; color:var(--text-muted);">{{ '{:,}'.format(ind.establishments) }}</td>
@@ -76,6 +81,41 @@
 <div class="methods-footer">
   <strong>Data:</strong> BLS QCEW {{ latest_quarter }} — county-level employment for Kansas City MSA counties. Includes Federal, State, Local government, and Private sector workers. Suppressed rows (BLS confidentiality rules) are excluded. YoY compares same quarter to prior year.
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const filter = document.getElementById("naics-level-filter");
+  const rows = document.querySelectorAll(".field-row");
+  const countDisplay = document.getElementById("results-count-display");
+
+  filter.addEventListener("change", function() {
+    let visibleCount = 0;
+    const mode = this.value;
+
+    rows.forEach(row => {
+      const naicsTextNode = row.querySelector(".naics-code-span");
+      if (!naicsTextNode) return;
+      
+      const naicsCode = naicsTextNode.textContent.replace("NAICS ", "").trim();
+      const length = naicsCode.length;
+      let show = false;
+      
+      if (mode === "all") {
+        show = true;
+      } else if (mode === "sectors") {
+        show = (length === 2 || naicsCode.includes("-"));
+      } else if (mode === "subsectors") {
+        show = (length > 2 && !naicsCode.includes("-"));
+      }
+
+      row.style.display = show ? "" : "none";
+      if (show) visibleCount++;
+    });
+
+    countDisplay.textContent = visibleCount.toLocaleString() + " industries tracked";
+  });
+});
+</script>
 
 {% endif %}
 {% endblock %}

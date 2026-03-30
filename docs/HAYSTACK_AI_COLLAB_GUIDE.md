@@ -373,6 +373,11 @@ Data sources (IPEDS, ETPL, Scorecard) will always have missing cells. **Never** 
 - **Rule:** The `pytest` suite is configured to fail the CI build if global coverage drops below 70%.
 - **Rule:** When adding new HTMX deferred tabs (e.g., `/providers/<id>/tab/connections`), you **must** write at least a basic smoke test (`assert res.status_code == 200`) to hit those routes. They contribute heavily to coverage drops if ignored.
 
+### 4. Zero-Latency Filtering & Safe Fallbacks (Epic 18 Pattern)
+- **Rule:** When external schema data naturally lacks high-level category descriptors (e.g., BLS granular matrices omitting pure 2-digit NAICS codes), gracefully construct a static `CONSTANT_MAP` dictionary in the routing layer rather than forging pseudo-entries in the database and corrupting upstream foreign keys.
+- **Rule:** For single-page static list manipulations (e.g. toggling the Industry Directory between the 20 Super Sectors and the 850 granular sub-industries), implement zero-latency DOM filtering using Vanilla JS and CSS `display: none`. Avoid full-page server round-trips or heavy HTMX loads for simple display-state toggles.
+- **Data Rule:** Be extremely skeptical of "Total" columns in Census or BLS datasets. E.g., LEHD J2J data requires actively summing the `EE` (Continuous) and `AQHire` (Adjacent-Quarter Hires) to derive true totals. Always inspect the codebooks deeply before relying on presumed aggregate fields.
+
 ---
 
 ## Key docs (reference, don't re-derive)

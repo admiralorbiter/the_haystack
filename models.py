@@ -464,3 +464,15 @@ class IndustryQCEW(db.Model):
 
 Index("ix_industry_qcew_lookup", IndustryQCEW.naics, IndustryQCEW.county_fips)
 Index("ix_industry_qcew_time", IndustryQCEW.year, IndustryQCEW.quarter)
+
+class IndustryFlowJ2J(db.Model):
+    __tablename__ = "industry_flow_j2j"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    state: Mapped[str] = mapped_column(String(2), nullable=False) # 'MO' or 'KS'
+    origin_naics: Mapped[str] = mapped_column(String(6), nullable=False)
+    destination_naics: Mapped[str] = mapped_column(String(6), nullable=False)
+    transitions: Mapped[int] = mapped_column(Integer, nullable=False)
+
+Index("ix_industry_flow_dest", IndustryFlowJ2J.destination_naics)
+Index("ix_industry_flow_orig", IndustryFlowJ2J.origin_naics)

@@ -21,7 +21,33 @@ def industries_directory():
         for r in db.session.query(OccupationIndustry.naics, OccupationIndustry.industry_title).all()
     }
 
-    # Get all NAICS that have titles (excludes BLS roll-up aggregate codes)
+    SECTOR_NAMES = {
+        '11': 'Agriculture, Forestry, Fishing and Hunting',
+        '21': 'Mining, Quarrying, and Oil and Gas Extraction',
+        '22': 'Utilities',
+        '23': 'Construction',
+        '31-33': 'Manufacturing',
+        '42': 'Wholesale Trade',
+        '44-45': 'Retail Trade',
+        '48-49': 'Transportation and Warehousing',
+        '51': 'Information',
+        '52': 'Finance and Insurance',
+        '53': 'Real Estate and Rental and Leasing',
+        '54': 'Professional, Scientific, and Technical Services',
+        '55': 'Management of Companies and Enterprises',
+        '56': 'Administrative and Support and Waste Management',
+        '61': 'Educational Services',
+        '62': 'Health Care and Social Assistance',
+        '71': 'Arts, Entertainment, and Recreation',
+        '72': 'Accommodation and Food Services',
+        '81': 'Other Services (except Public Administration)',
+        '92': 'Public Administration'
+    }
+    
+    # Inject 2-digit super-sectors into the title map so they render in the directory
+    title_map.update(SECTOR_NAMES)
+
+    # Get all NAICS that have titles (excludes BLS roll-up aggregate codes not in title_map)
     named_naics = list(title_map.keys())
     if not named_naics:
         return render_template("industries/directory.html", industries=[], latest_quarter="N/A")
@@ -108,12 +134,35 @@ def industry_detail(naics: str):
         .all()
     )
 
+    SECTOR_NAMES = {
+        '11': 'Agriculture, Forestry, Fishing and Hunting',
+        '21': 'Mining, Quarrying, and Oil and Gas Extraction',
+        '22': 'Utilities',
+        '23': 'Construction',
+        '31-33': 'Manufacturing',
+        '42': 'Wholesale Trade',
+        '44-45': 'Retail Trade',
+        '48-49': 'Transportation and Warehousing',
+        '51': 'Information',
+        '52': 'Finance and Insurance',
+        '53': 'Real Estate and Rental and Leasing',
+        '54': 'Professional, Scientific, and Technical Services',
+        '55': 'Management of Companies and Enterprises',
+        '56': 'Administrative and Support and Waste Management',
+        '61': 'Educational Services',
+        '62': 'Health Care and Social Assistance',
+        '71': 'Arts, Entertainment, and Recreation',
+        '72': 'Accommodation and Food Services',
+        '81': 'Other Services (except Public Administration)',
+        '92': 'Public Administration'
+    }
+
     ind_name_row = db.session.query(OccupationIndustry.industry_title).filter_by(naics=naics).first()
 
-    if not rows and not ind_name_row:
+    if not rows and not ind_name_row and naics not in SECTOR_NAMES:
         abort(404, description=f"Data for NAICS {naics} doesn't exist.")
 
-    title = ind_name_row.industry_title if ind_name_row else f"Industry (NAICS {naics})"
+    title = ind_name_row.industry_title if ind_name_row else SECTOR_NAMES.get(naics, f"Industry (NAICS {naics})")
 
     # Prepare chart data in chronological order
     chart_data = []
@@ -143,6 +192,42 @@ def industry_detail(naics: str):
         )
         snapshot = snapshot_row
 
+    # --- LEHD J2J Talent Flows ---
+    from models import IndustryFlowJ2J
+    
+    # Top 5 source industries (we are the destination)
+    raw_in = (
+        db.session.query(IndustryFlowJ2J.origin_naics, func.sum(IndustryFlowJ2J.transitions).label("count"))
+        .filter(IndustryFlowJ2J.destination_naics == naics)
+        .group_by(IndustryFlowJ2J.origin_naics)
+        .order_by(func.sum(IndustryFlowJ2J.transitions).desc())
+        .limit(5)
+        .all()
+    )
+
+    flow_in = []
+    for row in raw_in:
+        t_row = db.session.query(OccupationIndustry.industry_title).filter(OccupationIndustry.naics == row.origin_naics).first()
+        ind_title = t_row.industry_title if t_row else SECTOR_NAMES.get(row.origin_naics, f"Sector {row.origin_naics}")
+        flow_in.append({"naics": row.origin_naics, "title": ind_title, "count": row.count})
+
+    # Top 5 destination industries (we are the origin)
+    raw_out = (
+        db.session.query(IndustryFlowJ2J.destination_naics, func.sum(IndustryFlowJ2J.transitions).label("count"))
+        .filter(IndustryFlowJ2J.origin_naics == naics)
+        .group_by(IndustryFlowJ2J.destination_naics)
+        .order_by(func.sum(IndustryFlowJ2J.transitions).desc())
+        .limit(5)
+        .all()
+    )
+
+    flow_out = []
+    for row in raw_out:
+        t_row = db.session.query(OccupationIndustry.industry_title).filter(OccupationIndustry.naics == row.destination_naics).first()
+        ind_title = t_row.industry_title if t_row else SECTOR_NAMES.get(row.destination_naics, f"Sector {row.destination_naics}")
+        flow_out.append({"naics": row.destination_naics, "title": ind_title, "count": row.count})
+
+
     return render_template(
         "industries/detail.html",
         naics=naics,
@@ -151,4 +236,6 @@ def industry_detail(naics: str):
         latest=chart_data[-1] if chart_data else None,
         snapshot=snapshot,
         trend=trend_result,
+        flow_in=flow_in,
+        flow_out=flow_out,
     )
