@@ -30,7 +30,7 @@ A local KC data platform that lets users explore training providers, programs, o
 | Program / Offering | `program` | Healthcare Tech Certificate |
 | Work / Opportunity | `occupation` | Registered Nurse (SOC 29-1141) |
 | Civic Signal | `civic_signal` | 311 request, crime incident |
-| Relationship / Network | `relationship` | Org A funds Org B; Employer in supply chain |
+| Relationship / Network | `relationship` | Org A funds Org B; shared CIP peer; `rel_type` values locked in `RelationshipType` constants class in `models.py` |
 
 ### Tech stack
 - **Backend:** Python / Flask
@@ -72,12 +72,14 @@ haystack/
     programs.py
     fields.py
     map.py
+    network.py            # Epic 12 — /network graph page
     compare.py
   templates/
     base.html             # Shared shell
     providers/
     programs/
     fields/
+    network/              # Epic 12 — Cytoscape.js canvas page
     partials/             # Reusable Jinja includes
   static/
     css/
@@ -377,6 +379,13 @@ Data sources (IPEDS, ETPL, Scorecard) will always have missing cells. **Never** 
 - **Rule:** When external schema data naturally lacks high-level category descriptors (e.g., BLS granular matrices omitting pure 2-digit NAICS codes), gracefully construct a static `CONSTANT_MAP` dictionary in the routing layer rather than forging pseudo-entries in the database and corrupting upstream foreign keys.
 - **Rule:** For single-page static list manipulations (e.g. toggling the Industry Directory between the 20 Super Sectors and the 850 granular sub-industries), implement zero-latency DOM filtering using Vanilla JS and CSS `display: none`. Avoid full-page server round-trips or heavy HTMX loads for simple display-state toggles.
 - **Data Rule:** Be extremely skeptical of "Total" columns in Census or BLS datasets. E.g., LEHD J2J data requires actively summing the `EE` (Continuous) and `AQHire` (Adjacent-Quarter Hires) to derive true totals. Always inspect the codebooks deeply before relying on presumed aggregate fields.
+
+### Network Graph Pattern (Epic 12+)
+- **`RelationshipType` constants class** lives in `models.py` (mirrors `OrgFactType`). All `rel_type` strings MUST use these constants — never write a raw string like `"parent_org"` in a query or loader without referencing `RelationshipType.PARENT_ORG`. This prevents string drift across loaders and API endpoints.
+- **Cytoscape.js via CDN:** Load via `<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js">`. No npm build step needed. Initialize after `fetch('/api/v1/network/providers')` resolves. The canvas container must be `#cy` with an explicit pixel height (not `height: auto`) or Cytoscape renders a zero-height container.
+- **On-the-fly vs pre-stored edges:** V1 edge overlap (CIP + SOC pairwise) is computed dynamically in `/api/v1/network/providers`. This is fine for ≤75 nodes. When Phase 6 data (IRS 990, board members) joins the graph, add `loaders/load_network_edges.py` to materialize edges into the `Relationship` table via `RelationshipType` constants.
+- **Edge noise:** Prune edges with `weight < 2` in the API before returning JSON. A single shared CIP code between two large providers is not a meaningful connection.
+- **Node sizing:** Use `Math.sqrt(completions)` to scale node size — raw completions span 1–16,000 and would produce unusable size variance without the sqrt transform.
 
 ---
 

@@ -505,3 +505,83 @@ inferred_employers = [
 {% endif %}
 {{ item.org.name }}
 ```
+
+---
+
+## Part 13 — Network Edge Pattern
+
+The `Relationship` table is the backbone of Phase 6's network intelligence layer. Follow these rules before writing any code that creates or queries relationship edges.
+
+### The `RelationshipType` Constants Registry
+
+All `rel_type` string values MUST use the `RelationshipType` constants class in `models.py`. Never write a raw string literal like `"parent_org"` in a loader or query — always reference `RelationshipType.PARENT_ORG`. This is the same principle as `OrgFactType`.
+
+```python
+# models.py
+class RelationshipType:
+    """Canonical rel_type strings for the Relationship table."""
+    PARENT_ORG = "parent_org"                    # WIOA satellite → IPEDS college
+    SHARED_CIP = "shared_cip"                    # Two providers, same CIP family
+    SHARED_SOC = "shared_soc"                    # Two providers, same SOC (occupation)
+    LIKELY_HIRES = "likely_hires"                # Employer → Occupation (NAICS inferred)
+    APPRENTICESHIP_TRAINS_FOR = "apprenticeship_trains_for"  # Sponsor → SOC (blocked)
+    FUNDS = "funds"                              # Funder → Grantee (IRS 990, Phase 3)
+    SHARED_BOARD = "shared_board_member"          # Org → Org via board member (Phase 6)
+    TALENT_ORIGIN = "talent_pipeline_origin"     # Industry inflow (LEHD J2J)
+    SUPPLIES_TO = "supplies_to"                  # Supply chain (BEA I-O, Phase 6)
+```
+
+### On-the-Fly vs Pre-Stored Edges
+
+| Approach | When to use | Performance |
+|---|---|---|
+| **On-the-fly** (compute in API) | V1 CIP/SOC overlap, \u226475 nodes | Fast to ship; ~100ms query |
+| **Pre-stored** (rows in `Relationship`) | Phase 6 cross-entity edges (990, board, BEA) | Required when graph >100 nodes or cross-table joins |
+
+**V1 rule:** Compute CIP-overlap and SOC-overlap edges dynamically in `/api/v1/network/providers`. Return `{nodes: [], edges: []}` JSON.
+
+**Phase 6 rule:** Add `loaders/load_network_edges.py` as a maintenance script. It re-computes and upserts all `shared_cip`, `shared_soc`, and inferred edges into the `Relationship` table on a scheduled run.
+
+### Edge Quality Rules
+
+- **Prune weak edges:** Drop any edge with `weight < 2` before returning JSON. One shared CIP code is not a meaningful connection.
+- **Node sizing:** Use `Math.sqrt(completions)` for Cytoscape node radius to prevent size explosion.
+- **Merge dual edges:** If CIP and SOC edges exist between the same pair of providers, merge into a single edge with `edge_type = "both"` and `weight = max(cip_weight, soc_weight)`.
+- **Always label inferred edges:** Edges derived from crosswalks (e.g., NAICS → SOC for `likely_hires`) must carry the `confidence_source` field and render the `Inferred` badge in the UI per Part 12.
+
+### Loader Pattern for Pre-Stored Edges (Phase 6)
+
+```python
+"""
+load_network_edges.py
+
+Entity type: crosswalk (org-to-org relationship)
+Idempotent: yes — deletes all existing shared_cip/shared_soc rows, then recomputes
+"""
+
+from models import Relationship, RelationshipType, db
+
+def load_network_edges(session):
+    # 1. Clear all computed edges (keep manual/sourced ones)
+    session.query(Relationship).filter(
+        Relationship.rel_type.in_([
+            RelationshipType.SHARED_CIP,
+            RelationshipType.SHARED_SOC,
+        ])
+    ).delete()
+
+    # 2. Compute CIP-overlap edges in Python
+    # ... pairwise CIP overlap query here ...
+
+    # 3. Upsert into Relationship table
+    session.add(Relationship(
+        from_entity_type="organization",
+        from_entity_id=org_a_id,
+        to_entity_type="organization",
+        to_entity_id=org_b_id,
+        rel_type=RelationshipType.SHARED_CIP,
+        weight=shared_count,
+        source="computed_cip_overlap",
+    ))
+    session.commit()
+```

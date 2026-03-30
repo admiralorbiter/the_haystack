@@ -61,6 +61,21 @@
 | Epic 10: Non-Title IV Training Base | ✅ Shipped | ETPL, RAPIDS, Employers, Hubs all landed |
 | Epic 11/11b: Workforce & O*NET | ✅ Shipped | Wage integration, skills, alternate titles, education levels |
 | Epic 16: BLS Expansion | ✅ Shipped | 10-Yr Projections, NAICS Industry Matrix, QCEW Local Momentum |
-| Epic 18: Industry Profiles | ✅ Shipped | Core NAICS profiles and QCEW 12-quarter trend charts |
+| Epic 13: Briefing Builder | ✅ Shipped | Session-based collection tray, print export, HTMX nav counter |
+| Epic 14: Stepping Stones | ✅ Shipped | Job Zone pathway segmentation, skill gap matrix, ROI break-even calculator |
+| Epic 17: Employer-Occupation Link | ✅ Shipped | NAICS major employer data, 2-pass inferred occupation matching |
 | Epic 19: Career Intelligence | ✅ Shipped | Career Grades, Remote/Automation Risk, `/outlook` dashboard |
-| Epic 12: Network Explorer | 🔲 Planned | Graph UI for relationships |
+| Epic 12: Network Explorer | 🔲 Next Up | `/network` page, Cytoscape.js, dual-mode CIP+SOC edges |
+| Epic 15: Hidden Gems Engine | 🔬 Research Spike | Weighted SQL scoring + search intercept |
+| Epic 20: Phase 3 Org Enrichment | 🔲 Planned | IRS 990, H-1B petition data, USASpending |
+| Epic 21: Phase 4 Civic Signals | 🔲 Planned | 311, crime, permits, transit feeds |
+| Epic 22: Phase 7 Multi-Region | 🔲 Future | Region switcher, `--region` flag on all loaders |
+
+---
+
+## Network Layer
+
+| # | Item | Severity | Status | Notes |
+|---|------|----------|--------|-------|
+| N-1 | Pre-stored network edges in `Relationship` table | 🟢 P3 | 🔲 Backburner | V1 edges computed on-the-fly in `/api/v1/network/providers`. Fine for 75 nodes. When graph exceeds 100 nodes (Phase 6, with 990 + board member edges), build `loaders/load_network_edges.py` maintenance script to materialize `Relationship` rows with `rel_type` values from `RelationshipType` constants. |
+| N-2 | `RelationshipType` constants class in `models.py` | 🟡 P2 | 🔲 Next Up | Only `"parent_org"` is in use. Ship a formal `RelationshipType` class before Epic 12 to prevent string drift across future loaders and APIs. |

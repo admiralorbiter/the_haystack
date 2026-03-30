@@ -24,14 +24,17 @@
 | **11b O*NET Depth** | Alternate Titles (search), Skills, Education Level, Work Values | ✅ Shipped 2026-03-29 |
 | **16 BLS Expansion** | Employment Projections (growth) + NAICS-to-SOC Industry Matrix | ✅ Shipped 2026-03-29 |
 | **16-C Regional Projections** | MERIC MO-level projections + QCEW local trend signals | ✅ Shipped 2026-03-29 |
-| **17 Employer-Occupation Link** | Apprenticeship SOC direct links + NAICS inferred employer matching | 🔲 Planned |
-| **18 Industry (NAICS) Profiles** | Industry detail pages + LEHD J2J talent flow intelligence | ✅ Shipped 2026-03-29 |
-| **12 Ecosystem & Network View** | Force-directed graph of provider relationships | 🔲 Planned |
-| **13 Briefing Builder** | Collect stats/entities and generate printable one-pager | ✅ Shipped 2026-03-30 |
-| **14 Stepping Stones** | Sequenced credential pathways + ROI break-even calculator | 🔬 Research Spike |
-| **15 Hidden Gems Engine** | Algorithmic surfacing of high-ROI programs | 🔬 Research Spike |
-| **Data Research Spike** | Proactive discovery of new regional/local datasets to fill data gaps | 🔬 Research Spike |
 | **19 KC Career Intelligence** | `/outlook` dashboard — Career Grades (A+→F), Now/Next/Later tiers, top jobs by tier | ✅ Shipped 2026-03-29 |
+| **14 Stepping Stones** | Sequenced credential pathways + ROI break-even calculator | ✅ Shipped 2026-03-29 |
+| **17 Employer-Occupation Link** | Apprenticeship SOC direct links + NAICS inferred employer matching | ✅ Shipped 2026-03-30 |
+| **18 Industry (NAICS) Profiles** | Industry detail pages + LEHD J2J talent flow intelligence | ✅ Shipped 2026-03-30 |
+| **13 Briefing Builder** | Collect stats/entities and generate printable one-pager | ✅ Shipped 2026-03-30 |
+| **12 Ecosystem & Network View** | Force-directed graph at `/network` — CIP + SOC dual-mode edges | 🔲 Next Up |
+| **15 Hidden Gems Engine** | Algorithmic surfacing of high-ROI programs + search intercept | 🔬 Research Spike |
+| **Data Research Spike** | Proactive discovery of new regional/local datasets to fill data gaps | 🔬 Research Spike |
+| **20 Phase 3: Org Enrichment** | IRS 990 financials + H-1B demand + USASpending federal awards | 🔲 Phase 3 |
+| **21 Phase 4: Civic Signals** | 311, crime, permits, transit access — geography & map context | 🔲 Phase 4 |
+| **22 Phase 7: Multi-Region** | Activate for St. Louis or national; region switcher in nav | 🔲 Phase 7 |
 
 ---
 
@@ -344,29 +347,53 @@ Once `IndustryFlowJ2J` is populated (Epic 18), we can synthesize a "Recruitment 
 ---
 
 ## Epic 12 — Ecosystem / Network View
-**Goal:** Render a living, force-directed graph of KC's training ecosystem — making relationships between providers, programs, employers, and occupations visually navigable.
+**Goal:** Render a living, force-directed graph of KC's training ecosystem — making relationships between providers, programs, employers, and occupations visually navigable at `/network`.
 
-**Design principle:** The List view shows *what exists*. The Network view shows *how things connect*. Both should be toggleable on any directory page where relationship data exists.
+**Design principle:** The List view shows *what exists*. The Network view shows *how things connect*. This is the layer that turns a directory into a network intelligence tool.
 
-**Exit criteria:** Provider directory has a Network view toggle rendering a force-directed graph of providers connected by shared CIP families (V1) or funded relationships (Phase 6).
+**Exit criteria:** `/network` renders a Cytoscape.js canvas with provider nodes sized by completions, colored by dominant CIP family, and connected by dual-mode edges (CIP-overlap + SOC-overlap). Clicking a node opens a side-panel detail drawer.
 
-**Effort estimate:** 2 weeks
+**Effort estimate:** ~1.5 days
 
-### Design
-**V1 network edges (data we already have):**
-- Providers connected by shared CIP families (if A and B both offer Health programs, they are peers)
-- Providers connected by overlapping linked occupations
-- Visual clustering by CIP family to reveal training hubs and deserts
+### Architecture Decisions
+- **Page location:** Own page at `/network` (not a sub-page of providers)
+- **Edge mode:** Dual-mode — CIP-overlap edges (same training field) + SOC-overlap edges (same job market). Edges merged when both exist (`edge_type = "both"`)
+- **Edge storage:** On-the-fly for V1 (computed in API endpoint). Phase 6 will pre-materialize via `load_network_edges.py`
+- **Node scope:** Top 75 providers by IPEDS completions
+- **Graph library:** Cytoscape.js (CDN, no npm build step)
 
-**Phase 6 network edges (future — when relationship table has data):**
-- Funding flows (funder → grantee via IRS 990)
-- Board member cross-pollination (ProPublica Nonprofit Explorer)
-- Employer-training partnerships
+### V1 Implementation
 
-### Implementation notes
-- Use **Cytoscape.js** for graph rendering — good layout algorithms, compatible with HTMX data injection
-- Route `GET /api/network/providers.json` returns nodes + edges JSON
-- Pre-filter to top 50 providers by completions to keep initial render fast
+**Models (`models.py`):**
+- Add `RelationshipType` constants class (mirrors `OrgFactType`) locking canonical `rel_type` strings:
+  - `PARENT_ORG`, `SHARED_CIP`, `SHARED_SOC`, `LIKELY_HIRES`, `FUNDS`, `SHARED_BOARD`, `TALENT_ORIGIN`
+
+**API (`routes/api/network.py`):**
+- `GET /api/v1/network/providers` — returns `{nodes: [], edges: []}` JSON
+- `?edge=both|cip|soc` and `?limit=75` query params
+- Algorithm: top-N providers → CIP pairwise overlap → SOC pairwise overlap → merge → prune edges weight < 2
+
+**Route (`routes/network.py`):**
+- `GET /network` — renders canvas page; passes CIP family list + county list for filters
+
+**Template (`templates/network/index.html`):**
+- Control bar: edge mode selector, CIP family filter, county filter, node count badge
+- Full-height `#cy` Cytoscape canvas
+- Click-to-open side panel drawer (name, city, completions, CIP, link to provider detail)
+- Color legend: CIP families + edge type colors (CIP=teal, SOC=amber, Both=purple)
+- Methods footer with data-as-of date
+
+### Phase 6 Network Edges (Future Data Sources)
+
+| Relationship | `rel_type` | Source | Status |
+|---|---|---|---|
+| Parent ↔ Satellite | `parent_org` | `link_org_parents.py` | ✅ Live |
+| Employer → Occupation | `likely_hires` | `OccupationIndustry` NAICS xwalk | ✅ Logic exists, not yet stored |
+| Funder → Grantee | `funds` | IRS 990 / ProPublica | 🔲 Phase 3 |
+| Board Member Crossover | `shared_board_member` | ProPublica / Candid | 🔲 Phase 6 |
+| Supply Chain | `supplies_to` | BEA Input-Output tables | 🔲 Phase 6 |
+| Industry Talent Flow | `talent_pipeline_origin` | LEHD `IndustryFlowJ2J` (loaded) | ✅ Data ready, needs graph surface |
+| Apprenticeship → SOC | `apprenticeship_trains_for` | DOL RAPIDS | 🛑 Blocked (data missing SOC fields) |
 
 ---
 
@@ -420,6 +447,74 @@ Once `IndustryFlowJ2J` is populated (Epic 18), we can synthesize a "Recruitment 
 - Construct a weighted SQL scoring heuristic using: `grad_rate_150 > 60%` + `avg_cost < 10000` + `median_earnings_6yr > 45000`.
 - Evaluate algorithm fragility: Does it surface statistically anomalous programs with tiny N-counts? Design a minimum completions threshold (e.g., N ≥ 25) to suppress noise.
 - Prototype Search Interception: parse `SearchEvent` queries against FTS5 `occupation_fts` to inject a high-priority "Career Match" card above the fold.
+
+---
+
+## Epic 20 — Phase 3 Organization Enrichment (IRS 990 + H-1B)
+**Goal:** Strengthen the organization spine with financial health signals from IRS 990 filings and immigration/skills demand signals from H-1B petition data.
+
+**Status:** 🔲 Planned (Phase 3)
+
+**Prerequisites:** `org_fact` EAV table (✅ shipped in Epic 2.9), `is_active` soft-delete (✅ shipped), `ein` field on Organization (✅ present)
+
+### Dataset A: IRS Form 990 Filings
+- **Source:** AWS Public Data (`s3://irs-form-990/`) or ProPublica Nonprofit Explorer API
+- **Fields:** EIN, revenue, expenses, net income, top executive salaries, program service expenses
+- **Models:** `OrgFact` rows with `fact_type IN ('revenue', 'expenses', 'net_income')` (schema already supports this)
+- **UI surfaces:**
+  - Organization detail page: New "Financial Health" tab (revenue trend, program vs admin spend ratio)
+  - Provider detail: Endowment context for tuition justification
+
+### Dataset B: DOL H-1B Petition Data  
+- **Source:** DOL Office of Foreign Labor Certification public disclosure data
+- **Fields:** Employer name, SOC code, wage offered, petition count, decision year
+- **Models:** `OrgFact` rows with `fact_type = 'h1b_petitions'`
+- **UI surfaces:**
+  - Employer detail pages: "High-Skills Demand" signal badge
+  - Occupation detail: "Who sponsors H-1B visas for this role?" widget
+
+### Dataset C: USASpending Federal Contracts & Grants
+- **Source:** https://usaspending.gov/download_center/award_data_archive
+- **Fields:** Recipient name/EIN, award amount, agency, award type, NAICS
+- **Models:** `OrgFact` rows with `fact_type = 'federal_award'`; future `Relationship` rows with `rel_type = 'funds'`
+- **UI surfaces:**
+  - Organization detail: Federal funding timeline
+  - Phase 6: Funder → Grantee network edges
+
+---
+
+## Epic 21 — Phase 4 Civic Signal Layer (311 + Crime + Permits)
+**Goal:** Add city-condition context to neighborhoods, making it possible to understand the environment surrounding training providers and employers.
+
+**Status:** 🔲 Planned (Phase 4)
+
+**Design principle:** Civic signals should surface primarily through Geography pages and Map mode — NOT on provider/program pages where they would distract from workforce data.
+
+### Planned Sources
+- **KCMO 311 Service Requests** — KCMO Open Data Portal (public CSV)
+- **Crime/Incident Reports** — KCMO Open Data Portal
+- **Building Permits** — KCMO development activity signal
+- **Transit Access** — GTFS feeds for KCATA and KC Streetcar
+
+### Primary UI Surfaces
+- `GeoArea` detail pages (ZIP, tract, county) — signal density maps
+- Map mode: choropleth layer for 311 density or crime concentration
+- Provider detail — small "Neighborhood Context" strip (transit access + service density only)
+
+---
+
+## Epic 22 — Phase 7 Multi-Region Expansion
+**Goal:** Activate Haystack for a second metro region (St. Louis or national).
+
+**Status:** 🔲 Future (Phase 7)
+
+**Design principle:** This is not a rewrite — it is the payoff for building the region-configurable architecture in Phase 0. The `Region` and `RegionCounty` models already exist; loaders already use `get_kc_county_fips()` which queries from the DB.
+
+**What's needed:**
+- New `geo_scope` region record with a name and bounding FIPS set (seed data only)
+- Region switcher in top nav (`"Kansas City" | "St. Louis" | "National"`)
+- Cross-region comparison via Compare surface
+- All IPEDS/BLS loaders tested with `--region stl` flag
 
 ---
 
