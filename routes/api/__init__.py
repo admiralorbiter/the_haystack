@@ -2,4 +2,4 @@ from flask import Blueprint
 
 api_v1_bp = Blueprint("api_v1", __name__)
 
-from . import map_data, search
+from . import map_data, network, search  # noqa: F401

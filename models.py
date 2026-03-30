@@ -397,6 +397,19 @@ class CivicSignal(db.Model):
     source: Mapped[str] = mapped_column(String(50), nullable=True)
 
 
+class RelationshipType:
+    """Canonical rel_type strings for the Relationship table."""
+    PARENT_ORG = "parent_org"
+    SHARED_CIP = "shared_cip"
+    SHARED_SOC = "shared_soc"
+    LIKELY_HIRES = "likely_hires"
+    APPRENTICESHIP_TRAINS_FOR = "apprenticeship_trains_for"
+    FUNDS = "funds"
+    SHARED_BOARD = "shared_board_member"
+    TALENT_ORIGIN = "talent_pipeline_origin"
+    SUPPLIES_TO = "supplies_to"
+
+
 class Relationship(db.Model):
     __tablename__ = "relationship"
     

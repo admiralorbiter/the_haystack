@@ -29,7 +29,7 @@
 | **17 Employer-Occupation Link** | Apprenticeship SOC direct links + NAICS inferred employer matching | ✅ Shipped 2026-03-30 |
 | **18 Industry (NAICS) Profiles** | Industry detail pages + LEHD J2J talent flow intelligence | ✅ Shipped 2026-03-30 |
 | **13 Briefing Builder** | Collect stats/entities and generate printable one-pager | ✅ Shipped 2026-03-30 |
-| **12 Ecosystem & Network View** | Force-directed graph at `/network` — CIP + SOC dual-mode edges | 🔲 Next Up |
+| **12 Ecosystem & Network View** | Force-directed graph at `/network` — CIP + SOC dual-mode edges | ✅ Shipped 2026-03-30 |
 | **15 Hidden Gems Engine** | Algorithmic surfacing of high-ROI programs + search intercept | 🔬 Research Spike |
 | **Data Research Spike** | Proactive discovery of new regional/local datasets to fill data gaps | 🔬 Research Spike |
 | **20 Phase 3: Org Enrichment** | IRS 990 financials + H-1B demand + USASpending federal awards | 🔲 Phase 3 |
@@ -346,42 +346,25 @@ Once `IndustryFlowJ2J` is populated (Epic 18), we can synthesize a "Recruitment 
 
 ---
 
-## Epic 12 — Ecosystem / Network View
+## ✅ Epic 12 — Ecosystem / Network View (Shipped 2026-03-30)
 **Goal:** Render a living, force-directed graph of KC's training ecosystem — making relationships between providers, programs, employers, and occupations visually navigable at `/network`.
 
 **Design principle:** The List view shows *what exists*. The Network view shows *how things connect*. This is the layer that turns a directory into a network intelligence tool.
 
-**Exit criteria:** `/network` renders a Cytoscape.js canvas with provider nodes sized by completions, colored by dominant CIP family, and connected by dual-mode edges (CIP-overlap + SOC-overlap). Clicking a node opens a side-panel detail drawer.
-
-**Effort estimate:** ~1.5 days
-
-### Architecture Decisions
-- **Page location:** Own page at `/network` (not a sub-page of providers)
-- **Edge mode:** Dual-mode — CIP-overlap edges (same training field) + SOC-overlap edges (same job market). Edges merged when both exist (`edge_type = "both"`)
-- **Edge storage:** On-the-fly for V1 (computed in API endpoint). Phase 6 will pre-materialize via `load_network_edges.py`
-- **Node scope:** Top 75 providers by IPEDS completions
-- **Graph library:** Cytoscape.js (CDN, no npm build step)
-
-### V1 Implementation
-
-**Models (`models.py`):**
-- Add `RelationshipType` constants class (mirrors `OrgFactType`) locking canonical `rel_type` strings:
-  - `PARENT_ORG`, `SHARED_CIP`, `SHARED_SOC`, `LIKELY_HIRES`, `FUNDS`, `SHARED_BOARD`, `TALENT_ORIGIN`
-
-**API (`routes/api/network.py`):**
-- `GET /api/v1/network/providers` — returns `{nodes: [], edges: []}` JSON
-- `?edge=both|cip|soc` and `?limit=75` query params
-- Algorithm: top-N providers → CIP pairwise overlap → SOC pairwise overlap → merge → prune edges weight < 2
-
-**Route (`routes/network.py`):**
-- `GET /network` — renders canvas page; passes CIP family list + county list for filters
-
-**Template (`templates/network/index.html`):**
-- Control bar: edge mode selector, CIP family filter, county filter, node count badge
-- Full-height `#cy` Cytoscape canvas
-- Click-to-open side panel drawer (name, city, completions, CIP, link to provider detail)
-- Color legend: CIP families + edge type colors (CIP=teal, SOC=amber, Both=purple)
-- Methods footer with data-as-of date
+**What shipped:**
+- **Core Visualization:** Deployed Cytoscape.js with a physics-based `cose` layout, mapping the Top 50 KC training providers (by completions). Nodes are sized proportional to `sqrt(completions)` and colored by dominant CIP Family.
+- **Dual-Mode Edges:** Connections between providers indicate shared training fields (`CIP`), shared target occupations (`SOC`), or combinations of both (`Both` - strongest link). Edge thickness and opacity scale dynamically based on the strength of the overlap.
+- **Wayfinding & UX:**
+  - Real-time **Institution Search** that highlights matches.
+  - Interactive **CIP Filter Chips** to isolate single training sectors.
+  - Hover-activated **Dimming Effect** to focus on a node's immediate neighborhood.
+  - First-time user **Onboarding Banner** to explain core interactions cleanly.
+- **Analytical Power:** 
+  - **Provider Panel:** Clicking a node reveals its stats, primary training field, and direct peer connections.
+  - **Compare Tab:** Clicking a neighbor's card (or a thick edge) instantly opens a side-by-side comparison revealing the exact shared CIP fields and overlapping SOC outcomes.
+  - **Focus Mode:** Redraws the canvas using a concentric layout centered exclusively on the selected institution, revealing its immediate competitive landscape.
+  - **Gap Analysis Panel:** Actively scans the Graph's returned metadata to surface underserved training fields (CIP families with fewer than 3 providers in the KC metro).
+- **Navigation Integration:** Added a "🕸 View in Network" deep-link button to all Provider Profile pages, injecting `?highlight=org_id` into the URL to automatically pan to and highlight that provider on network load.
 
 ### Phase 6 Network Edges (Future Data Sources)
 

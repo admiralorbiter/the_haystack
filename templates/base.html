@@ -59,6 +59,7 @@
                 <div class="nav-dropdown-menu">
                     <a href="{{ url_for('root.hubs_index') }}">Hubs</a>
                     <a href="{{ url_for('root.map_view') }}">Map</a>
+                    <a class="nav-item {% if request.endpoint == 'root.network_page' %}active{% endif %}" href="{{ url_for('root.network_page') }}">Network <span class="badge-beta">Beta</span></a>
                     <a href="{{ url_for('root.guided_search') }}">Explore (Advanced)</a>
                     <hr style="margin: 0.5rem 0; border: none; border-top: 1px solid #e5e5e5;">
                     <a href="{{ url_for('root.briefing_page') }}" id="briefing-nav-counter" style="display: flex; justify-content: space-between; align-items: center;">

@@ -1,0 +1,1317 @@
+{% extends "base.html" %}
+{% block title %}Network Explorer | The Haystack{% endblock %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════
+   NETWORK EXPLORER — v3 (Student-First, Full Features)
+   ═══════════════════════════════════════════════════ */
+
+/* Full-bleed layout */
+.net-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 64px);
+    margin: 0 calc(-1 * var(--space-xl, 24px));
+}
+
+/* ── Onboarding banner ── */
+.net-onboard {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 9px 24px;
+    background: linear-gradient(135deg, rgba(124,58,237,0.07), rgba(13,148,136,0.05));
+    border-bottom: 1px solid rgba(124,58,237,0.15);
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+}
+.net-onboard .onboard-steps { display: flex; gap: 20px; flex-wrap: wrap; flex: 1; }
+.net-onboard .onboard-step  { display: flex; align-items: center; gap: 7px; }
+.net-onboard .step-num {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #7c3aed; color: #fff;
+    font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.net-onboard strong { color: var(--color-text-primary); }
+.net-onboard-close {
+    background: none; border: 1px solid var(--color-border); border-radius: 5px;
+    cursor: pointer; color: var(--color-text-tertiary);
+    font-size: 12px; font-weight: 600; padding: 3px 10px;
+    transition: all 0.12s; flex-shrink: 0; white-space: nowrap;
+}
+.net-onboard-close:hover { background: var(--color-background-elevated); color: var(--color-text-primary); }
+
+/* ── Toolbar ── */
+.net-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+    background: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+    gap: 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+.net-toolbar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.net-toolbar-right { display: flex; align-items: center; gap: 8px; }
+
+.net-title h1 { font-size: 18px; font-weight: 700; color: var(--color-text-primary); margin: 0; line-height: 1; }
+.net-title p  { font-size: 12px; color: var(--color-text-tertiary); margin: 2px 0 0; }
+
+.net-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--color-text-tertiary); font-weight: 600; margin-bottom: 3px;
+}
+
+.net-select {
+    padding: 5px 8px; border: 1px solid var(--color-border);
+    border-radius: 6px; background: var(--color-background-elevated);
+    color: var(--color-text-primary); font-size: 12px; cursor: pointer;
+}
+.net-select:focus { outline: 2px solid var(--color-primary); }
+
+/* Search input */
+.net-search-wrap { position: relative; }
+.net-search-wrap input {
+    padding: 5px 8px 5px 30px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-background-elevated);
+    color: var(--color-text-primary);
+    font-size: 12px;
+    width: 200px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.net-search-wrap input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(124,58,237,0.15);
+}
+.net-search-wrap input::placeholder { color: var(--color-text-tertiary); }
+.net-search-icon {
+    position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+    color: var(--color-text-tertiary); font-size: 13px; pointer-events: none;
+}
+.net-search-clear {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: var(--color-text-tertiary);
+    font-size: 12px; padding: 2px; display: none;
+}
+.net-search-clear.is-visible { display: block; }
+
+.net-icon-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 10px;
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 12px; font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+.net-icon-btn:hover { background: var(--color-background); color: var(--color-text-primary); }
+.net-icon-btn.is-active { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+
+.net-badge {
+    padding: 4px 9px;
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    font-size: 11px; color: var(--color-text-secondary);
+}
+
+/* Stats bar */
+.net-stats-bar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 6px 24px;
+    background: var(--color-background-elevated);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+    font-size: 11px; color: var(--color-text-tertiary);
+}
+.net-stat-pill {
+    display: flex; align-items: center; gap: 5px;
+    font-weight: 500;
+}
+.net-stat-pill strong { color: var(--color-text-primary); font-weight: 700; font-size: 13px; }
+.net-stats-divider { width: 1px; height: 14px; background: var(--color-border); }
+
+/* ── CIP Filter Strip ── */
+.net-filter-strip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 24px;
+    background: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+    overflow-x: auto;
+    flex-shrink: 0;
+    scrollbar-width: none;
+}
+.net-filter-strip::-webkit-scrollbar { display: none; }
+
+.net-filter-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--color-text-tertiary); font-weight: 600;
+    white-space: nowrap; margin-right: 4px;
+}
+
+.cip-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--color-border);
+    background: var(--color-background-elevated);
+    font-size: 11px; font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+.cip-chip:hover { border-color: #7c3aed; color: #7c3aed; }
+.cip-chip.is-active {
+    background: #7c3aed; border-color: #7c3aed; color: #fff;
+}
+.cip-chip .chip-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+}
+.cip-chip .chip-count {
+    font-weight: 700; font-size: 10px;
+    background: rgba(0,0,0,0.12); border-radius: 8px;
+    padding: 0 4px;
+}
+.cip-chip.is-active .chip-count { background: rgba(255,255,255,0.25); }
+
+/* ── Main graph area ── */
+.net-body { display: flex; flex: 1; position: relative; overflow: hidden; min-height: 500px; }
+
+.net-canvas-area {
+    flex: 1;
+    position: relative;
+    background: #0d1117;
+    overflow: hidden;
+}
+
+#cy { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ── Loading overlay ── */
+#net-loader {
+    position: absolute; inset: 0; background: #0d1117; z-index: 30;
+    display: flex; flex-direction: column; justify-content: center;
+    align-items: center; gap: 14px; transition: opacity 0.4s ease;
+}
+#net-loader.is-hidden { opacity: 0; pointer-events: none; }
+.net-spinner {
+    width: 32px; height: 32px;
+    border: 3px solid rgba(255,255,255,0.08);
+    border-top-color: #7c3aed;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#net-loader p { color: rgba(255,255,255,0.45); font-size: 13px; text-align: center; margin: 0; line-height: 1.6; }
+
+/* ── HUD overlays ── */
+.net-hud { position: absolute; z-index: 10; pointer-events: none; }
+
+#net-hint {
+    top: 12px; right: 12px;
+    font-size: 11px; color: rgba(255,255,255,0.22);
+    text-align: right; line-height: 1.7;
+    display: none;
+}
+
+#net-tooltip {
+    bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(13,17,23,0.92); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px; padding: 7px 13px;
+    font-size: 12px; color: rgba(255,255,255,0.85);
+    white-space: nowrap; opacity: 0;
+    transition: opacity 0.12s ease; pointer-events: none;
+}
+#net-tooltip.is-visible { opacity: 1; }
+
+#net-legend {
+    bottom: 14px; left: 14px;
+    background: rgba(13,17,23,0.88); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px; padding: 10px 13px;
+}
+.net-legend-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.35); font-weight: 600; margin-bottom: 7px; }
+.net-legend-row { display: flex; align-items: center; gap: 7px; color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 4px; }
+.net-legend-line { width: 16px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+
+#net-focus-badge {
+    top: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(124,58,237,0.9); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px; padding: 5px 14px;
+    font-size: 12px; font-weight: 600; color: #fff;
+    display: none; align-items: center; gap: 8px;
+    pointer-events: all;
+    white-space: nowrap;
+}
+#net-focus-badge.is-visible { display: flex; }
+#net-focus-badge button {
+    background: rgba(255,255,255,0.2); border: none; border-radius: 4px;
+    color: #fff; cursor: pointer; font-size: 11px; padding: 2px 7px;
+}
+
+/* Zoom controls */
+#net-zoom { position: absolute; bottom: 56px; left: 14px; display: flex; flex-direction: column; gap: 3px; z-index: 10; }
+.zoom-btn {
+    width: 30px; height: 30px;
+    background: rgba(13,17,23,0.88); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 7px;
+    color: rgba(255,255,255,0.65); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s;
+}
+.zoom-btn:hover { background: rgba(40,45,60,0.95); color: #fff; }
+
+/* ── Right Panel (Drawer) ── */
+#net-panel {
+    width: 0;
+    background: #131820;
+    border-left: 1px solid rgba(255,255,255,0.07);
+    overflow: hidden;
+    transition: width 0.3s cubic-bezier(0.16,1,0.3,1);
+    display: flex; flex-direction: column;
+    flex-shrink: 0;
+}
+#net-panel.is-open { width: 320px; }
+
+.panel-tabs {
+    display: flex; border-bottom: 1px solid rgba(255,255,255,0.07);
+    flex-shrink: 0;
+}
+.panel-tab {
+    flex: 1; padding: 11px 8px;
+    background: none; border: none;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.3); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s;
+}
+.panel-tab.is-active { color: #a78bfa; border-bottom-color: #7c3aed; }
+.panel-tab:hover:not(.is-active) { color: rgba(255,255,255,0.6); }
+
+.panel-pane { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+.panel-pane.is-active { display: flex; }
+
+.panel-header {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: flex-start; gap: 10px;
+}
+.panel-close {
+    margin-left: auto; background: rgba(255,255,255,0.06); border: none;
+    border-radius: 5px; width: 24px; height: 24px; cursor: pointer;
+    color: rgba(255,255,255,0.4); font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 0.12s;
+}
+.panel-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+#panel-node-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+
+.panel-name { font-size: 14px; font-weight: 700; color: #f1f5f9; line-height: 1.3; word-break: break-word; }
+.panel-city { font-size: 11px; color: rgba(255,255,255,0.38); margin-top: 2px; }
+
+.panel-body {
+    flex: 1; overflow-y: auto; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 14px;
+}
+.panel-body::-webkit-scrollbar { width: 4px; }
+.panel-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+.p-stat { display: flex; flex-direction: column; gap: 3px; }
+.p-stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255,255,255,0.3); font-weight: 600; }
+.p-stat-val { font-size: 22px; font-weight: 700; color: #f1f5f9; line-height: 1.1; }
+.p-stat-sub { font-size: 11px; color: rgba(255,255,255,0.4); }
+.p-stat-val.md { font-size: 14px; font-weight: 500; }
+
+.p-cip-pill {
+    display: inline-block; margin-top: 4px;
+    padding: 2px 8px; border-radius: 20px;
+    background: rgba(167,139,250,0.14); border: 1px solid rgba(167,139,250,0.28);
+    font-size: 11px; color: #a78bfa; font-weight: 600;
+}
+
+/* Peer list */
+.peer-list { display: flex; flex-direction: column; gap: 3px; }
+.peer-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    cursor: pointer; transition: background 0.12s;
+}
+.peer-item:hover { background: rgba(255,255,255,0.08); }
+.peer-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.peer-name { flex: 1; font-size: 12px; color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.peer-badge {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 2px 5px; border-radius: 4px; flex-shrink: 0;
+}
+.peer-badge.cip  { background: rgba(13,148,136,0.2); color: #2dd4bf; }
+.peer-badge.soc  { background: rgba(217,119,6,0.2);  color: #fbbf24; }
+.peer-badge.both { background: rgba(124,58,237,0.2);  color: #a78bfa; }
+
+.panel-footer {
+    padding: 10px 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex; gap: 8px;
+    flex-shrink: 0;
+}
+.panel-cta {
+    flex: 1; padding: 9px;
+    text-align: center; border-radius: 7px;
+    font-size: 12px; font-weight: 600; text-decoration: none;
+    transition: background 0.12s;
+}
+.panel-cta.primary { background: #7c3aed; color: #fff; }
+.panel-cta.primary:hover { background: #6d28d9; }
+.panel-cta.secondary { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.1); }
+.panel-cta.secondary:hover { background: rgba(255,255,255,0.12); }
+
+/* Focus mode button in footer */
+.panel-focus-btn {
+    padding: 9px; border-radius: 7px;
+    background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3);
+    color: #a78bfa; font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: background 0.12s;
+    white-space: nowrap;
+}
+.panel-focus-btn:hover { background: rgba(124,58,237,0.25); }
+
+/* ── COMPARE PANEL ── */
+.compare-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.compare-vs {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: rgba(255,255,255,0.5);
+}
+.compare-node-name { font-size: 12px; font-weight: 600; color: #f1f5f9; }
+.compare-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.compare-vs-sep { font-size: 10px; color: rgba(255,255,255,0.25); padding: 0 4px; }
+
+#compare-shared-section { margin-top: 4px; }
+
+.shared-chip-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.shared-chip {
+    padding: 3px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: 500;
+    background: rgba(13,148,136,0.15); border: 1px solid rgba(13,148,136,0.3);
+    color: #2dd4bf;
+}
+
+/* ── Gap Analysis sidebar ── */
+#net-gap-panel {
+    width: 0; overflow: hidden; background: #131820;
+    border-right: 1px solid rgba(255,255,255,0.07);
+    transition: width 0.3s cubic-bezier(0.16,1,0.3,1);
+    flex-shrink: 0;
+}
+#net-gap-panel.is-open { width: 260px; overflow-y: auto; }
+#net-gap-panel::-webkit-scrollbar { width: 4px; }
+#net-gap-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+.gap-panel-inner { padding: 16px; min-width: 260px; }
+.gap-panel-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+.gap-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 8px; border-radius: 6px; margin-bottom: 4px;
+    background: rgba(255,255,255,0.03);
+}
+.gap-item.underserved { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.2); }
+.gap-item.low { background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.15); }
+.gap-name { font-size: 12px; color: rgba(255,255,255,0.7); }
+.gap-count {
+    font-size: 11px; font-weight: 700; padding: 2px 7px;
+    border-radius: 10px; min-width: 24px; text-align: center;
+}
+.gap-item.underserved .gap-count { background: rgba(239,68,68,0.25); color: #f87171; }
+.gap-item.low          .gap-count { background: rgba(245,158,11,0.2);  color: #fbbf24; }
+.gap-item:not(.underserved):not(.low) .gap-count { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
+.gap-legend { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.gap-legend-item { font-size: 10px; color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 4px; }
+.gap-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="net-shell">
+
+  <!-- ══ Toolbar ══ -->
+  <div class="net-toolbar">
+    <div class="net-toolbar-left">
+      <div class="net-title">
+        <div class="breadcrumb"><a href="/">The Haystack</a> / Ecosystem View</div>
+        <h1>Network Explorer</h1>
+        <p id="net-provider-subtitle">Training providers in the Kansas City region</p>
+      </div>
+
+      <!-- Search -->
+      <div>
+        <div class="net-label">Find an Institution</div>
+        <div class="net-search-wrap">
+          <span class="net-search-icon">🔍</span>
+          <input type="text" id="net-search" placeholder="Search schools…" autocomplete="off" oninput="onSearchInput(this.value)">
+          <button class="net-search-clear" id="search-clear-btn" onclick="clearSearch()">✕</button>
+        </div>
+      </div>
+
+      <!-- Connection type -->
+      <div>
+        <div class="net-label">Connection Type</div>
+        <select id="edge-mode-select" class="net-select" onchange="reloadNetwork()">
+          <option value="both" {% if edge_mode == 'both' %}selected{% endif %}>Both (Strongest Link)</option>
+          <option value="cip"  {% if edge_mode == 'cip'  %}selected{% endif %}>Shared Training Fields</option>
+          <option value="soc"  {% if edge_mode == 'soc'  %}selected{% endif %}>Shared Occupations</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="net-toolbar-right">
+      <button class="net-icon-btn" id="gap-toggle-btn" onclick="toggleGapPanel()" title="Show underserved training fields">⚡ Gap Analysis</button>
+      <button class="net-icon-btn" onclick="fitGraph()">⊞ Fit</button>
+      <button class="net-icon-btn" onclick="exportPNG()">↓ Save</button>
+      {% if ds_hd %}
+        <span class="net-badge">{{ ds_hd.loaded_at.strftime('%b %Y') }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ══ Stats Bar ══ -->
+  <div class="net-stats-bar">
+    <div class="net-stat-pill"><strong id="stat-nodes">—</strong> providers</div>
+    <div class="net-stats-divider"></div>
+    <div class="net-stat-pill"><strong id="stat-edges">—</strong> connections</div>
+    <div class="net-stats-divider"></div>
+    <div class="net-stat-pill"><strong id="stat-families">—</strong> training fields</div>
+    <div class="net-stats-divider"></div>
+    <div class="net-stat-pill" id="stat-isolated-wrap" style="display:none">
+      <strong id="stat-isolated" style="color:#f87171">—</strong> isolated nodes
+    </div>
+    <div class="net-stats-divider" id="stat-isolated-div" style="display:none"></div>
+    <div class="net-stat-pill" id="search-status" style="display:none; color:#a78bfa; font-weight:600"></div>
+  </div>
+
+  <!-- ══ Onboarding Banner (dismissable) ══ -->
+  <div class="net-onboard" id="net-onboard" style="display:none">
+    <div class="onboard-steps">
+      <div class="onboard-step">
+        <span class="step-num">1</span>
+        <span>Pick a <strong>training field</strong> chip below to focus on one sector</span>
+      </div>
+      <div class="onboard-step">
+        <span class="step-num">2</span>
+        <span><strong>Click any school</strong> to see its size, field, and peer connections</span>
+      </div>
+      <div class="onboard-step">
+        <span class="step-num">3</span>
+        <span>Click a <strong>neighbor in the panel</strong> to compare two schools side-by-side</span>
+      </div>
+    </div>
+    <button class="net-onboard-close" onclick="dismissOnboard()" title="Dismiss">× Got it</button>
+  </div>
+
+  <!-- ══ CIP Filter Strip ══ -->
+  <div class="net-filter-strip" id="cip-strip">
+    <span class="net-filter-label">Filter by Field:</span>
+    <button class="cip-chip is-active" data-fam="all" onclick="filterByCIP('all', this)">All Fields</button>
+    <!-- Chips populated by JS after data loads -->
+  </div>
+
+  <!-- ══ Body (gap panel + canvas + detail panel) ══ -->
+  <div class="net-body">
+
+    <!-- Gap Analysis Left Panel -->
+    <div id="net-gap-panel">
+      <div class="gap-panel-inner">
+        <div class="gap-panel-title">⚡ Training Gap Analysis</div>
+        <p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 12px;">
+          Fields with fewer than 3 providers in the top 50 by completions.
+        </p>
+        <div class="gap-legend">
+          <div class="gap-legend-item"><div class="gap-legend-dot" style="background:#ef4444"></div> 0–1 providers</div>
+          <div class="gap-legend-item"><div class="gap-legend-dot" style="background:#f59e0b"></div> 2 providers</div>
+        </div>
+        <div id="gap-list"></div>
+      </div>
+    </div>
+
+    <!-- Canvas Area -->
+    <div class="net-canvas-area" id="net-canvas">
+      <!-- Loading -->
+      <div id="net-loader">
+        <div class="net-spinner"></div>
+        <p>Computing layout…<br><span style="font-size:11px;opacity:0.5">Usually takes 2–4 seconds</span></p>
+      </div>
+
+      <!-- Cytoscape canvas -->
+      <div id="cy"></div>
+
+      <!-- Overlays -->
+      <div class="net-hud" id="net-hint">Click any node to explore<br>Scroll to zoom · Drag to pan</div>
+      <div class="net-hud" id="net-tooltip"></div>
+      <div class="net-hud" id="net-focus-badge">
+        <span>🎯 Focus: </span><span id="focus-badge-name"></span>
+        <button onclick="exitFocusMode()">Exit</button>
+      </div>
+      <div class="net-hud" id="net-legend">
+        <div class="net-legend-title">Edge Types</div>
+        <div class="net-legend-row"><div class="net-legend-line" style="background:#0d9488"></div>Shared Fields</div>
+        <div class="net-legend-row"><div class="net-legend-line" style="background:#d97706"></div>Shared Occupations</div>
+        <div class="net-legend-row"><div class="net-legend-line" style="background:#7c3aed"></div>Both</div>
+      </div>
+      <div id="net-zoom">
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <button class="zoom-btn" onclick="zoomOut()">−</button>
+      </div>
+    </div>
+
+    <!-- Right Detail Panel -->
+    <div id="net-panel">
+      <div class="panel-tabs">
+        <button class="panel-tab is-active" id="tab-provider" onclick="switchTab('provider')">Provider</button>
+        <button class="panel-tab" id="tab-compare" onclick="switchTab('compare')">Compare</button>
+      </div>
+
+      <!-- Provider Tab -->
+      <div class="panel-pane is-active" id="pane-provider">
+        <div class="panel-header">
+          <div id="panel-node-dot"></div>
+          <div>
+            <div class="panel-name" id="panel-name">—</div>
+            <div class="panel-city" id="panel-city"></div>
+          </div>
+          <button class="panel-close" onclick="closePanel()">✕</button>
+        </div>
+        <div class="panel-body">
+          <div class="p-stat">
+            <div class="p-stat-label">Annual Completions</div>
+            <div class="p-stat-val" id="p-completions">—</div>
+            <div class="p-stat-sub">IPEDS reported</div>
+          </div>
+          <div class="p-stat">
+            <div class="p-stat-label">Dominant Training Field</div>
+            <div class="p-stat-val md" id="p-cip-label">—</div>
+            <span class="p-cip-pill" id="p-cip-pill" style="display:none"></span>
+          </div>
+          <div class="p-stat">
+            <div class="p-stat-label">Direct Connections</div>
+            <div class="p-stat-val" id="p-degree">—</div>
+            <div class="p-stat-sub">peer institutions in this view</div>
+          </div>
+          <div class="p-stat">
+            <div class="p-stat-label">Top Neighbors <span style="opacity:0.5;font-weight:400">(click to add to compare)</span></div>
+            <div class="peer-list" id="p-peer-list"></div>
+          </div>
+        </div>
+        <div class="panel-footer">
+          <button class="panel-focus-btn" onclick="activateFocusMode()">🎯 Focus Mode</button>
+          <a href="#" id="p-profile-link" class="panel-cta primary">View Profile →</a>
+        </div>
+      </div>
+
+      <!-- Compare Tab -->
+      <div class="panel-pane" id="pane-compare">
+        <div class="compare-header">
+          <div class="panel-header" style="padding:0;border:0;margin-bottom:10px">
+            <div style="flex:1">
+              <div class="p-stat-label">Comparing</div>
+            </div>
+            <button class="panel-close" onclick="clearCompare()">Clear</button>
+          </div>
+          <div class="compare-vs" id="compare-nodes-display">
+            <div style="color:rgba(255,255,255,0.3);font-size:12px">Select a second node on the graph</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="p-stat" id="compare-shared-section" style="display:none">
+            <div class="p-stat-label">Shared Training Fields</div>
+            <div class="shared-chip-list" id="compare-shared-cips"></div>
+          </div>
+          <div class="p-stat" id="compare-soc-section" style="display:none">
+            <div class="p-stat-label">Shared Occupations (SOC)</div>
+            <div class="p-stat-val" id="compare-soc-count">—</div>
+            <div class="p-stat-sub">overlapping career pathways</div>
+          </div>
+          <div class="p-stat" id="compare-edge-section" style="display:none">
+            <div class="p-stat-label">Connection Strength</div>
+            <div class="p-stat-val" id="compare-weight">—</div>
+            <div class="p-stat-sub" id="compare-edge-label"></div>
+          </div>
+        </div>
+        <div class="panel-footer">
+          <a href="#" id="compare-cta" class="panel-cta primary" style="display:none">Full Head-to-Head →</a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /net-body -->
+
+</div><!-- /net-shell -->
+
+<!-- ══ Methodology ══ -->
+<div class="methods-docs" style="margin-top:var(--space-xl)">
+  <h4>Data &amp; Methodology</h4>
+  <ul>
+    <li><strong>Graph Algorithm:</strong> Physics-based spring embedder (COSE) — providers with stronger shared training programs cluster naturally.</li>
+    <li><strong>Node Size:</strong> Proportional to √(annual completions) — prevents mega-universities from dominating the canvas.</li>
+    <li><strong>Gap Analysis:</strong> Shows CIP training families with &lt;3 providers in the current view. Not an exhaustive census — reflects the top 50 providers by completions only.</li>
+    <li><span class="badge-inferred">Inferred</span> Edges represent algorithmic overlap from IPEDS/CIP/SOC mappings, not formal administrative partnerships.</li>
+  </ul>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+'use strict';
+
+// ── Global state ──
+let cy           = null;
+let graphData    = null;   // full API response
+let activeCIP    = 'all';  // current CIP filter
+let selectedNode = null;   // first selected node
+let compareNode  = null;   // second node (compare tab)
+let focusMode    = false;
+const LABEL_THRESHOLD = 22;
+const EDGE_COLORS = { cip: '#0d9488', soc: '#d97706', both: '#7c3aed' };
+
+// ── Color helpers ──
+function nodeColor(cipFamily) {
+    if (!cipFamily || cipFamily === '—') return '#4b5563';
+    const hue = (parseInt(cipFamily, 10) * 47) % 360;
+    return `hsl(${hue}, 60%, 58%)`;
+}
+
+// ── Init + fetch ──
+async function initNetwork() {
+    showLoader();
+    closePanel();
+
+    const mode  = document.getElementById('edge-mode-select').value;
+    const limit = {{ node_count }};
+    const url   = `/api/v1/network/providers?edge=${mode}&limit=${limit}`;
+
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`API error ${resp.status}`);
+        graphData = await resp.json();
+
+        enrichData(graphData);
+        buildCytoscape(graphData);
+        buildCIPStrip(graphData);
+        buildGapPanel(graphData.meta);
+        updateStatsBar(graphData);
+
+    } catch (err) {
+        console.error('Network init failed:', err);
+        document.getElementById('net-loader').innerHTML =
+            `<p style="color:#f87171">Failed to load.<br><small>${err.message}</small></p>`;
+    }
+}
+
+function enrichData(data) {
+    data.nodes.forEach(n => {
+        const d = n.data;
+        d.bgColor    = nodeColor(d.cip_family);
+        const raw    = Math.max(18, Math.sqrt(d.completions || 0) * 2.2);
+        d.calcSize   = Math.min(raw, 90);
+        d.displayLabel = d.calcSize >= LABEL_THRESHOLD ? d.label : '';
+    });
+    data.edges.forEach(e => {
+        const d        = e.data;
+        d.lineColor    = EDGE_COLORS[d.edge_type] || '#555';
+        d.lineWidth    = Math.max(0.8, Math.min(d.weight / 4, 6));
+        d.lineOpacity  = 0.2 + Math.min(d.weight / 24, 0.45);
+    });
+}
+
+// ── Build Cytoscape ──
+function buildCytoscape(data) {
+    if (cy) { cy.destroy(); cy = null; }
+
+    cy = cytoscape({
+        container: document.getElementById('cy'),
+        elements: { nodes: data.nodes, edges: data.edges }, // strip meta
+        style: cyStyle(),
+        layout: cyLayout(),
+        minZoom: 0.25,
+        maxZoom: 4,
+    });
+
+    // Hide loader after first animation frame settles
+    setTimeout(() => {
+        document.getElementById('net-loader').classList.add('is-hidden');
+        document.getElementById('net-hint').style.display = 'block';
+    }, 800);
+
+    bindEvents();
+}
+
+function cyStyle() {
+    return [
+        {
+            selector: 'node',
+            style: {
+                'background-color'   : 'data(bgColor)',
+                'label'              : 'data(displayLabel)',
+                'width'              : 'data(calcSize)',
+                'height'             : 'data(calcSize)',
+                'font-size'          : '11px',
+                'font-family'        : 'Inter, system-ui, sans-serif',
+                'font-weight'        : '600',
+                'color'              : '#ffffff',
+                'text-outline-color' : '#0d1117',
+                'text-outline-width' : 3,
+                'text-outline-opacity': 1,
+                'text-valign'        : 'center',
+                'text-halign'        : 'right',
+                'text-margin-x'      : 7,
+            }
+        },
+        {
+            selector: 'edge',
+            style: {
+                'width'       : 'data(lineWidth)',
+                'line-color'  : 'data(lineColor)',
+                'curve-style' : 'haystack',
+                'opacity'     : 'data(lineOpacity)',
+            }
+        },
+        { selector: 'node.highlighted', style: { 'border-width': 3, 'border-color': '#fff', 'border-opacity': 0.9, 'opacity': 1, 'z-index': 999, 'label': 'data(label)' } },
+        { selector: 'node.dimmed',      style: { 'opacity': 0.07 } },
+        { selector: 'edge.highlighted', style: { 'opacity': 0.8 } },
+        { selector: 'edge.dimmed',      style: { 'opacity': 0.025 } },
+        { selector: 'node.selected-a',  style: { 'border-width': 3, 'border-color': '#a78bfa', 'border-opacity': 1, 'label': 'data(label)', 'z-index': 1000 } },
+        { selector: 'node.selected-b',  style: { 'border-width': 3, 'border-color': '#2dd4bf', 'border-opacity': 1, 'label': 'data(label)', 'z-index': 1000 } },
+        { selector: 'node.search-hit',  style: { 'border-width': 4, 'border-color': '#fbbf24', 'border-opacity': 1, 'label': 'data(label)', 'z-index': 1001 } },
+        { selector: 'node.isolated',    style: { 'border-width': 2, 'border-color': '#f87171', 'border-opacity': 0.5, 'border-style': 'dashed' } },
+    ];
+}
+
+function cyLayout() {
+    return {
+        name: 'cose',
+        animate: true,
+        animationDuration: 600,
+        animationEasing: 'ease-out',
+        fit: true, padding: 40,
+        nodeRepulsion: 400000,
+        idealEdgeLength: 100,
+        edgeElasticity: 100,
+        gravity: 200,
+        numIter: 100,
+        initialTemp: 200,
+        coolingFactor: 0.95,
+        minTemp: 1.0,
+        randomize: true,
+    };
+}
+
+// ── Events ──
+function bindEvents() {
+    const tooltip = document.getElementById('net-tooltip');
+
+    cy.on('mouseover', 'node', e => {
+        const d = e.target.data();
+        tooltip.textContent = `${d.label} · ${(d.completions||0).toLocaleString()} completions`;
+        tooltip.classList.add('is-visible');
+        const hood = e.target.closedNeighborhood();
+        cy.elements().not(hood).addClass('dimmed');
+        hood.removeClass('dimmed').addClass('highlighted');
+        document.getElementById('cy').style.cursor = 'pointer';
+    });
+
+    cy.on('mouseout', 'node', () => {
+        tooltip.classList.remove('is-visible');
+        cy.elements().removeClass('dimmed highlighted');
+        document.getElementById('cy').style.cursor = 'default';
+    });
+
+    cy.on('tap', 'node', e => {
+        const node = e.target;
+        if (compareNode || (selectedNode && node.id() !== selectedNode.id())) {
+            // Second click → compare flow
+            if (selectedNode && node.id() !== selectedNode.id()) {
+                setCompareNode(node);
+                return;
+            }
+        }
+        setSelectedNode(node);
+    });
+
+    cy.on('tap', 'edge', e => {
+        const edge = e.target;
+        // Find the two nodes
+        const srcNode = cy.getElementById(edge.data('source'));
+        const tgtNode = cy.getElementById(edge.data('target'));
+        setSelectedNode(srcNode);
+        setCompareNode(tgtNode);
+    });
+
+    cy.on('tap', evt => {
+        if (evt.target === cy) {
+            if (focusMode) return;
+            clearAllSelections();
+            closePanel();
+        }
+    });
+
+    // Mark isolated nodes
+    cy.nodes().forEach(n => {
+        if (n.degree() === 0) n.addClass('isolated');
+    });
+}
+
+// ── Node selection ──
+function setSelectedNode(node) {
+    cy.elements().removeClass('selected-a selected-b dimmed highlighted');
+    compareNode = null;
+    selectedNode = node;
+    node.addClass('selected-a');
+    // Dim non-neighbors
+    const hood = node.closedNeighborhood();
+    cy.elements().not(hood).addClass('dimmed');
+    openProviderTab(node);
+    switchTab('provider');
+}
+
+function setCompareNode(node) {
+    compareNode = node;
+    node.addClass('selected-b');
+    openCompareTab(selectedNode, node);
+    switchTab('compare');
+}
+
+function clearAllSelections() {
+    selectedNode = null;
+    compareNode = null;
+    if (cy) cy.elements().removeClass('selected-a selected-b dimmed highlighted search-hit');
+}
+
+// ── Provider Panel ──
+function openProviderTab(node) {
+    const d = node.data();
+    document.getElementById('panel-node-dot').style.background = d.bgColor;
+    document.getElementById('panel-name').textContent = d.label;
+    document.getElementById('panel-city').textContent = [d.city, d.state].filter(Boolean).join(', ') || 'Kansas City Region';
+    document.getElementById('p-completions').textContent = d.completions ? d.completions.toLocaleString() : '—';
+    document.getElementById('p-cip-label').textContent = d.cip_label || '—';
+
+    const pill = document.getElementById('p-cip-pill');
+    if (d.cip_family && d.cip_family !== '—') {
+        pill.textContent = `CIP ${d.cip_family}`;
+        pill.style.display = 'inline-block';
+    } else {
+        pill.style.display = 'none';
+    }
+
+    document.getElementById('p-degree').textContent = node.degree(false);
+
+    // Build peer list — sorted by edge weight descending
+    const peerList = document.getElementById('p-peer-list');
+    peerList.innerHTML = '';
+    const sortedEdges = node.connectedEdges().sort((a, b) => b.data('weight') - a.data('weight')).slice(0, 6);
+    sortedEdges.forEach(edge => {
+        const neighbor = edge.source().id() === node.id() ? edge.target() : edge.source();
+        const nd = neighbor.data();
+        const et = edge.data('edge_type');
+        const item = document.createElement('div');
+        item.className = 'peer-item';
+        item.innerHTML = `
+            <span class="peer-dot" style="background:${nd.bgColor}"></span>
+            <span class="peer-name">${nd.label}</span>
+            <span class="peer-badge ${et}">${et}</span>
+        `;
+        item.onclick = () => { if (selectedNode) setCompareNode(neighbor); };
+        peerList.appendChild(item);
+    });
+
+    document.getElementById('p-profile-link').href = d.url || '#';
+    document.getElementById('net-panel').classList.add('is-open');
+}
+
+// ── Compare Tab ──
+function openCompareTab(nodeA, nodeB) {
+    const dA = nodeA.data();
+    const dB = nodeB.data();
+
+    // Header display
+    const display = document.getElementById('compare-nodes-display');
+    display.innerHTML = `
+        <span class="compare-dot" style="background:${dA.bgColor}"></span>
+        <span class="compare-node-name">${dA.label}</span>
+        <span class="compare-vs-sep">vs</span>
+        <span class="compare-dot" style="background:${dB.bgColor}"></span>
+        <span class="compare-node-name">${dB.label}</span>
+    `;
+
+    // Find connecting edge
+    const edge = nodeA.edgesTo(nodeB).first().length ? nodeA.edgesTo(nodeB).first() : nodeB.edgesTo(nodeA).first();
+
+    if (edge && edge.length) {
+        const ed = edge.data();
+
+        // Shared CIPs
+        const sharedSection = document.getElementById('compare-shared-section');
+        const cipChips = document.getElementById('compare-shared-cips');
+        if (ed.shared_cips && ed.shared_cips.length > 0) {
+            cipChips.innerHTML = ed.shared_cips.map(sc =>
+                `<span class="shared-chip">${sc.name}</span>`
+            ).join('');
+            sharedSection.style.display = 'block';
+        } else {
+            sharedSection.style.display = 'none';
+        }
+
+        // Shared SOCs
+        const socSection = document.getElementById('compare-soc-section');
+        if (ed.shared_soc_count > 0) {
+            document.getElementById('compare-soc-count').textContent = ed.shared_soc_count;
+            socSection.style.display = 'block';
+        } else {
+            socSection.style.display = 'none';
+        }
+
+        // Edge summary
+        document.getElementById('compare-weight').textContent = ed.weight;
+        document.getElementById('compare-edge-label').textContent = ed.label || '';
+        document.getElementById('compare-edge-section').style.display = 'block';
+
+    } else {
+        // No direct edge
+        document.getElementById('compare-shared-section').style.display = 'none';
+        document.getElementById('compare-soc-section').style.display = 'none';
+        document.getElementById('compare-edge-section').style.display = 'none';
+    }
+
+    // Wire CTA to compare tool (only if org_ids are available as IDs)
+    const cta = document.getElementById('compare-cta');
+    cta.href = `/compare?a=${dA.id}&b=${dB.id}`;
+    cta.style.display = 'block';
+
+    document.getElementById('net-panel').classList.add('is-open');
+}
+
+function clearCompare() {
+    compareNode = null;
+    cy.nodes().removeClass('selected-b');
+    document.getElementById('compare-nodes-display').innerHTML =
+        `<div style="color:rgba(255,255,255,0.3);font-size:12px">Select a second node on the graph</div>`;
+    document.getElementById('compare-shared-section').style.display = 'none';
+    document.getElementById('compare-soc-section').style.display = 'none';
+    document.getElementById('compare-edge-section').style.display = 'none';
+    document.getElementById('compare-cta').style.display = 'none';
+    switchTab('provider');
+}
+
+function closePanel() {
+    document.getElementById('net-panel').classList.remove('is-open');
+    clearAllSelections();
+}
+
+// ── Tabs ──
+function switchTab(name) {
+    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('is-active'));
+    document.querySelectorAll('.panel-pane').forEach(p => p.classList.remove('is-active'));
+    document.getElementById('tab-' + name).classList.add('is-active');
+    document.getElementById('pane-' + name).classList.add('is-active');
+}
+
+// ── Focus Mode ──
+function activateFocusMode() {
+    if (!selectedNode || !cy) return;
+    focusMode = true;
+    const node = selectedNode;
+    const d = node.data();
+
+    document.getElementById('focus-badge-name').textContent = d.label;
+    document.getElementById('net-focus-badge').classList.add('is-visible');
+
+    // Rebuild graph with concentric layout centered on this node
+    // Set concentric value = edge weight to this node (or 0 for unconnected)
+    cy.nodes().forEach(n => {
+        if (n.id() === node.id()) {
+            n.data('concentricVal', 999);
+        } else {
+            const edge = node.edgesTo(n).first().length
+                ? node.edgesTo(n).first()
+                : n.edgesTo(node).first();
+            if (edge && edge.length) {
+                n.data('concentricVal', edge.data('weight'));
+            } else {
+                n.data('concentricVal', 0);
+            }
+        }
+    });
+
+    const layout = cy.layout({
+        name: 'concentric',
+        fit: true,
+        padding: 50,
+        concentric: n => n.data('concentricVal'),
+        levelWidth: () => 3,
+        animate: true,
+        animationDuration: 700,
+        animationEasing: 'ease-out',
+        minNodeSpacing: 30,
+    });
+    layout.run();
+
+    // Dim unconnected nodes
+    const neighborhood = node.closedNeighborhood();
+    cy.elements().not(neighborhood).addClass('dimmed');
+}
+
+function exitFocusMode() {
+    focusMode = false;
+    document.getElementById('net-focus-badge').classList.remove('is-visible');
+    cy.elements().removeClass('dimmed highlighted selected-a selected-b');
+
+    const layout = cy.layout(cyLayout());
+    layout.run();
+}
+
+// ── CIP Filter Strip ──
+function buildCIPStrip(data) {
+    const strip = document.getElementById('cip-strip');
+    // Remove old chips except "All"
+    strip.querySelectorAll('[data-fam]:not([data-fam="all"])').forEach(el => el.remove());
+
+    // Count nodes per CIP family
+    const familyCounts = {};
+    const familyColors = {};
+    data.nodes.forEach(n => {
+        const fam = n.data.cip_family;
+        if (fam && fam !== '—') {
+            familyCounts[fam] = (familyCounts[fam] || 0) + 1;
+            familyColors[fam] = n.data.bgColor;
+        }
+    });
+
+    // Sort by count desc
+    const sorted = Object.entries(familyCounts).sort((a,b) => b[1]-a[1]);
+    sorted.forEach(([fam, count]) => {
+        const label = getFamilyName(fam, data);
+        const chip = document.createElement('button');
+        chip.className = 'cip-chip';
+        chip.dataset.fam = fam;
+        chip.innerHTML = `<span class="chip-dot" style="background:${familyColors[fam]}"></span>${label}<span class="chip-count">${count}</span>`;
+        chip.onclick = () => filterByCIP(fam, chip);
+        strip.appendChild(chip);
+    });
+}
+
+function getFamilyName(code, data) {
+    // Look up from node cip_label data
+    const node = data.nodes.find(n => n.data.cip_family === code);
+    if (node) {
+        const label = node.data.cip_label || '';
+        // Strip " (51)" suffix
+        return label.replace(/\s*\(\d+\)$/, '') || code;
+    }
+    return code;
+}
+
+function filterByCIP(fam, btn) {
+    activeCIP = fam;
+    document.querySelectorAll('.cip-chip').forEach(c => c.classList.remove('is-active'));
+    btn.classList.add('is-active');
+
+    if (!cy) return;
+    if (fam === 'all') {
+        cy.elements().removeClass('dimmed');
+        clearAllSelections();
+        return;
+    }
+
+    // Highlight nodes in this CIP family; dim others
+    cy.nodes().forEach(n => {
+        const families = n.data('cip_families') || [n.data('cip_family')];
+        if (families.includes(fam)) {
+            n.removeClass('dimmed');
+        } else {
+            n.addClass('dimmed');
+            n.removeClass('highlighted');
+        }
+    });
+
+    // Dim edges where both endpoints are dimmed
+    cy.edges().forEach(e => {
+        const srcDimmed = e.source().hasClass('dimmed');
+        const tgtDimmed = e.target().hasClass('dimmed');
+        if (srcDimmed || tgtDimmed) e.addClass('dimmed');
+        else e.removeClass('dimmed');
+    });
+
+    closePanel();
+}
+
+// ── Gap Analysis Panel ──
+function buildGapPanel(meta) {
+    if (!meta || !meta.gap_analysis) return;
+    const list = document.getElementById('gap-list');
+    list.innerHTML = '';
+
+    const entries = Object.entries(meta.gap_analysis)
+        .sort((a, b) => a[1].count - b[1].count);
+
+    entries.forEach(([code, info]) => {
+        const item = document.createElement('div');
+        item.className = 'gap-item' + (info.count === 0 || info.count === 1 ? ' underserved' : ' low');
+        item.innerHTML = `
+            <span class="gap-name">${info.name}</span>
+            <span class="gap-count">${info.count}</span>
+        `;
+        // Click to filter the graph
+        item.style.cursor = 'pointer';
+        item.onclick = () => {
+            const chip = document.querySelector(`.cip-chip[data-fam="${code}"]`);
+            if (chip) filterByCIP(code, chip);
+            else filterByCIP('all', document.querySelector('.cip-chip[data-fam="all"]'));
+        };
+        list.appendChild(item);
+    });
+}
+
+function toggleGapPanel() {
+    const panel = document.getElementById('net-gap-panel');
+    const btn   = document.getElementById('gap-toggle-btn');
+    const isOpen = panel.classList.toggle('is-open');
+    btn.classList.toggle('is-active', isOpen);
+}
+
+// ── Search ──
+function onSearchInput(val) {
+    const clear = document.getElementById('search-clear-btn');
+    clear.classList.toggle('is-visible', val.length > 0);
+
+    if (!cy) return;
+    cy.elements().removeClass('search-hit dimmed');
+
+    if (!val.trim()) {
+        document.getElementById('search-status').style.display = 'none';
+        return;
+    }
+
+    const q = val.toLowerCase();
+    let hits = 0;
+
+    cy.nodes().forEach(n => {
+        if (n.data('label').toLowerCase().includes(q)) {
+            n.addClass('search-hit');
+            hits++;
+        } else {
+            n.addClass('dimmed');
+        }
+    });
+
+    cy.edges().forEach(e => {
+        const sDimmed = e.source().hasClass('dimmed');
+        const tDimmed = e.target().hasClass('dimmed');
+        if (sDimmed && tDimmed) e.addClass('dimmed');
+    });
+
+    // Center on first hit
+    const hitNodes = cy.nodes('.search-hit');
+    if (hitNodes.length > 0) cy.animate({ fit: { eles: hitNodes, padding: 80 } }, { duration: 400 });
+
+    const status = document.getElementById('search-status');
+    status.textContent = `${hits} match${hits !== 1 ? 'es' : ''}`;
+    status.style.display = 'flex';
+}
+
+function clearSearch() {
+    document.getElementById('net-search').value = '';
+    document.getElementById('search-clear-btn').classList.remove('is-visible');
+    document.getElementById('search-status').style.display = 'none';
+    if (cy) cy.elements().removeClass('search-hit dimmed');
+}
+
+// ── Stats bar ──
+function updateStatsBar(data) {
+    const nodes    = data.nodes.length;
+    const edges    = data.edges.length;
+    const families = new Set(data.nodes.map(n => n.data.cip_family).filter(f => f && f !== '—')).size;
+    const isolated = data.nodes.filter(n => {
+        // count nodes with no edges in the response
+        const id = n.data.id;
+        return !data.edges.some(e => e.data.source === id || e.data.target === id);
+    }).length;
+
+    document.getElementById('stat-nodes').textContent    = nodes;
+    document.getElementById('stat-edges').textContent    = edges;
+    document.getElementById('stat-families').textContent = families;
+    document.getElementById('net-provider-subtitle').textContent =
+        `Showing top ${nodes} training providers · ${families} training fields`;
+
+    if (isolated > 0) {
+        document.getElementById('stat-isolated').textContent   = isolated;
+        document.getElementById('stat-isolated-wrap').style.display = 'flex';
+        document.getElementById('stat-isolated-div').style.display  = 'block';
+    }
+}
+
+// ── Controls ──
+function reloadNetwork() { clearSearch(); initNetwork(); }
+function fitGraph()  { if (cy) cy.animate({ fit: { padding: 40 } }, { duration: 350 }); }
+function zoomIn()    { if (cy) cy.zoom({ level: cy.zoom() * 1.3, renderedPosition: { x: cy.width()/2, y: cy.height()/2 } }); }
+function zoomOut()   { if (cy) cy.zoom({ level: cy.zoom() * 0.75, renderedPosition: { x: cy.width()/2, y: cy.height()/2 } }); }
+function exportPNG() {
+    if (!cy) return;
+    const a = document.createElement('a');
+    a.href = cy.png({ full: true, scale: 2, bg: '#0d1117' });
+    a.download = 'haystack-network.png';
+    a.click();
+}
+
+function showLoader() {
+    document.getElementById('net-loader').innerHTML = `
+        <div class="net-spinner"></div>
+        <p>Computing layout…<br><span style="font-size:11px;opacity:0.5">Usually takes 2–4 seconds</span></p>`;
+    document.getElementById('net-loader').classList.remove('is-hidden');
+    document.getElementById('net-hint').style.display = 'none';
+}
+
+// ── Onboarding dismiss ──
+function dismissOnboard() {
+    document.getElementById('net-onboard').style.display = 'none';
+    try { localStorage.setItem('net_onboard_dismissed', '1'); } catch(e) {}
+}
+
+// ── Boot ──
+document.addEventListener('DOMContentLoaded', () => {
+    // Show onboarding banner if not previously dismissed
+    if (!localStorage.getItem('net_onboard_dismissed')) {
+        document.getElementById('net-onboard').style.display = 'flex';
+    }
+
+    // Handle ?highlight=org_id coming from a provider profile
+    const highlightId = new URLSearchParams(window.location.search).get('highlight');
+
+    initNetwork().then(() => {
+        if (highlightId && cy) {
+            const target = cy.getElementById(highlightId);
+            if (target.length > 0) {
+                cy.animate({ fit: { eles: target, padding: 120 } }, { duration: 600 });
+                setTimeout(() => {
+                    setSelectedNode(target);
+                }, 700);
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

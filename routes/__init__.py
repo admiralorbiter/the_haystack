@@ -69,6 +69,19 @@ def methods():
 
 # These imports must be AFTER the blueprint definition — this is Flask's required pattern.
 # ruff: noqa: E402, F401
-from . import (briefing, compare, employers, fields, industries,  # noqa: E402, F401
-               guided_search, hubs, map, occupations, programs, providers, search,
-               outlook)
+from . import (
+    briefing,
+    compare,
+    employers,
+    fields,
+    guided_search,
+    hubs,
+    industries,
+    map,
+    network,
+    occupations,
+    outlook,
+    programs,
+    providers,
+    search,
+)
